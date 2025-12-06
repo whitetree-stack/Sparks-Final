@@ -414,6 +414,7 @@ label skybridge_quest_intro:
     "WASD to move, SPACE to attack. Collect 3 beacon shards to open the path forward!"
 
     call beacon_quest_start()
+    $ beacon_quest_victory = _return
 
     jump skybridge_quest_complete
 
@@ -591,6 +592,7 @@ label skybridge_boss_intro:
     "Work together to defeat the Shadow King!"
 
     call boss_rush_start()
+    $ boss_rush_victory = _return
 
     jump skybridge_boss_complete
 
