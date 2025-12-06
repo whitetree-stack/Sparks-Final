@@ -238,6 +238,29 @@ label region_1_library:
 
     k "I wish it looked a bit more welcoming, but..."
     k "The Lantern of Knowledge has gone dark. Its darkness has invited chaos."
+
+    show k annoyed
+    show h a_unsure_looking_right_talking
+    h "Pipwick told us about Bedimurk. Did he do this?"
+
+    show h a_unsure_looking_right
+    show k hands_on_hips_talking
+    k "That grumpy old mole? Yes, I'm afraid so."
+    k "He tunneled up from below and drained the lantern's light while I was shelving books."
+
+    show k annoyed_talking
+    k "Left behind nothing but claw marks and the smell of damp earth."
+
+    show t a_pointing_confused_talking:
+        xzoom 1
+    t "Why doesn't someone just... stop him?"
+
+    show t a_pointing_confused
+    show k hands_on_hips_talking:
+        xzoom -1
+    k "He's slippery. And he knows these tunnels better than anyone."
+    k "By the time you spot his shadow, he's already three burrows away."
+
     show k annoyed
     show t a_hands_on_hips_expressionless_talking
     t "Looks pretty chaotic to me."

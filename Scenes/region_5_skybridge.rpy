@@ -82,11 +82,12 @@ label region_5_skybridge:
 
     show t a_hands_on_hips_expressionless_talking:
         xzoom -1
-    t "Let me guess—the Shadow King?"
+    t "Let me guess—Bedimurk is here too?"
 
     show t a_hands_on_hips_expressionless
     show p frustrated
-    p "Yes. He's been siphoning the beacons' energy to corrupt this place."
+    p "Yes. This is his lair—the darkest place in all the realm."
+    p "He's been siphoning the beacons' energy to make it even darker."
 
     show p offended
     p "If he succeeds in extinguishing the Skybridge Beacon, all the light in the realm will fade forever."
@@ -100,7 +101,7 @@ label region_5_skybridge:
     p "It does! The restored beacons are fighting back against the darkness."
 
     show p worried
-    p "But they're not strong enough alone. We need to restore the final beacon and defeat the Shadow King."
+    p "But they're not strong enough alone. We need to restore the final beacon and stop Bedimurk once and for all."
 
     show t a_determined_looking_left_talking:
         xzoom 1
@@ -248,14 +249,18 @@ label region_5_skybridge:
 
     show t a_hands_on_hips_expressionless
     show h a_unsure_looking_right_talking
-    h "The Shadow King is still out there. And this beacon is still dark."
+    h "Bedimurk is still out there. And this beacon is still dark."
 
     show h a_unsure_looking_right
     show g frustrated_talking
-    g "Yes. The Shadow King."
+    g "Yes. That poor, misguided mole."
 
-    show g frustrated
+    show g worried
     g "He's been gathering power at the far end of the bridge. Drawing in all the darkness of the realm."
+
+    show g hands_on_hips_talking
+    g "I've tried talking to him, you know. He won't listen."
+    g "He's convinced that making the world dark is the only way he'll ever fit in."
 
     show g hands_on_hips_talking
     g "To reach him, you'll need to cross the bridge. But it's been shattered into pieces."
@@ -325,7 +330,7 @@ label region_5_skybridge:
     p "Navigate through the bridge fragments, defeat the shadows, and collect three beacon shards."
 
     show p offended
-    p "Once you have all three, the path to the Shadow King will be revealed."
+    p "Once you have all three, the path to Bedimurk will be revealed."
 
     show g hands_on_hips_talking
     g "I'll stay here with Logan and keep the light burning as long as I can."
@@ -481,8 +486,8 @@ label skybridge_quest_victory:
         ease 0.5 alpha 0.0
     with vpunch
 
-    "A bridge of pure light materialized before them, stretching toward a dark throne in the distance."
-    "Upon it sat a massive figure wreathed in shadows—the Shadow King himself."
+    "A bridge of pure light materialized before them, stretching toward a dark platform in the distance."
+    "Upon it stood a hunched figure in an oversized cape—a mole with comically thick glasses perched on his snout."
 
     show t a_surprised:
         zoom 0.35
@@ -496,15 +501,15 @@ label skybridge_quest_victory:
     with dissolve
 
     t "There he is..."
-    h "He's... huge."
+    h "He's... smaller than I expected."
 
-    "The Shadow King rose from his throne, his voice echoing across the sky."
+    "Bedimurk squinted in their direction, adjusting his glasses repeatedly."
 
-    "SHADOW KING" "So... the Twin Sparks finally arrive."
+    b "Who's there?! I can hear footsteps! Is that the Twin Sparks?"
 
-    "SHADOW KING" "You've restored my corrupted beacons. Impressive."
+    b "Ugh, this light is hurting my eyes! You've restored the beacons, haven't you?!"
 
-    "SHADOW KING" "But do you really think you can challenge ME?"
+    b "Why can't you just leave things DARK like they're supposed to be?!"
 
     show t a_determined_looking_left_talking:
         xzoom 1
@@ -517,11 +522,20 @@ label skybridge_quest_victory:
 
     show h a_thumbs_up_determined
 
-    "SHADOW KING" "HA HA HA! Such spirit!"
+    b "Stop ME?! I'm trying to make things FAIR!"
 
-    "SHADOW KING" "Very well, little sparks. Let us see if your light can truly overcome my darkness."
+    b "You don't know what it's like! Everyone else gets to see perfectly fine!"
+    b "Beautiful sunsets! Pretty colors! Reading books without squinting!"
 
-    "SHADOW KING" "COME! FACE ME!"
+    b "Well if {i}I{/i} can't see, then NOBODY gets to see! That's FAIR!"
+
+    show t a_hands_on_hips_expressionless_talking
+    t "That's not fair at all! That's just making everyone miserable!"
+
+    show t a_hands_on_hips_expressionless
+    b "MISERABLE?! I've been miserable my whole life! It's YOUR turn!"
+
+    b "Now stop talking and let me EXTINGUISH you like all the other lights!"
 
     show p offended:
         zoom 0.28
@@ -529,13 +543,13 @@ label skybridge_quest_victory:
         yalign 0.65
     with dissolve
 
-    p "This is it, Twin Sparks! The final battle!"
+    p "This is it, Twin Sparks! The final challenge!"
 
     show p happy_talking
-    p "You must fight TOGETHER! Tristan, use the arrow keys! Henry, use WASD!"
+    p "You must work TOGETHER! Tristan, use the arrow keys! Henry, use WASD!"
 
     show p proud
-    p "Combine your attacks! Only by working as one can you defeat him!"
+    p "Combine your light! Only by working as one can you reach Bedimurk!"
 
     show g presenting_talking:
         zoom 0.3
@@ -567,7 +581,7 @@ label skybridge_boss_intro:
         xalign 0.5
     with dissolve
 
-    "The brothers stepped onto the bridge of light, facing the Shadow King together."
+    "The brothers stepped onto the bridge of light, facing Bedimurk together."
     "Behind them, the restored beacons blazed with power, lending them strength."
 
     show t a_determined_looking_left:
@@ -592,7 +606,7 @@ label skybridge_boss_intro:
     with dissolve
 
     "Tristan: Arrow Keys + Enter to attack | Henry: WASD + Space to attack"
-    "Work together to defeat the Shadow King!"
+    "Work together to reach Bedimurk!"
 
     call boss_rush_start()
     $ boss_rush_victory = _return
@@ -624,9 +638,9 @@ label skybridge_boss_retry:
         yalign 0.65
     with dissolve
 
-    "The Shadow King's power was overwhelming. The brothers were forced back."
+    "Bedimurk's darkness pushed them back. They couldn't get close enough."
 
-    "SHADOW KING" "Is that all you have? Pathetic!"
+    b "Ha! Can't even see where you're going, can you? NOW you know how I feel!"
 
     show g frustrated:
         zoom 0.35
@@ -643,7 +657,7 @@ label skybridge_boss_retry:
         yalign 0.7
     with dissolve
 
-    p "The Shadow King has weak points between attacks! Strike when he's vulnerable!"
+    p "Bedimurk's darkness has weak points! Push through when there's an opening!"
 
     menu:
         "Try again!":
@@ -655,7 +669,7 @@ label skybridge_boss_retry:
 # --- FINAL VICTORY ---
 
 label skybridge_victory:
-    "With one final combined attack, light EXPLODED from the brothers!"
+    "With one final combined effort, light EXPLODED from the brothers!"
 
     show light_burst at light_burst_grow_2:
         alpha 0.0
@@ -663,42 +677,135 @@ label skybridge_victory:
         ease 1.0 alpha 0.0
     with vpunch
 
-    "The Shadow King howled as pure radiance tore through his darkness."
+    "The brilliant light swept across the platform, and Bedimurk stumbled backward with a shriek."
 
-    "SHADOW KING" "NO! IMPOSSIBLE! How can two children—"
+    b "AAAAGH! Too bright! TOO BRIGHT!"
 
-    "SHADOW KING" "HOW CAN YOUR LIGHT BE SO STRONG?!"
+    "He tripped over his own cape and tumbled to the ground, his thick glasses flying off."
+    "Without them, he looked smaller. Vulnerable. Just a frightened mole squinting at the world."
 
-    show t a_cheering_mouth_open:
+    show t a_surprised:
         zoom 0.35
         xalign 0.35
         yalign 0.6
         xzoom 1
-    show h a_cheer_eyes_closed:
+    show h a_surprised_looking_down:
         zoom 0.32
         xalign 0.55
         yalign 0.65
         xzoom -1
     with dissolve
 
-    t "Because we're not just two kids!"
+    t "Wait... he's not fighting back?"
 
-    h "We have our whole family behind us!"
+    b "My glasses! Where are my glasses?! I can't see anything!"
 
-    "SHADOW KING" "Family... such a simple thing..."
+    "Bedimurk patted the ground frantically, tears forming in his squinted eyes."
 
-    "SHADOW KING" "And yet... it burns brighter than any beacon..."
+    b "Please... everything's just blurs and shapes without them..."
 
-    "The Shadow King's form began to dissolve, shadows streaming away into nothing."
+    show h a_unsure_looking_right_talking
+    h "Tristan... he looks really scared."
 
-    "SHADOW KING" "Perhaps... there is more to light than I understood..."
+    show h a_unsure_looking_right
+    show t a_hands_on_hips_expressionless_talking
+    t "Yeah..."
 
-    "SHADOW KING" "Remember this, Twin Sparks... even the deepest darkness..."
+    "Henry spotted the glasses nearby. He walked over and picked them up."
 
-    "SHADOW KING" "...fears the smallest light..."
+    show h a_thumbs_up_smile_talking:
+        xzoom 1
+    h "Here. I found your glasses."
 
-    "With a final flash, the Shadow King vanished completely."
-    "In his place, the Skybridge Beacon blazed to life—brighter than ever before."
+    show h a_thumbs_up_smile
+    b "You... you're giving them back? But I tried to destroy everything you love!"
+
+    show t a_hands_on_hips_smile_talking
+    t "You're not a bad mole, Bedimurk. You're just... really frustrated."
+
+    show t a_hands_on_hips_smile
+    b "I just... I just wanted to fit in. I wanted things to be equal."
+
+    show h a_smile_looking_right_talking
+    h "But making everyone blind doesn't make things equal. It just makes everyone sad."
+
+    show h a_smile_looking_right
+    show t a_pointing_smile_talking
+    t "What if instead of making the world darker, we helped you see better?"
+
+    show t a_pointing_smile
+    b "See... better? But I've always had terrible eyesight. Even these glasses barely help."
+
+    show p happy_talking:
+        zoom 0.28
+        xalign 0.15
+        yalign 0.7
+    with dissolve
+
+    p "Twin Sparks! The restored beacons have created something new!"
+    p "Light infused with the power of knowledge, harmony, nature, and time!"
+
+    show p proud
+    p "Perhaps... we could use that light to help Bedimurk's eyes?"
+
+    show g presenting_talking:
+        zoom 0.3
+        xalign 0.85
+        yalign 0.65
+    with dissolve
+
+    g "What a wonderful idea. Sometimes the best way to defeat darkness..."
+    g "...is with kindness."
+
+    "The light from all five beacons swirled together, forming a gentle golden glow."
+    "It settled over Bedimurk's glasses, infusing them with warmth."
+
+    b "What's happening? Everything's getting... clearer?"
+
+    "Bedimurk put on the glasses and gasped."
+
+    b "I can... I can SEE! Really see!"
+    b "The colors! The details! Is that what the sky looks like?!"
+
+    "For the first time, Bedimurk looked up at the realm he had tried so hard to destroy."
+    "And he saw how beautiful it was."
+
+    b "Oh... oh my. I had no idea. It's... it's gorgeous."
+
+    b "All this time, I was trying to take THIS away from everyone?"
+
+    show h a_thumbs_up_determined_talking
+    h "You didn't know what you were missing!"
+
+    show h a_thumbs_up_determined
+    b "I'm so sorry. I'm so, so sorry."
+    b "I was so focused on what I couldn't have that I wanted to ruin it for everyone else."
+
+    show t a_hands_on_hips_smile_talking
+    t "It's okay, Bedimurk. Everyone makes mistakes."
+
+    show t a_hands_on_hips_smile
+    b "But mine were really BIG mistakes. I drained the beacons! I made everyone miserable!"
+
+    show p nervous_laugh
+    p "Yes, well... you could always help FIX things now?"
+
+    b "You'd... you'd let me help? After everything I did?"
+
+    show g hands_on_hips_talking
+    g "That's what redemption is, dear. It's not about being perfect."
+    g "It's about trying to do better."
+
+    b "Then I'll try. I'll try really hard."
+    b "I'll help maintain the beacons! I'll keep the tunnels clear!"
+    b "And I'll never, EVER try to dim the lights again!"
+
+    "Bedimurk stood up straight—well, as straight as a mole can stand—with new determination in his now-clear eyes."
+
+    b "Thank you, Twin Sparks. You've given me something I never had before."
+    b "Hope. And really good glasses."
+
+    "The Skybridge Beacon blazed to life—brighter than ever before."
 
     show light_burst at light_burst_grow_2:
         alpha 0.0
@@ -891,7 +998,7 @@ label game_epilogue:
 
     t "The giant metal spiders."
 
-    h "The Shadow King."
+    h "Bedimurk."
 
     "They looked at each other, the same question in their eyes."
 

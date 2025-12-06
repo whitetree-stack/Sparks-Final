@@ -282,6 +282,19 @@ label region_3_conservatory:
     l "But the darkness came and scattered the harmony. Now the crystals are jumbled and confused."
 
     show l frustrated
+    show t a_hands_on_hips_expressionless_talking
+    t "Let me guess—Bedimurk?"
+
+    show t a_hands_on_hips_expressionless
+    show l frustrated_talking
+    l "That wretched mole, yes. He came through here with earplugs stuffed in his ears."
+    l "Said the singing gave him headaches. Can you believe that?"
+
+    show l annoyed_talking
+    l "He scratched the crystals with his claws until they couldn't hold a tune anymore."
+    l "Left little tunnel holes everywhere. I'm still finding dirt in the corners."
+
+    show l frustrated
     show h a_unsure_looking_right_talking
     h "Scattered how?"
 

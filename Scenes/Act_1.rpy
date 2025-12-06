@@ -240,7 +240,33 @@ label prologue:
 
     show p proud_night:
         xzoom 1.0
-    p "Indeed! You are prophesied saviors of my world. The Great Beacon has almost been extinguished, and our realm will perish if it’s not restored."
+    p "Indeed! You are prophesied saviors of my world. The Great Beacon has almost been extinguished, and our realm will perish if it's not restored."
+
+    show p worried_night
+    p "Someone has been dimming the lights across the land. A creature who hates the brightness..."
+
+    show t bd_on_knees_talking
+    t "A creature? What kind of creature?"
+
+    show t bd_on_knees
+    show p frustrated_night
+    p "A mole. A very grumpy, very determined mole named Bedimurk."
+    p "He wants to plunge the entire realm into eternal darkness!"
+
+    show h bd_sitting_up_worried_talking
+    h "Why would anyone want that?"
+
+    show h bd_sitting_up_worried
+    show p sad_night
+    p "Bedimurk has terrible eyesight—even for a mole. He's always struggled to see."
+    p "He believes if {i}everyone{/i} lives in darkness, then no one will have an advantage over him."
+
+    show t bd_on_knees_talking
+    t "That's... kind of sad, actually."
+
+    show t bd_on_knees
+    show p offended_night
+    p "Sad, yes! But also very dangerous! He's been draining the beacons one by one!"
 
 
 

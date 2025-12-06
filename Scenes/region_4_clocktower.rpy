@@ -286,6 +286,27 @@ label region_4_clocktower:
     show j frustrated
     j "The Clockwork Beacon keeps time for the whole realm. But the gears that drive it have fallen out of alignment."
 
+    show h a_skeptical_talking
+    h "Bedimurk again?"
+
+    show h a_skeptical
+    show j frustrated_talking
+    j "That nearsighted nuisance? You bet!"
+    j "He jammed acorns into the main gearbox! ACORNS!"
+
+    show j anchor
+    j "Said the ticking was 'too loud' and it hurt his sensitive ears."
+
+    show j hands_on_hips_talking
+    j "I spent two days picking acorn shells out of the machinery."
+
+    show t a_hands_on_hips_expressionless_talking
+    t "He really doesn't like... anything, does he?"
+
+    show t a_hands_on_hips_expressionless
+    show j frustrated_talking
+    j "The guy's got issues. But that's no excuse for sabotaging TIME ITSELF!"
+
     show j hands_on_hips_talking
     j "When the gears don't mesh right, time gets... glitchy."
 
@@ -857,17 +878,17 @@ label clocktower_conclusion:
     p "If I may interrupt—we still have one more region to visit!"
 
     show p offended
-    p "The Eternal Skybridge awaits, and the Shadow King grows stronger by the minute!"
+    p "The Eternal Skybridge awaits, and Bedimurk grows more desperate by the minute!"
 
     show t a_surprised_talking
-    t "The Shadow King?"
+    t "Bedimurk? He's there?"
 
     show t a_surprised
     show p worried
-    p "The one who has been corrupting the beacons. The source of all this darkness."
+    p "Yes—he's making his last stand. Gathering all the darkness he can."
 
     show p frustrated
-    p "He waits at the Skybridge, gathering power. We must stop him before it's too late!"
+    p "He's at the Skybridge, trying to extinguish the final beacon. We must stop him before it's too late!"
 
     show j anchor
     j "The big boss fight, huh?"
@@ -954,6 +975,6 @@ label clocktower_conclusion:
     with dissolve
 
     "And then they were gone, carried on beams of light toward the final challenge."
-    "The Eternal Skybridge—and the Shadow King—awaited."
+    "The Eternal Skybridge—and Bedimurk—awaited."
 
     jump region_5_skybridge

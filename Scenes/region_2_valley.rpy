@@ -228,6 +228,8 @@ label region_2_valley:
     "Uncle Ryan pointed toward the sky. High above the metallic canopy, something glowed faintly—"
     "—and it was wrapped in massive, thorny vines as black as night."
 
+    "At the base of the nearest tree, fresh claw marks scarred the metal bark."
+
     show t a_surprised:
         xzoom 1
     show h a_surprised_looking_down:
@@ -241,6 +243,19 @@ label region_2_valley:
     
     show r frustrated
     r "Those vines showed up about a week ago. They've been squeezing the life out of it ever since."
+
+    show t a_pointing_confused_talking
+    t "Was it Bedimurk? The mole?"
+
+    show t a_pointing_confused
+    show r surprised_talking
+    r "You've heard of him? Yeah, that furry menace planted these vines himself."
+    r "Saw him scurrying away with my own eyes. Big ol' mole in a cape, squinting at everything."
+
+    show r frustrated_talking
+    r "He's got some kind of grudge against the light. Keeps muttering about 'fairness' and 'equal darkness.'"
+
+    show r frustrated
     
     show h a_skeptical_talking:
         xzoom 1

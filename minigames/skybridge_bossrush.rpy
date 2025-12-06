@@ -1,8 +1,8 @@
 # skybridge_bossrush.rpy - Skybridge Boss Rush Minigame
-# Epic finale boss battle against the Shadow King
+# Epic finale confrontation with Bedimurk the Mole
 
 ####################################################################################################################
-# SHADOW KING BOSS RUSH MINIGAME
+# BEDIMURK BOSS RUSH MINIGAME
 ####################################################################################################################
 
 init python in boss_rush:
@@ -46,7 +46,7 @@ init python in boss_rush:
         "orb_blue_trail": "images/minigames/bossrush/projectiles/orb_blue_trail.png",
     }
 
-    # Shadow King boss sprites (multi-phase)
+    # Bedimurk boss sprites (multi-phase mole villain)
     BOSS_SPRITES = {
         # Phase 1 (full health)
         "phase1_idle": "images/minigames/bossrush/boss/phase1_idle.png",
@@ -595,7 +595,7 @@ init python in boss_rush:
             pygame.draw.circle(surf, (255, 200, 255), (int(self.x), int(self.y)), int(self.radius * 0.4 * pulse))
 
     class ShadowKing:
-        """The final boss - The Shadow King."""
+        """The final boss - Bedimurk the Mole."""
         def __init__(self):
             self.x = WIDTH // 2
             self.y = 200
@@ -859,7 +859,7 @@ init python in boss_rush:
 
             # Phase indicator
             font = pygame.font.Font(None, 36)
-            phase_text = font.render(f"SHADOW KING - Phase {self.phase}", True, (200, 180, 255))
+            phase_text = font.render(f"BEDIMURK - Phase {self.phase}", True, (200, 180, 255))
             surf.blit(phase_text, (WIDTH // 2 - phase_text.get_width() // 2, 85))
 
     class HitEffect:
@@ -1126,7 +1126,7 @@ init python in boss_rush:
                 font_title = pygame.font.Font(None, 96)
                 font_sub = pygame.font.Font(None, 48)
 
-                title = font_title.render("THE SHADOW KING", True, (200, 100, 255))
+                title = font_title.render("BEDIMURK THE MOLE", True, (200, 100, 255))
                 surf.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 50))
 
                 if self.intro_timer > 1000:
@@ -1145,7 +1145,7 @@ init python in boss_rush:
             title = font_title.render("VICTORY!", True, (100, 255, 150))
             surf.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 100))
 
-            sub1 = font_sub.render("The Shadow King is defeated!", True, (255, 255, 255))
+            sub1 = font_sub.render("Bedimurk has been stopped!", True, (255, 255, 255))
             surf.blit(sub1, (WIDTH // 2 - sub1.get_width() // 2, HEIGHT // 2 - 20))
 
             sub2 = font_sub.render("Light returns to the realm!", True, (255, 220, 100))
@@ -1258,12 +1258,12 @@ label boss_rush_start():
 # Test label
 label test_boss_rush:
     "The final battle awaits..."
-    "Tristan and Henry must work together to defeat the Shadow King!"
+    "Tristan and Henry must work together to reach Bedimurk!"
 
     call boss_rush_start()
 
     if _return:
-        "The Shadow King has been vanquished!"
+        "You've reached Bedimurk!"
         "Light returns to the realm!"
     else:
         "The heroes will return stronger..."
