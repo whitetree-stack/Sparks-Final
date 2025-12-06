@@ -24,7 +24,7 @@ label act_2_start:
     p "You must find each lantern, mend what’s broken, and rekindle its flame."
     p "Only then will the Beacon’s heart burn bright enough to restore balance."
 
-    h "Five lanterns...? that’s a lot of walking."
+    h "Five lanterns...? That's a lot of walking."
     t "Better than staying here till the world breaks apart."
     h "If that's even really going to happen."
 

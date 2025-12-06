@@ -7,8 +7,11 @@ init:
         zoom 0.15
         xalign 0.5
         yalign -0.1
-        
+
     image tunnel_trans = Movie("images/videos/tunnel_trans.webm", loop=True)
+
+    # Audio definitions
+    define audio.thunder = "audio/sfx/Thunder_close_1.mp3"
 
 label prologue:
 
@@ -92,7 +95,6 @@ label prologue:
     "They laughed softly, the kind of sleepy laughter that only happens right before drifting off."
 
     # --- THUNDER STRIKES ---
-    define audio.thunder = "audio/sfx/Thunder_close_1.mp3"
     play sound audio.thunder
     $ renpy.music.set_volume(0.2, channel="sound")
 
@@ -249,12 +251,12 @@ label prologue:
 
     # --- CHOICE MOMENT 1 ---
 
-    define choices = [
+    $ choices = [
         ("Wait, this is a dream, right?", "dream"),
         ("What's a Great Beacon?", "beacon"),
         ("You sure you got the right kids?", "kids"),
     ]
-    define clicked = set()
+    $ clicked = set()
 
     label choice_loop:
         $ available = [c for c in choices if c[1] not in clicked]
@@ -412,14 +414,13 @@ label prologue:
 
 
 
-    define attire_choices = [
-
+    $ attire_choices = [
         ("Where did these outfits come from?", "outfits"),
         ("Are you sure this isn't a dream?", "dream"),
         ("How do we get back home?", "home"),
         ("Do we really have to save the world?", "save"),
     ]
-    define attire_clicked = set()
+    $ attire_clicked = set()
 
     label attire_choice_loop:
         $ available = [c for c in attire_choices if c[1] not in attire_clicked]
@@ -553,8 +554,9 @@ label prologue:
 
 
     "And so, their adventure began."
-    show expression Solid("#ffffff") with dissolve
-    #show screen game_title with fade
-    pause 5.0
 
-  
+    scene image "#ffffff" with dissolve
+    pause 2.0
+
+    jump region_1_library
+

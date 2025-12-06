@@ -253,10 +253,10 @@ label start_rune_decode:
     scene bg_library with fade
 
     "The boys found articles and scrolls filled with peculiar symbols."
-    "It some of the symbols looked as if they were recently written, while others had faded with age."
+    "Some of the symbols looked as if they were recently written, while others had faded with age."
     "Some of the symbols appeared to be English letters, but others were unfamiliar."
     t "I think these are runes! I've read about them in books before."
-    t "If we can decode the runes, we might be able read these other symbols!"
+    t "If we can decode the runes, we might be able to read these other symbols!"
     h "I'm in!"
 
     call screen rune_decode_gate
@@ -325,7 +325,7 @@ default past_rows     = []          # list of completed guesses
 default corrupted_slots = set()
 default game_state = "playing"      # "playing", "victory", "failure"
 
-define show_instructions = True
+default show_instructions = True
 
 transform slide_book_in:
     xoffset -800
@@ -477,7 +477,7 @@ screen rune_wordle_builder():
                 text "Start typing your guess!" color "#ffffff" size 32
         
 
-        if show_instructions == True:
+        if show_instructions:
             frame:
                 xalign 0.5 yalign 0.5 background "#000000db" padding (25,15) 
                 vbox xalign 0.5 yalign 0.5 spacing 25 xysize 850,350:

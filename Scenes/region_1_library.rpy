@@ -60,8 +60,6 @@ label region_1_library:
     show h a_unsure_looking_right_talking
     h "I hope they are nice."
     show h a_back:
-
-
         xzoom 1
     p "Oh, I'm sure you'll get along just fine."
 
@@ -362,7 +360,7 @@ label library_conclusion:
     show k hands_on_hips_talking
     k "I hope you are still practicing every day, Pipwick."
     show k hands_on_hips
-    show t hands_on_hips_smile
+    show t a_hands_on_hips_smile
     show p nervous_laugh
     p "Of course! Well... most days."
     show p offended
@@ -404,7 +402,7 @@ label library_conclusion:
     p "Onward to the next region!"
     show t a_hands_on_hips_smile_talking
     t "Bye, Aunt Kayla!"
-    show t hands_on_hips_smile
+    show t a_hands_on_hips_smile
     show h a_eyes_closed_talking_smile:
         xzoom 1
     h "Enjoy your books!"
