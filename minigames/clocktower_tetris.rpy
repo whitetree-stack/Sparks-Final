@@ -186,6 +186,84 @@ init python in clockwork_tetris:
     # END SPRITE CONFIGURATION
     ####################################################################################################################
 
+    ####################################################################################################################
+    # AUDIO CONFIGURATION - Sound effects for Tetris
+    ####################################################################################################################
+
+    USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    AUDIO_PATHS = {
+        "piece_move": "audio/sfx/minigames/tetris/piece_move.ogg",
+        "piece_rotate": "audio/sfx/minigames/tetris/piece_rotate.ogg",
+        "piece_drop": "audio/sfx/minigames/tetris/piece_drop.ogg",
+        "hard_drop": "audio/sfx/minigames/tetris/hard_drop.ogg",
+        "piece_lock": "audio/sfx/minigames/tetris/piece_lock.ogg",
+        "line_clear": "audio/sfx/minigames/tetris/line_clear.ogg",
+        "line_clear_double": "audio/sfx/minigames/tetris/line_clear_double.ogg",
+        "line_clear_triple": "audio/sfx/minigames/tetris/line_clear_triple.ogg",
+        "line_clear_tetris": "audio/sfx/minigames/tetris/line_clear_tetris.ogg",
+        "hold_piece": "audio/sfx/minigames/tetris/hold_piece.ogg",
+        "level_up": "audio/sfx/minigames/tetris/level_up.ogg",
+        "danger_warning": "audio/sfx/minigames/tetris/danger_warning.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    # Background music
+    TETRIS_MUSIC = "audio/music/regions/clocktower_tetris.ogg"
+
+    _audio_cache = {}
+    _audio_initialized = False
+
+    def init_audio():
+        global _audio_initialized
+        if not _audio_initialized:
+            try:
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _audio_initialized = True
+            except:
+                pass
+
+    def load_sound(sound_key):
+        if not USE_AUDIO or not _audio_initialized:
+            return None
+        if sound_key in _audio_cache:
+            return _audio_cache[sound_key]
+        path = AUDIO_PATHS.get(sound_key)
+        if path:
+            try:
+                sound = pygame.mixer.Sound(path)
+                _audio_cache[sound_key] = sound
+                return sound
+            except:
+                return None
+        return None
+
+    def play_sound(sound_key, volume=1.0):
+        if not USE_AUDIO:
+            return
+        init_audio()
+        sound = load_sound(sound_key)
+        if sound:
+            sound.set_volume(volume)
+            sound.play()
+
+    def play_line_clear_sound(lines_cleared):
+        """Play appropriate sound based on lines cleared."""
+        if lines_cleared >= 4:
+            play_sound("line_clear_tetris")
+        elif lines_cleared == 3:
+            play_sound("line_clear_triple")
+        elif lines_cleared == 2:
+            play_sound("line_clear_double")
+        elif lines_cleared == 1:
+            play_sound("line_clear")
+
+    ####################################################################################################################
+    # END AUDIO CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     GRID_COLS = 10

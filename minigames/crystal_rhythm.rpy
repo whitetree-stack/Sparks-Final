@@ -142,6 +142,94 @@ init python in crystal_rhythm:
     # END SPRITE CONFIGURATION
     # ==================================================================================
 
+    # ==================================================================================
+    # AUDIO CONFIGURATION - Sound effects for the rhythm game
+    # ==================================================================================
+
+    USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    # Sound effect paths - replace with your actual audio files
+    AUDIO_PATHS = {
+        "hit_perfect": "audio/sfx/minigames/rhythm/hit_perfect.ogg",
+        "hit_good": "audio/sfx/minigames/rhythm/hit_good.ogg",
+        "hit_ok": "audio/sfx/minigames/rhythm/hit_ok.ogg",
+        "miss": "audio/sfx/minigames/rhythm/miss.ogg",
+        "note_spawn": "audio/sfx/minigames/rhythm/note_spawn.ogg",
+        "hold_start": "audio/sfx/minigames/rhythm/hold_start.ogg",
+        "hold_end": "audio/sfx/minigames/rhythm/hold_end.ogg",
+        "streak_5": "audio/sfx/minigames/rhythm/streak_5.ogg",
+        "streak_10": "audio/sfx/minigames/rhythm/streak_10.ogg",
+        "streak_lost": "audio/sfx/minigames/rhythm/streak_lost.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    # Background music for rhythm game (the song to play along with)
+    RHYTHM_MUSIC = "audio/music/regions/conservatory_rhythm_base.ogg"
+
+    # Audio cache
+    _audio_cache = {}
+    _audio_initialized = False
+
+    def init_audio():
+        """Initialize pygame mixer for audio playback."""
+        global _audio_initialized
+        if not _audio_initialized:
+            try:
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _audio_initialized = True
+            except:
+                pass
+
+    def load_sound(sound_key):
+        """Load a sound effect by key."""
+        if not USE_AUDIO or not _audio_initialized:
+            return None
+        if sound_key in _audio_cache:
+            return _audio_cache[sound_key]
+        path = AUDIO_PATHS.get(sound_key)
+        if path:
+            try:
+                sound = pygame.mixer.Sound(path)
+                _audio_cache[sound_key] = sound
+                return sound
+            except:
+                return None
+        return None
+
+    def play_sound(sound_key, volume=1.0):
+        """Play a sound effect by key."""
+        if not USE_AUDIO:
+            return
+        init_audio()
+        sound = load_sound(sound_key)
+        if sound:
+            sound.set_volume(volume)
+            sound.play()
+
+    def play_hit_sound(judgment):
+        """Play appropriate sound based on hit judgment."""
+        if judgment == "perfect":
+            play_sound("hit_perfect")
+        elif judgment == "good":
+            play_sound("hit_good")
+        elif judgment == "ok":
+            play_sound("hit_ok")
+        else:
+            play_sound("miss")
+
+    def play_streak_sound(streak):
+        """Play streak milestone sound."""
+        if streak == 10:
+            play_sound("streak_10")
+        elif streak == 5:
+            play_sound("streak_5")
+
+    # ==================================================================================
+    # END AUDIO CONFIGURATION
+    # ==================================================================================
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     NUM_LANES = 4

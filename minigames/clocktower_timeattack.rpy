@@ -205,6 +205,68 @@ init python in gear_rush:
     # END SPRITE CONFIGURATION
     ####################################################################################################################
 
+    ####################################################################################################################
+    # AUDIO CONFIGURATION - Sound effects for Gear Rush
+    ####################################################################################################################
+
+    USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    AUDIO_PATHS = {
+        "gear_click": "audio/sfx/minigames/gearrush/gear_click.ogg",
+        "gear_correct": "audio/sfx/minigames/gearrush/gear_correct.ogg",
+        "gear_wrong": "audio/sfx/minigames/gearrush/gear_wrong.ogg",
+        "gear_spin": "audio/sfx/minigames/gearrush/gear_spin.ogg",
+        "gear_chain": "audio/sfx/minigames/gearrush/gear_chain.ogg",
+        "wave_complete": "audio/sfx/minigames/gearrush/wave_complete.ogg",
+        "countdown_tick": "audio/sfx/minigames/gearrush/countdown_tick.ogg",
+        "countdown_go": "audio/sfx/minigames/gearrush/countdown_go.ogg",
+        "time_low": "audio/sfx/minigames/gearrush/time_low.ogg",
+        "time_bonus": "audio/sfx/minigames/gearrush/time_bonus.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    _audio_cache = {}
+    _audio_initialized = False
+
+    def init_audio():
+        global _audio_initialized
+        if not _audio_initialized:
+            try:
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _audio_initialized = True
+            except:
+                pass
+
+    def load_sound(sound_key):
+        if not USE_AUDIO or not _audio_initialized:
+            return None
+        if sound_key in _audio_cache:
+            return _audio_cache[sound_key]
+        path = AUDIO_PATHS.get(sound_key)
+        if path:
+            try:
+                sound = pygame.mixer.Sound(path)
+                _audio_cache[sound_key] = sound
+                return sound
+            except:
+                return None
+        return None
+
+    def play_sound(sound_key, volume=1.0):
+        if not USE_AUDIO:
+            return
+        init_audio()
+        sound = load_sound(sound_key)
+        if sound:
+            sound.set_volume(volume)
+            sound.play()
+
+    ####################################################################################################################
+    # END AUDIO CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
 

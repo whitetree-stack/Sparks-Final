@@ -277,6 +277,77 @@ init python in boss_rush:
     # END SPRITE CONFIGURATION
     ####################################################################################################################
 
+    ####################################################################################################################
+    # AUDIO CONFIGURATION - Sound effects for Boss Rush
+    ####################################################################################################################
+
+    USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    AUDIO_PATHS = {
+        "boss_roar": "audio/sfx/minigames/bossrush/boss_roar.ogg",
+        "boss_attack": "audio/sfx/minigames/bossrush/boss_attack.ogg",
+        "boss_hit": "audio/sfx/minigames/bossrush/boss_hit.ogg",
+        "phase_change": "audio/sfx/minigames/bossrush/phase_change.ogg",
+        "boss_death": "audio/sfx/minigames/bossrush/boss_death.ogg",
+        "hero_shoot": "audio/sfx/minigames/bossrush/hero_shoot.ogg",
+        "hero_hit": "audio/sfx/minigames/bossrush/hero_hit.ogg",
+        "projectile_fire": "audio/sfx/minigames/bossrush/projectile_fire.ogg",
+        "projectile_hit": "audio/sfx/minigames/bossrush/projectile_hit.ogg",
+        "spread_attack": "audio/sfx/minigames/bossrush/spread_attack.ogg",
+        "rain_attack": "audio/sfx/minigames/bossrush/rain_attack.ogg",
+        "spiral_attack": "audio/sfx/minigames/bossrush/spiral_attack.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    # Boss battle music by phase
+    BOSS_MUSIC = {
+        1: "audio/music/regions/boss_battle_intense.ogg",
+        2: "audio/music/regions/boss_battle_phase2.ogg",
+        3: "audio/music/regions/boss_battle_finale.ogg",
+    }
+
+    _audio_cache = {}
+    _audio_initialized = False
+
+    def init_audio():
+        global _audio_initialized
+        if not _audio_initialized:
+            try:
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _audio_initialized = True
+            except:
+                pass
+
+    def load_sound(sound_key):
+        if not USE_AUDIO or not _audio_initialized:
+            return None
+        if sound_key in _audio_cache:
+            return _audio_cache[sound_key]
+        path = AUDIO_PATHS.get(sound_key)
+        if path:
+            try:
+                sound = pygame.mixer.Sound(path)
+                _audio_cache[sound_key] = sound
+                return sound
+            except:
+                return None
+        return None
+
+    def play_sound(sound_key, volume=1.0):
+        if not USE_AUDIO:
+            return
+        init_audio()
+        sound = load_sound(sound_key)
+        if sound:
+            sound.set_volume(volume)
+            sound.play()
+
+    ####################################################################################################################
+    # END AUDIO CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     ARENA_MARGIN = 100

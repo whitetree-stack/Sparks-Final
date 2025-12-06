@@ -3,12 +3,18 @@
 # =======================================================
 
 label region_1_library:
+    # Library region music and ambient
+    play music MUSIC_LIBRARY fadein 2.0
+    play ambient AMBIENT_LIBRARY fadein 2.0 volume 0.3 loop
+
     scene bg_library_ext:
         zoom 0.8
         yalign 1.0
         xalign 0.55
 
     with fade
+
+    play sound SFX_PORTAL_EXIT
     pause 1.0
     show t a_back:
         alpha 0.0

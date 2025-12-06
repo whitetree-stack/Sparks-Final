@@ -186,6 +186,41 @@ init python:
     # END SPRITE CONFIGURATION
     ################################################################################################
 
+    ################################################################################################
+    # AUDIO CONFIGURATION - Sound effects for Valley minigames
+    ################################################################################################
+
+    VALLEY_USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    VALLEY_AUDIO_PATHS = {
+        # Vine Blaster sounds
+        "fireball_shoot": "audio/sfx/minigames/valley/fireball_shoot.ogg",
+        "fireball_hit": "audio/sfx/minigames/valley/fireball_hit.ogg",
+        "vine_grow": "audio/sfx/minigames/valley/vine_grow.ogg",
+        "vine_destroy": "audio/sfx/minigames/valley/vine_destroy.ogg",
+        "spider_crawl": "audio/sfx/minigames/valley/spider_crawl.ogg",
+        "spider_death": "audio/sfx/minigames/valley/spider_death.ogg",
+        "beacon_danger": "audio/sfx/minigames/valley/beacon_danger.ogg",
+        "second_wind": "audio/sfx/minigames/valley/second_wind.ogg",
+        "wave_start": "audio/sfx/minigames/valley/wave_start.ogg",
+        "wave_complete": "audio/sfx/minigames/valley/wave_complete.ogg",
+        # Valley Climb sounds
+        "jump": "audio/sfx/minigames/valley/jump.ogg",
+        "land": "audio/sfx/minigames/valley/land.ogg",
+        "climb": "audio/sfx/minigames/valley/climb.ogg",
+        "acorn_collect": "audio/sfx/minigames/valley/acorn_collect.ogg",
+        "branch_grab": "audio/sfx/minigames/valley/branch_grab.ogg",
+        "fall": "audio/sfx/minigames/valley/fall.ogg",
+        # Common
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    ################################################################################################
+    # END AUDIO CONFIGURATION
+    ################################################################################################
+
 ####################################################################################################################
 # VINE BLASTER - Beacon Rescue Minigame
 ####################################################################################################################

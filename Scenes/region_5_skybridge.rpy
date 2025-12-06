@@ -3,6 +3,10 @@
 # =======================================================
 
 label region_5_skybridge:
+    # Skybridge region music and ambient
+    play music MUSIC_SKYBRIDGE fadein 2.0
+    play ambient AMBIENT_WIND_HIGH fadein 2.0 volume 0.3 loop
+
     scene image "#ffffff" with dissolve
 
     scene bg_skybridge:
@@ -11,6 +15,7 @@ label region_5_skybridge:
         xalign 0.5
     with fade
 
+    play sound SFX_PORTAL_EXIT
     pause 0.8
 
     show t a_back:
@@ -40,8 +45,6 @@ label region_5_skybridge:
         zoom 0.25
         xalign 0.62
         yalign 0.85
-
-    play music "audio/music/skybridge_theme.ogg" fadein 2.0
 
     "The light faded, and the brothers found themselves standing on a bridge that stretched into infinity."
     "Beneath them, clouds swirled in an endless ocean of white and gold."

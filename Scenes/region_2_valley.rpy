@@ -3,16 +3,21 @@
 # =======================================================
 
 label region_2_valley:
+    # Valley region music and ambient
+    play music MUSIC_VALLEY fadein 2.0
+    play ambient AMBIENT_FOREST fadein 2.0 volume 0.3 loop
+
     scene image "#ffffff" with dissolve
-    
+
     scene bg_valley:
         zoom 0.85
         yalign 1.0
         xalign 0.5
     with fade
-    
+
+    play sound SFX_PORTAL_EXIT
     pause 0.8
-    
+
     show t a_back:
         alpha 0.0
     show h a_back:
@@ -24,7 +29,7 @@ label region_2_valley:
         ease 0.2 alpha 1.0
         ease 0.4 alpha 0.0
     pause 0.2
-    
+
     show t a_back:
         alpha 1.0
         zoom 0.4
@@ -40,8 +45,6 @@ label region_2_valley:
         zoom 0.25
         xalign 0.62
         yalign 0.85
-
-    play music "audio/music/valley_theme.ogg" fadein 2.0
 
     "The light faded, and the brothers found themselves standing in a forest unlike anything they'd ever seen."
     "Towering trees of gleaming metal stretched toward a dark sky, their branches humming with faint electrical pulses."

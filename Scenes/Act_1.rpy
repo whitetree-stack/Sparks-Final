@@ -1,6 +1,6 @@
 # =========================================
 # SCENE 1: "The Messenger in the Night"
-# Location: Tristan & Henry’s Bedroom
+# Location: Tristan & Henry's Bedroom
 # =========================================
 init:
     transform moonwindow_zoom:
@@ -10,23 +10,19 @@ init:
 
     image tunnel_trans = Movie("images/videos/tunnel_trans.webm", loop=True)
 
-    # Audio definitions
-    define audio.thunder = "audio/sfx/Thunder_close_1.mp3"
-
 label prologue:
 
     scene black
     with fade
 
-    play music "audio/music/bedroom_soft_loop.mp3" fadein 1.0 volume 0.5 loop
-
-    $ renpy.sound.play("audio/sfx/Sea Rain.ogg", channel="ambient", fadein=1.0, loop=True, )
-    $ renpy.sound.set_volume(0.3, channel="ambient")
+    # Start bedroom music and rain ambience
+    play music MUSIC_BEDROOM fadein 1.0 volume 0.5 loop
+    play ambient AMBIENT_RAIN fadein 1.0 volume 0.3 loop
     pause 4.0
 
     "A soft rain pattered against the window."
 
- 
+
     "The hum of a faraway thunderstorm filled the quiet little room."
     
 
@@ -95,8 +91,7 @@ label prologue:
     "They laughed softly, the kind of sleepy laughter that only happens right before drifting off."
 
     # --- THUNDER STRIKES ---
-    play sound audio.thunder
-    $ renpy.music.set_volume(0.2, channel="sound")
+    play sound SFX_THUNDER_CLOSE volume 0.8
 
     pause 0.45
     
@@ -126,6 +121,7 @@ label prologue:
     t "That sounded like it hit the house!"
 
     # --- PIPWICK ARRIVES ---
+    play sound SFX_MAGIC_SHIMMER
 
     pause 1.0
     show 2_magic_orb_static:
@@ -163,6 +159,7 @@ label prologue:
     t "I... I don’t know!"
 
     # --- FLASH ---
+    play sound SFX_PORTAL_OPEN
     show p frustrated_night:
         alpha 0.0
     show image Solid("#ffffff") with vpunch:
@@ -192,6 +189,7 @@ label prologue:
 
     
     # --- SMOKE OVERLAY (after scene) ---
+    play sound SFX_PIPWICK_FLUTTER
     show smoke_full onlayer master at center:
 
         easein 10 zoom 1.4 alpha 0.0
@@ -199,7 +197,7 @@ label prologue:
 
     "A burst of blue smoke and the smell of cinnamon filled the room — followed by a squeaky voice in distress."
 
-
+    play sound SFX_PIPWICK_CHIRP_WORRIED
     p "Oh dear heavens and half-lit lanterns! Wrong coordinates again!"
 
 
@@ -354,24 +352,26 @@ label prologue:
     "In an instant, the light engulfed them all."
 
     # --- TRANSITION TO REALM ---
+    play sound SFX_PORTAL_ENTER
+    stop ambient fadeout 1.0
 
     show image Solid("#ffffff") with vpunch:
         alpha 1.0
         pause 1.0
         easeout 1.5 alpha 0.0
 
-    # Place this at the top-level of your script, outside any label or block (e.g., after your other image definitions)
-    
-    
-    # Then, inside your label, just use:
+    # Portal tunnel animation
     show screen video_player("images/videos/tunnel_animation.webm", loop=True)
 
-
-    play sound "whoosh.ogg"
+    play sound SFX_MAGIC_WHOOSH
 
     "The world stretched, twisted, and turned inside out."
 
     "When the light faded, the boys were no longer in their room."
+
+    # Arrive in the Lantern Realm
+    play music MUSIC_MAIN_THEME fadein 2.0
+    play ambient AMBIENT_ETHEREAL fadein 2.0 volume 0.3 loop
 
     scene bg_act_2_with_boys:
         zoom 1.4
@@ -380,6 +380,7 @@ label prologue:
         ease 16.0 yalign 1.0 zoom 1.0
     with dissolve
 
+    play sound SFX_PORTAL_EXIT
     "They found themselves in a strange land beneath a violet sky. Mountains drifted like islands. A giant moon glowed above."
     p "There it is, my brave young companions — the Great Beacon. Heart of the Lantern Realm."
     p "Once, its light filled every corner of this world. It kept the stars bright, the dreams alive, and the shadows asleep."

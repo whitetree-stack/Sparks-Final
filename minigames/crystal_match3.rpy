@@ -102,6 +102,95 @@ init python in crystal_match:
     # END SPRITE CONFIGURATION
     # ==================================================================================
 
+    # ==================================================================================
+    # AUDIO CONFIGURATION - Sound effects for the match-3 game
+    # ==================================================================================
+
+    USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    # Sound effect paths - replace with your actual audio files
+    AUDIO_PATHS = {
+        "gem_select": "audio/sfx/minigames/match3/gem_select.ogg",
+        "gem_swap": "audio/sfx/minigames/match3/gem_swap.ogg",
+        "gem_swap_fail": "audio/sfx/minigames/match3/gem_swap_fail.ogg",
+        "match_3": "audio/sfx/minigames/match3/match_3.ogg",
+        "match_4": "audio/sfx/minigames/match3/match_4.ogg",
+        "match_5": "audio/sfx/minigames/match3/match_5.ogg",
+        "cascade": "audio/sfx/minigames/match3/cascade.ogg",
+        "gems_falling": "audio/sfx/minigames/match3/gems_falling.ogg",
+        "combo_1": "audio/sfx/minigames/match3/combo_1.ogg",
+        "combo_2": "audio/sfx/minigames/match3/combo_2.ogg",
+        "combo_3": "audio/sfx/minigames/match3/combo_3.ogg",
+        "combo_mega": "audio/sfx/minigames/match3/combo_mega.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+        "game_start": "audio/sfx/minigames/common/game_start.ogg",
+    }
+
+    # Audio cache for loaded sounds
+    _audio_cache = {}
+    _audio_initialized = False
+
+    def init_audio():
+        """Initialize pygame mixer for audio playback."""
+        global _audio_initialized
+        if not _audio_initialized:
+            try:
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _audio_initialized = True
+            except:
+                pass
+
+    def load_sound(sound_key):
+        """Load a sound effect by key. Returns None if not found."""
+        if not USE_AUDIO or not _audio_initialized:
+            return None
+        if sound_key in _audio_cache:
+            return _audio_cache[sound_key]
+        path = AUDIO_PATHS.get(sound_key)
+        if path:
+            try:
+                sound = pygame.mixer.Sound(path)
+                _audio_cache[sound_key] = sound
+                return sound
+            except:
+                return None
+        return None
+
+    def play_sound(sound_key, volume=1.0):
+        """Play a sound effect by key with optional volume (0.0 to 1.0)."""
+        if not USE_AUDIO:
+            return
+        init_audio()
+        sound = load_sound(sound_key)
+        if sound:
+            sound.set_volume(volume)
+            sound.play()
+
+    def play_match_sound(match_count):
+        """Play appropriate sound based on match size."""
+        if match_count >= 5:
+            play_sound("match_5")
+        elif match_count >= 4:
+            play_sound("match_4")
+        else:
+            play_sound("match_3")
+
+    def play_combo_sound(combo_level):
+        """Play combo sound based on combo level."""
+        if combo_level >= 4:
+            play_sound("combo_mega")
+        elif combo_level >= 3:
+            play_sound("combo_3")
+        elif combo_level >= 2:
+            play_sound("combo_2")
+        elif combo_level >= 1:
+            play_sound("combo_1")
+
+    # ==================================================================================
+    # END AUDIO CONFIGURATION
+    # ==================================================================================
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     GRID_COLS = 8

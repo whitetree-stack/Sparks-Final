@@ -3,6 +3,10 @@
 # =======================================================
 
 label region_3_conservatory:
+    # Conservatory region music and ambient
+    play music MUSIC_CONSERVATORY fadein 2.0
+    play ambient AMBIENT_CRYSTALS fadein 2.0 volume 0.3 loop
+
     scene image "#ffffff" with dissolve
 
     scene bg_crystal_conservatory:
@@ -11,6 +15,7 @@ label region_3_conservatory:
         xalign 0.5
     with fade
 
+    play sound SFX_PORTAL_EXIT
     pause 0.8
 
     show t a_back:
@@ -40,8 +45,6 @@ label region_3_conservatory:
         zoom 0.25
         xalign 0.62
         yalign 0.85
-
-    play music "audio/music/conservatory_theme.ogg" fadein 2.0
 
     "The light faded, and the brothers found themselves in a place of breathtaking beauty."
     "Towering crystalline structures rose all around them, catching and refracting what little light remained."

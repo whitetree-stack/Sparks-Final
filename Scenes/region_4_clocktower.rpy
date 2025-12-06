@@ -3,6 +3,10 @@
 # =======================================================
 
 label region_4_clocktower:
+    # Clocktower region music and ambient
+    play music MUSIC_CLOCKTOWER fadein 2.0
+    play ambient AMBIENT_CLOCKWORK fadein 2.0 volume 0.3 loop
+
     scene image "#ffffff" with dissolve
 
     scene bg_clocktower:
@@ -11,6 +15,7 @@ label region_4_clocktower:
         xalign 0.5
     with fade
 
+    play sound SFX_PORTAL_EXIT
     pause 0.8
 
     show t a_back:
@@ -40,8 +45,6 @@ label region_4_clocktower:
         zoom 0.25
         xalign 0.62
         yalign 0.85
-
-    play music "audio/music/clocktower_theme.ogg" fadein 2.0
 
     "The light faded, and the brothers found themselves surrounded by the rhythmic ticking of countless clocks."
     "Enormous gears turned overhead, brass and bronze spinning in an intricate dance of precision."

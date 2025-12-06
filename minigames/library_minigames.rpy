@@ -100,6 +100,40 @@ init python:
 # END SPRITE CONFIGURATION
 ####################################################################################################################
 
+####################################################################################################################
+# AUDIO CONFIGURATION - Sound effects for Library minigames
+####################################################################################################################
+
+init python:
+    LIBRARY_USE_AUDIO = True  # Set to False to disable all minigame audio
+
+    LIBRARY_AUDIO_PATHS = {
+        "key_press": "audio/sfx/minigames/library/key_press.ogg",
+        "key_correct": "audio/sfx/minigames/library/key_correct.ogg",
+        "key_wrong": "audio/sfx/minigames/library/key_wrong.ogg",
+        "letter_reveal": "audio/sfx/minigames/library/letter_reveal.ogg",
+        "word_complete": "audio/sfx/minigames/library/word_complete.ogg",
+        "puzzle_solve": "audio/sfx/minigames/library/puzzle_solve.ogg",
+        "hint_use": "audio/sfx/minigames/library/hint_use.ogg",
+        "rune_glow": "audio/sfx/minigames/library/rune_glow.ogg",
+        "page_flip": "audio/sfx/minigames/library/page_flip.ogg",
+        "quill_write": "audio/sfx/minigames/library/quill_write.ogg",
+        "victory": "audio/sfx/minigames/common/victory.ogg",
+        "defeat": "audio/sfx/minigames/common/defeat.ogg",
+    }
+
+    def play_library_sound(sound_key, volume=1.0):
+        """Play a library minigame sound effect using Ren'Py's audio system."""
+        if not LIBRARY_USE_AUDIO:
+            return
+        path = LIBRARY_AUDIO_PATHS.get(sound_key)
+        if path and renpy.loadable(path):
+            renpy.sound.play(path)
+
+####################################################################################################################
+# END AUDIO CONFIGURATION
+####################################################################################################################
+
 init python:
     # ── YOUR RUNE FONT TRANSLATION TABLE ───────────────────────
     # Left = normal English letter (what the player must type)
