@@ -1,0 +1,38 @@
+# Ren'Py generated files
+*.rpyc
+*.rpyb
+*.rpa
+cache/
+saves/
+log.txt
+errors.txt
+traceback.txt
+
+# Large media - DO NOT track in git
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp3
+*.ogg
+*.wav
+*.mp4
+*.mov
+*.avi
+*.psd
+*.ai
+*.eps
+*.ttf
+*.otf
+*.fla
+*.webm
+*.avif
+*.opus
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Keep these tracked (remove from ignore if needed)
+!gui/*.png
