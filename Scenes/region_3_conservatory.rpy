@@ -410,7 +410,7 @@ label conservatory_match_intro:
 
     "Arrow keys to move, SPACE to select and swap crystals. Match 3 or more to clear them!"
 
-    call crystal_match_start(target_score=1500, moves_limit=35)
+    call crystal_match_start(target_score=1000, moves_limit=40)
     $ crystal_match_victory = _return
 
     jump conservatory_match_complete
@@ -619,7 +619,7 @@ label conservatory_rhythm_intro:
 
     "Press D, F, J, K when notes reach the target line. Keep the rhythm!"
 
-    call crystal_rhythm_start(difficulty="medium")
+    call crystal_rhythm_start(difficulty="easy")
     $ crystal_rhythm_victory = _return
 
     jump conservatory_rhythm_complete

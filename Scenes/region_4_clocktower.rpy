@@ -662,7 +662,7 @@ label clocktower_timeattack_intro:
 
     "Click the numbered gears in order as fast as you can! Don't let time run out!"
 
-    call gear_rush_start(target_waves=5, time_limit=60)
+    call gear_rush_start(target_waves=4, time_limit=90)
     $ gear_rush_victory = _return
 
     jump clocktower_timeattack_complete
