@@ -86,7 +86,8 @@ layeredimage t:
             "images/characters/Tristan/rmbg/red_armor/pointing_confused_talking.png"
         attribute a_pointing_smile_talking:
             "images/characters/Tristan/rmbg/red_armor/pointing_smile_talking.png"
-        
+        attribute a_hands_on_hips_smile_talking:
+            "images/characters/Tristan/rmbg/red_armor/hands_on_hips_smile_talking.png"
 
 
 # Henry
@@ -184,6 +185,13 @@ layeredimage h:
             "images/characters/Henry/rmbg/blue_armor/smile_looking_right_talking.png"
         attribute a_smile_looking_right:
             "images/characters/Henry/rmbg/blue_armor/smile_looking_right.png"
+        attribute a_cheer_eyes_closed:
+            "images/characters/Henry/rmbg/blue_armor/cheer_eyes_closed.png"
+        attribute a_thumbs_up_smile_talking:
+            "images/characters/Henry/rmbg/blue_armor/thumbs_up_smile_talking.png"
+        attribute a_pointing_confused_talking:
+            "images/characters/Henry/rmbg/blue_armor/pointing_confused_talking.png"
+
 # Pipwick
 layeredimage p:
 
