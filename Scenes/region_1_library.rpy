@@ -477,12 +477,15 @@ label library_conclusion:
     "Henry reached out and placed his hand on the lantern's frame. A soft glow enveloped them both."
     "Then all turned to white and silence. They felt themselves moving, floating through space and time."
 
+    # Mark Library as complete
+    $ library_complete = True
+
     show light_burst at light_burst_grow_2:
         alpha 0.0
         ease 0.2 alpha 1.0
 
-
-    jump region_2_valley
+    # Go to navigation hub to choose next region
+    jump navigation_hub
 
 
 

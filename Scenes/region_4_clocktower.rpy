@@ -114,17 +114,21 @@ label region_4_clocktower:
     show p proud
     p "And from what I've heard, he's quite... enthusiastic about challenges."
 
-    show t a_pointing_confused_talking:
-        xzoom 1
-    t "Wait—Mom mentioned something about that..."
+    if conservatory_complete:
+        show t a_pointing_confused_talking:
+            xzoom 1
+        t "Wait—Mom mentioned something about that..."
 
-    show t a_pointing_confused
-    show h a_unsure_looking_right_talking
-    h "She said Dad's idea of team building was 'intense.'"
+        show t a_pointing_confused
+        show h a_unsure_looking_right_talking
+        h "She said Dad's idea of team building was 'intense.'"
 
-    show h a_unsure_looking_right
-    show p nervous_laugh
-    p "Yes, well... perhaps 'intense' is putting it mildly."
+        show h a_unsure_looking_right
+        show p nervous_laugh
+        p "Yes, well... perhaps 'intense' is putting it mildly."
+    else:
+        show p nervous_laugh
+        p "Yes, well... 'enthusiastic' might be an understatement."
 
     "Before Pipwick could say more, a booming voice echoed through the clocktower."
 
@@ -213,7 +217,8 @@ label region_4_clocktower:
     p "Indeed I did, Guardian Jeff! Your sons are the heroes we've been waiting for!"
 
     show p proud
-    p "They've already restored THREE beacons!"
+    $ beacon_count_text = get_beacon_text()
+    p "They've already restored [beacon_count_text]!"
 
     show j laughing
     j "HA! That's my boys!"
@@ -224,16 +229,25 @@ label region_4_clocktower:
     show j hands_on_hips
     show t a_hands_on_hips_smile_talking:
         xzoom 1
-    t "Giant metal spiders, dark vines, a whole library full of scrambled books..."
+    # Build description based on what's complete
+    if valley_complete and conservatory_complete:
+        t "Giant metal spiders, dark vines, a whole library full of scrambled books..."
+        show t a_hands_on_hips_smile
+        show h a_thumbs_up_determined_talking:
+            xzoom 1
+        h "Plus we did a rhythm game with singing crystals!"
+    elif valley_complete:
+        t "Giant metal spiders, dark vines, a whole library full of scrambled books..."
+    elif conservatory_complete:
+        t "A whole library full of scrambled books, plus a rhythm game with singing crystals!"
+    else:
+        t "A whole library full of scrambled books and word puzzles!"
 
     show t a_hands_on_hips_smile
-    show h a_thumbs_up_determined_talking:
+    show h a_thumbs_up_determined:
         xzoom 1
-    h "Plus we did a rhythm game with singing crystals!"
-
-    show h a_thumbs_up_determined
     show j laughing
-    j "A RHYTHM GAME! That's awesome!"
+    j "That's awesome!"
 
     show j hands_on_hips_talking
     j "Man, I've been stuck up here fixing gears while you two have been having all the fun!"
@@ -252,30 +266,36 @@ label region_4_clocktower:
     show j laughing
     j "This is basically my dream vacation!"
 
-    show h a_skeptical_talking
-    h "Mom said you'd say something like that."
+    if conservatory_complete:
+        show h a_skeptical_talking
+        h "Mom said you'd say something like that."
 
-    show h a_skeptical
-    show j surprised_talking
-    j "Wait—you saw your mom? She's here too?"
+        show h a_skeptical
+        show j surprised_talking
+        j "Wait—you saw your mom? She's here too?"
 
-    show j surprised
-    show t a_hands_on_hips_smile_talking
-    t "Yeah! She was the Guardian of the Crystal Conservatory."
+        show j surprised
+        show t a_hands_on_hips_smile_talking
+        t "Yeah! She was the Guardian of the Crystal Conservatory."
 
-    show t a_hands_on_hips_smile
-    show h a_smile_looking_right_talking
-    h "She told us to tell you NOT to go fight the giant spiders."
+        show t a_hands_on_hips_smile
 
-    show h a_smile_looking_right
-    show j hands_on_hips_talking
-    j "..."
+        if valley_complete:
+            show h a_smile_looking_right_talking
+            h "She told us to tell you NOT to go fight the giant spiders."
 
-    show j laughing
-    j "She knows me too well."
+            show h a_smile_looking_right
+            show j hands_on_hips_talking
+            j "..."
 
-    show j anchor
-    j "Alright, alright. Business first, spider-fighting later."
+            show j laughing
+            j "She knows me too well."
+
+            show j anchor
+            j "Alright, alright. Business first, spider-fighting later."
+        else:
+            show j laughing
+            j "She always was the responsible one. Alright, let's get to work!"
 
     show j frustrated_talking
     j "We've got a serious problem here. See those gears?"
@@ -868,47 +888,15 @@ label clocktower_conclusion:
     show j frustrated
     j "...Yeah, probably not."
 
-    show j hands_on_hips_talking
-    j "Speaking of your mom, she's going to be SO jealous that I got to see you in action."
+    if conservatory_complete:
+        show j hands_on_hips_talking
+        j "Speaking of your mom, she's going to be SO jealous that I got to see you in action."
 
-    show j laughing
-    j "I can't wait to tell her about the Tetris part!"
-
-    show p happy_talking
-    p "If I may interrupt—we still have one more region to visit!"
-
-    show p offended
-    p "The Eternal Skybridge awaits, and Bedimurk grows more desperate by the minute!"
-
-    show t a_surprised_talking
-    t "Bedimurk? He's there?"
-
-    show t a_surprised
-    show p worried
-    p "Yes—he's making his last stand. Gathering all the darkness he can."
-
-    show p frustrated
-    p "He's at the Skybridge, trying to extinguish the final beacon. We must stop him before it's too late!"
-
-    show j anchor
-    j "The big boss fight, huh?"
+        show j laughing
+        j "I can't wait to tell her about the Tetris part!"
 
     show j hands_on_hips_talking
-    j "Man, I wish I could come with you. But my place is here, keeping the clock running."
-
-    show j hands_on_hips
-    show h a_unsure_looking_right_talking
-    h "Will you be okay by yourself?"
-
-    show h a_unsure_looking_right
-    show j laughing
-    j "Are you kidding? I've got a whole tower full of gears to play with!"
-
-    show j anchor
-    j "Besides, someone has to keep time running while you save the world."
-
-    show j hands_on_hips_talking
-    j "Now listen—whoever you meet at the Skybridge, whatever challenge they throw at you..."
+    j "Now listen—whatever challenge comes next..."
 
     show j anchor
     j "Remember what I always say."
@@ -946,9 +934,10 @@ label clocktower_conclusion:
 
     show j hands_on_hips
     show p happy_talking
-    p "Time to move on, Twin Sparks! The final region awaits!"
+    p "Time to move on, Twin Sparks!"
 
-    "Pipwick held out his lantern, now blazing with the combined light of four restored beacons."
+    $ beacon_desc = get_beacon_text()
+    "Pipwick held out his lantern, burning brighter with [beacon_desc] restored."
 
     show t a_determined_looking_left_talking:
         xzoom 1
@@ -974,7 +963,11 @@ label clocktower_conclusion:
     hide p
     with dissolve
 
-    "And then they were gone, carried on beams of light toward the final challenge."
-    "The Eternal Skybridge—and Bedimurk—awaited."
+    # Mark Clocktower as complete
+    $ clocktower_complete = True
+    $ met_dad = True
 
-    jump region_5_skybridge
+    "And then they were gone, carried on beams of light toward their next adventure."
+
+    # Return to navigation hub
+    jump navigation_hub

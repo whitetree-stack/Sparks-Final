@@ -3,6 +3,12 @@
 # =======================================================
 
 label region_5_skybridge:
+    # Safety check - ensure all 4 beacons are complete before entering
+    if not check_skybridge_unlock():
+        "You sense that the path ahead isn't ready yet..."
+        "More beacons must be restored before facing the final challenge."
+        jump navigation_hub
+
     # Skybridge region music and ambient
     play music MUSIC_SKYBRIDGE fadein 2.0
     play ambient AMBIENT_WIND_HIGH fadein 2.0 volume 0.3 loop

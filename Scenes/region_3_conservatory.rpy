@@ -197,7 +197,8 @@ label region_3_conservatory:
     show t a_hands_on_hips_smile
     show h a_thumbs_up_determined_talking:
         xzoom 1
-    h "We're the Twin Sparks! We've already saved TWO beacons!"
+    $ beacon_count_text = get_beacon_text()
+    h "We're the Twin Sparks! We've already restored [beacon_count_text]!"
 
     show h a_thumbs_up_determined
     show l skeptical_talking
@@ -223,32 +224,37 @@ label region_3_conservatory:
     p "With all due respect, Guardian, your boys ARE warriors."
 
     show p offended
-    p "They've faced giant spiders, dark vines, and puzzles that would stump most adults!"
+    if valley_complete:
+        p "They've faced giant spiders, dark vines, and puzzles that would stump most adults!"
+    else:
+        p "They've already proven themselves with puzzles that would stump most adults!"
 
     show l anchor
     l "..."
 
-    show l hands_on_hips_talking
-    l "You faced giant spiders?"
+    if valley_complete:
+        show l hands_on_hips_talking
+        l "You faced giant spiders?"
 
-    show l hands_on_hips
-    show t a_hands_on_hips_expressionless_talking
-    t "Metal ones. They were pretty gross."
+        show l hands_on_hips
+        show t a_hands_on_hips_expressionless_talking
+        t "Metal ones. They were pretty gross."
 
-    show t a_hands_on_hips_expressionless
-    show h a_skeptical_talking
-    h "I still have nightmares about the clicking sounds."
+        show t a_hands_on_hips_expressionless
+        show h a_skeptical_talking
+        h "I still have nightmares about the clicking sounds."
 
-    show h a_skeptical
-    show l frustrated
-    l "..."
+        show h a_skeptical
+        show l frustrated
+        l "..."
 
-    show l hands_on_hips_talking
-    l "I am going to have WORDS with your uncle about letting you climb into spider territory."
+        show l hands_on_hips_talking
+        l "I am going to have WORDS with your uncle about letting you climb into spider territory."
 
-    show l hands_on_hips
+        show l hands_on_hips
+
     show t a_pointing_confused_talking
-    t "We also saw Aunt Kayla! Well, sort of."
+    t "We met Aunt Kayla! Well, sort of."
 
     show t a_pointing_confused
     show h a_smile_looking_right_talking
@@ -789,56 +795,44 @@ label conservatory_conclusion:
     show l hands_on_hips_talking
     l "I remember. And you've proven it today."
 
-    show l frustrated_talking
-    l "But please, when you get home—don't tell your father about the giant spiders."
+    if valley_complete:
+        show l frustrated_talking
+        l "But please, when you get home—don't tell your father about the giant spiders."
 
-    show l frustrated
-    show t a_pointing_confused_talking
-    t "Why not?"
+        show l frustrated
+        show t a_pointing_confused_talking
+        t "Why not?"
 
-    show t a_pointing_confused
-    show l skeptical_talking
-    l "Because he'll want to come back here and FIGHT them, and I cannot deal with that right now."
+        show t a_pointing_confused
+        show l skeptical_talking
+        l "Because he'll want to come back here and FIGHT them, and I cannot deal with that right now."
 
-    show l skeptical
-    show h a_eyes_closed_talking_smile:
-        xzoom 1
-    h "Dad would totally try to fight the spiders."
+        show l skeptical
+        show h a_eyes_closed_talking_smile:
+            xzoom 1
+        h "Dad would totally try to fight the spiders."
 
-    show h a_smile_looking_right
-    show l anchor
-    l "Your father would try to fight a dragon if it looked at him funny."
+        show h a_smile_looking_right
+        show l anchor
+        l "Your father would try to fight a dragon if it looked at him funny."
+    else:
+        show l frustrated_talking
+        l "But please, be careful out there. I worry about you both."
+
+        show l frustrated
 
     show p happy_talking
-    p "Speaking of guardians, your next stop is the Celestial Clocktower!"
-
-    show p nervous_laugh
-    p "And there may or may not be a certain someone there who enjoys... challenges."
-
-    show t a_surprised_talking
-    t "Wait—is Dad here too?!"
-
-    show t a_surprised
-    show l hands_on_hips_talking
-    l "Knowing Jeff, he probably volunteered the moment he heard there was danger involved."
+    p "Time to move on, Twin Sparks! More beacons need your help!"
 
     show l anchor
-    l "Go find him. He'll be thrilled to see you both."
+    l "Go save the rest of the realm, my brave boys."
 
     show l hands_on_hips_talking
-    l "And boys? Whatever he asks you to do... try to be careful, okay?"
+    l "And whatever challenges you face... try to be careful, okay?"
 
     show l hands_on_hips
-    show h a_skeptical_talking
-    h "What do you mean 'whatever he asks'?"
-
-    show h a_skeptical
-    show l skeptical_talking
-    l "Let's just say... your father's idea of 'team building' is a little intense."
-
-    show l skeptical
     show t a_hands_on_hips_smile_talking
-    t "We can handle intense. We've got this, Mom!"
+    t "We can handle anything. We've got this, Mom!"
 
     show t a_hands_on_hips_smile
     show l anchor
@@ -852,7 +846,8 @@ label conservatory_conclusion:
     show p happy_talking
     p "Time to move on, Twin Sparks! Touch the lantern when you're ready!"
 
-    "Pipwick held out his lantern, its light now burning brighter than ever with three beacons restored."
+    $ beacon_desc = get_beacon_text()
+    "Pipwick held out his lantern, its light burning brighter with [beacon_desc] restored."
 
     show t a_determined_looking_left_talking:
         xzoom 1
@@ -878,8 +873,13 @@ label conservatory_conclusion:
     hide p
     with dissolve
 
-    "And then they were gone, carried on beams of light toward the Celestial Clocktower."
+    # Mark Conservatory as complete
+    $ conservatory_complete = True
+    $ met_mom = True
+
+    "And then they were gone, carried on beams of light toward their next adventure."
     "Behind them, the Crystal Conservatory sparkled with restored harmony—"
     "A testament to the power of the Twin Sparks."
 
-    jump region_4_clocktower
+    # Return to navigation hub
+    jump navigation_hub

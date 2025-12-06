@@ -896,7 +896,12 @@ label valley_conclusion:
     hide h
     hide p
     with dissolve
-    
+
+    # Mark Valley as complete
+    $ valley_complete = True
+    $ met_uncle_ryan = True
+
     "And then they were gone, carried on beams of light toward their next adventure."
-    
-    jump region_3_conservatory
+
+    # Return to navigation hub
+    jump navigation_hub
