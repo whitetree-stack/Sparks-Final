@@ -2,14 +2,19 @@
 # Character Definitions
 # --------------------------------------------------------
 
-define t = Character("Tristan", color="#c8ffc8")
-define h = Character("Henry", color="#c8c8ff")
-define r = Character("Uncle Ryan", color="#f3a0a0")
-define k = Character("Aunt Kayla", color="#a0c9ff")
-define l = Character("Mom", color="#ffd1dc")
-define p = Character("Pipwick", color="#ffffa0")
-define g = Character("G-Mom", color="#ffa0ff")
-define j = Character("Dad", color="#a0ffa0")
+# Main heroes - Tristan (red/crimson) and Henry (blue/azure)
+define t = Character("Tristan", color="#ff6b6b", who_outlines=[(2, "#4a1a1a", 0, 0)])
+define h = Character("Henry", color="#6bb5ff", who_outlines=[(2, "#1a3a4a", 0, 0)])
+
+# Family members - warm earth tones
+define r = Character("Uncle Ryan", color="#e8a87c")
+define k = Character("Aunt Kayla", color="#95d5b2")
+define l = Character("Mom", color="#f4acb7")
+define j = Character("Dad", color="#8ecae6")
+define g = Character("G-Mom", color="#ddb892")
+
+# Magical companion - golden sparkle
+define p = Character("Pipwick", color="#ffd700", who_outlines=[(2, "#5a4500", 0, 0)])
 
 
 

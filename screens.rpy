@@ -109,11 +109,24 @@ screen say(who, what):
 
         text what id "what"
 
+        # Click-to-continue indicator - magical sparkle arrow
+        add "ctc_indicator" xalign 0.98 yalign 0.9
+
 
     ## If there's a side image, display it above the text. Do not display on
     ## the phone variant - there's no room.
     if not renpy.variant("small"):
         add SideImage() xalign 0.0 yalign 1.0
+
+
+# Animated click-to-continue indicator - bouncing arrow
+image ctc_indicator:
+    Text("{font=DejaVuSans.ttf}{size=24}{color=#f4c542}\u25BC{/color}{/size}{/font}")
+    block:
+        yoffset 0
+        ease 0.4 yoffset 6
+        ease 0.4 yoffset 0
+        repeat
 
 
 ## Make the namebox available for styling through the Character object.
@@ -209,8 +222,18 @@ screen choice(items):
 
     vbox:
         for i in items:
-            textbutton i.caption action i.action
+            textbutton i.caption action i.action at choice_button_hover
 
+
+# Hover animation for choice buttons - gentle glow effect
+transform choice_button_hover:
+    on idle:
+        alpha 0.9
+    on hover:
+        alpha 1.0
+        ease 0.15 zoom 1.02
+    on idle:
+        ease 0.15 zoom 1.0
 
 style choice_vbox is vbox
 style choice_button is button
@@ -225,9 +248,13 @@ style choice_vbox:
 
 style choice_button is default:
     properties gui.button_properties("choice_button")
+    hover_sound "audio/sfx/ui/hover.ogg"
+    activate_sound "audio/sfx/ui/click.ogg"
 
 style choice_button_text is default:
     properties gui.text_properties("choice_button")
+    outlines [(2, "#2a1a0a", 0, 0)]
+    hover_outlines [(2, "#4a3a1a", 0, 0), (4, "#f4c54280", 0, 0)]
 
 
 ## Quick Menu screen ###########################################################
@@ -246,14 +273,11 @@ screen quick_menu():
             style_prefix "quick"
             style "quick_menu"
 
+            # Simplified menu for kids - fewer, clearer options
             textbutton _("Back") action Rollback()
-            textbutton _("History") action ShowMenu('history')
-            textbutton _("Skip") action Skip() alternate Skip(fast=True, confirm=True)
             textbutton _("Auto") action Preference("auto-forward", "toggle")
             textbutton _("Save") action ShowMenu('save')
-            textbutton _("Q.Save") action QuickSave()
-            textbutton _("Q.Load") action QuickLoad()
-            textbutton _("Prefs") action ShowMenu('preferences')
+            textbutton _("Menu") action ShowMenu('preferences')
 
 
 ## This code ensures that the quick_menu screen is displayed in-game, whenever
@@ -262,6 +286,39 @@ init python:
     config.overlay_screens.append("quick_menu")
 
 default quick_menu = True
+
+################################################################################
+## Pipwick Companion Indicator
+################################################################################
+
+## A small floating Pipwick in the corner showing the magical companion is with you
+## Toggle with show_pipwick_companion variable
+
+default show_pipwick_companion = True
+
+screen pipwick_companion():
+    zorder 50
+
+    if show_pipwick_companion and not renpy.get_screen("main_menu"):
+        # Small Pipwick floating in corner with gentle animation
+        fixed:
+            xalign 0.02
+            yalign 0.15
+
+            # Use the expressionless Pipwick image if available
+            add "p expressionless":
+                zoom 0.25
+                at pipwick_float
+
+# Gentle floating animation for companion Pipwick
+transform pipwick_float:
+    yoffset 0
+    ease 2.0 yoffset -8
+    ease 2.0 yoffset 0
+    repeat
+
+init python:
+    config.overlay_screens.append("pipwick_companion")
 
 style quick_menu is hbox
 style quick_button is default
