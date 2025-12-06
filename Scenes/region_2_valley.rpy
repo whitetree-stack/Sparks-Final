@@ -881,7 +881,4 @@ label valley_conclusion:
     
     "And then they were gone, carried on beams of light toward their next adventure."
     
-    # Uncomment when region 3 is ready:
-    # jump region_3_conservatory
-    
-    return
+    jump region_3_conservatory

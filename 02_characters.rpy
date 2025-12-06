@@ -278,4 +278,124 @@ layeredimage k:
         attribute waving:
             "images/characters/Kayla/rmbg/waving.png"
 
+# Uncle Ryan
+layeredimage r:
+    group expression:
+        attribute anchor default:
+            "images/characters/Ryan/rmbg/anchor.png"
+        attribute back:
+            "images/characters/Ryan/rmbg/back.png"
+        attribute surprised:
+            "images/characters/Ryan/rmbg/surprised.png"
+        attribute surprised_talking:
+            "images/characters/Ryan/rmbg/surprised_talking.png"
+        attribute hands_on_hips:
+            "images/characters/Ryan/rmbg/hands_on_hips.png"
+        attribute hands_on_hips_talking:
+            "images/characters/Ryan/rmbg/hands_on_hips_talking.png"
+        attribute skeptical:
+            "images/characters/Ryan/rmbg/skeptical.png"
+        attribute skeptical_talking:
+            "images/characters/Ryan/rmbg/skeptical_talking.png"
+        attribute laughing:
+            "images/characters/Ryan/rmbg/laughing.png"
+        attribute frustrated:
+            "images/characters/Ryan/rmbg/frustrated.png"
+        attribute frustrated_talking:
+            "images/characters/Ryan/rmbg/frustrated_talking.png"
+        attribute waving:
+            "images/characters/Ryan/rmbg/waving.png"
+
+# Mom (Lauren)
+layeredimage l:
+    group expression:
+        attribute anchor default:
+            "images/characters/Lauren/rmbg/anchor.png"
+        attribute back:
+            "images/characters/Lauren/rmbg/back.png"
+        attribute surprised:
+            "images/characters/Lauren/rmbg/surprised.png"
+        attribute surprised_talking:
+            "images/characters/Lauren/rmbg/surprised_talking.png"
+        attribute hands_on_hips:
+            "images/characters/Lauren/rmbg/hands_on_hips.png"
+        attribute hands_on_hips_talking:
+            "images/characters/Lauren/rmbg/hands_on_hips_talking.png"
+        attribute skeptical:
+            "images/characters/Lauren/rmbg/skeptical.png"
+        attribute skeptical_talking:
+            "images/characters/Lauren/rmbg/skeptical_talking.png"
+        attribute presenting:
+            "images/characters/Lauren/rmbg/presenting.png"
+        attribute presenting_talking:
+            "images/characters/Lauren/rmbg/presenting_talking.png"
+        attribute frustrated:
+            "images/characters/Lauren/rmbg/frustrated.png"
+        attribute frustrated_talking:
+            "images/characters/Lauren/rmbg/frustrated_talking.png"
+        attribute cheering:
+            "images/characters/Lauren/rmbg/cheering.png"
+        attribute waving:
+            "images/characters/Lauren/rmbg/waving.png"
+
+# Dad (Jeff)
+layeredimage j:
+    group expression:
+        attribute anchor default:
+            "images/characters/Jeff/rmbg/anchor.png"
+        attribute back:
+            "images/characters/Jeff/rmbg/back.png"
+        attribute surprised:
+            "images/characters/Jeff/rmbg/surprised.png"
+        attribute surprised_talking:
+            "images/characters/Jeff/rmbg/surprised_talking.png"
+        attribute hands_on_hips:
+            "images/characters/Jeff/rmbg/hands_on_hips.png"
+        attribute hands_on_hips_talking:
+            "images/characters/Jeff/rmbg/hands_on_hips_talking.png"
+        attribute laughing:
+            "images/characters/Jeff/rmbg/laughing.png"
+        attribute frustrated:
+            "images/characters/Jeff/rmbg/frustrated.png"
+        attribute frustrated_talking:
+            "images/characters/Jeff/rmbg/frustrated_talking.png"
+        attribute presenting:
+            "images/characters/Jeff/rmbg/presenting.png"
+        attribute presenting_talking:
+            "images/characters/Jeff/rmbg/presenting_talking.png"
+        attribute waving:
+            "images/characters/Jeff/rmbg/waving.png"
+
+# G-Mom (Gloria)
+layeredimage g:
+    group expression:
+        attribute anchor default:
+            "images/characters/GMom/rmbg/anchor.png"
+        attribute back:
+            "images/characters/GMom/rmbg/back.png"
+        attribute surprised:
+            "images/characters/GMom/rmbg/surprised.png"
+        attribute hands_on_hips:
+            "images/characters/GMom/rmbg/hands_on_hips.png"
+        attribute hands_on_hips_talking:
+            "images/characters/GMom/rmbg/hands_on_hips_talking.png"
+        attribute presenting:
+            "images/characters/GMom/rmbg/presenting.png"
+        attribute presenting_talking:
+            "images/characters/GMom/rmbg/presenting_talking.png"
+        attribute shrug_talking:
+            "images/characters/GMom/rmbg/shrug_talking.png"
+        attribute frustrated:
+            "images/characters/GMom/rmbg/frustrated.png"
+        attribute frustrated_talking:
+            "images/characters/GMom/rmbg/frustrated_talking.png"
+        attribute cheering:
+            "images/characters/GMom/rmbg/cheering.png"
+        attribute waving:
+            "images/characters/GMom/rmbg/waving.png"
+        attribute wink:
+            "images/characters/GMom/rmbg/wink.png"
+        attribute worried:
+            "images/characters/GMom/rmbg/worried.png"
+
 # --------------------------------------------------------
