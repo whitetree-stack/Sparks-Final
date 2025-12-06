@@ -342,7 +342,7 @@ label library_conclusion:
         xoffset -100
         ease 0.2 alpha 1.0
         ease 0.4 alpha 0.0
-    show pipwick_happy_talking
+    show p happy_talking
     with dissolve
     p "Yay! You did it!"
     p "The knowledge is coming back!"
