@@ -1,6 +1,105 @@
 # ── rune_decode_minigame.rpy (font-only version) ──────────────
 # Uses your Khuzdulerebor-Rjno.ttf + a simple translation table
 
+####################################################################################################################
+# SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+####################################################################################################################
+
+init python:
+    LIBRARY_USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Background sprites for library minigames
+    LIBRARY_BACKGROUND_SPRITES = {
+        "book_open": "images/minigames/library/backgrounds/book_open.png",
+        "parchment": "images/minigames/library/backgrounds/parchment.png",
+        "desk_surface": "images/minigames/library/backgrounds/desk_surface.png",
+        "library_shelves": "images/minigames/library/backgrounds/library_shelves.png",
+        "candlelight": "images/minigames/library/backgrounds/candlelight.png",
+    }
+
+    # Rune tile sprites (alternative to font rendering)
+    RUNE_TILE_SPRITES = {
+        "tile_empty": "images/minigames/library/runes/tile_empty.png",
+        "tile_filled": "images/minigames/library/runes/tile_filled.png",
+        "tile_correct": "images/minigames/library/runes/tile_correct.png",
+        "tile_wrong": "images/minigames/library/runes/tile_wrong.png",
+        "tile_partial": "images/minigames/library/runes/tile_partial.png",
+        "tile_glow": "images/minigames/library/runes/tile_glow.png",
+    }
+
+    # Individual rune letter images (optional - can use font instead)
+    RUNE_LETTER_SPRITES = {
+        "A": "images/minigames/library/runes/letters/rune_a.png",
+        "B": "images/minigames/library/runes/letters/rune_b.png",
+        "C": "images/minigames/library/runes/letters/rune_c.png",
+        "D": "images/minigames/library/runes/letters/rune_d.png",
+        "E": "images/minigames/library/runes/letters/rune_e.png",
+        "F": "images/minigames/library/runes/letters/rune_f.png",
+        "G": "images/minigames/library/runes/letters/rune_g.png",
+        "H": "images/minigames/library/runes/letters/rune_h.png",
+        "I": "images/minigames/library/runes/letters/rune_i.png",
+        "K": "images/minigames/library/runes/letters/rune_k.png",
+        "L": "images/minigames/library/runes/letters/rune_l.png",
+        "N": "images/minigames/library/runes/letters/rune_n.png",
+        "O": "images/minigames/library/runes/letters/rune_o.png",
+        "P": "images/minigames/library/runes/letters/rune_p.png",
+        "R": "images/minigames/library/runes/letters/rune_r.png",
+        "S": "images/minigames/library/runes/letters/rune_s.png",
+        "T": "images/minigames/library/runes/letters/rune_t.png",
+        "U": "images/minigames/library/runes/letters/rune_u.png",
+        "W": "images/minigames/library/runes/letters/rune_w.png",
+        "Y": "images/minigames/library/runes/letters/rune_y.png",
+    }
+
+    # UI element sprites for library minigames
+    LIBRARY_UI_SPRITES = {
+        "frame_ornate": "images/minigames/library/ui/frame_ornate.png",
+        "frame_simple": "images/minigames/library/ui/frame_simple.png",
+        "button_default": "images/minigames/library/ui/button_default.png",
+        "button_hover": "images/minigames/library/ui/button_hover.png",
+        "button_pressed": "images/minigames/library/ui/button_pressed.png",
+        "hint_scroll": "images/minigames/library/ui/hint_scroll.png",
+        "progress_bar_bg": "images/minigames/library/ui/progress_bar_bg.png",
+        "progress_bar_fill": "images/minigames/library/ui/progress_bar_fill.png",
+        "keyboard_bg": "images/minigames/library/ui/keyboard_bg.png",
+        "key_normal": "images/minigames/library/ui/key_normal.png",
+        "key_used": "images/minigames/library/ui/key_used.png",
+        "key_correct": "images/minigames/library/ui/key_correct.png",
+        "key_wrong": "images/minigames/library/ui/key_wrong.png",
+    }
+
+    # Effect sprites for library minigames
+    LIBRARY_EFFECT_SPRITES = {
+        "sparkle_success": "images/minigames/library/effects/sparkle_success.png",
+        "dust_puff": "images/minigames/library/effects/dust_puff.png",
+        "page_turn": "images/minigames/library/effects/page_turn.png",
+        "ink_splatter": "images/minigames/library/effects/ink_splatter.png",
+        "light_ray": "images/minigames/library/effects/light_ray.png",
+        "magic_glow": "images/minigames/library/effects/magic_glow.png",
+    }
+
+    # Overlay sprites
+    LIBRARY_OVERLAY_SPRITES = {
+        "victory_scroll": "images/minigames/library/overlays/victory_scroll.png",
+        "failure_scroll": "images/minigames/library/overlays/failure_scroll.png",
+        "correct_stamp": "images/minigames/library/overlays/correct_stamp.png",
+        "hint_reveal": "images/minigames/library/overlays/hint_reveal.png",
+    }
+
+    # Decorative sprites
+    LIBRARY_DECOR_SPRITES = {
+        "quill": "images/minigames/library/decor/quill.png",
+        "inkwell": "images/minigames/library/decor/inkwell.png",
+        "candle": "images/minigames/library/decor/candle.png",
+        "bookmark": "images/minigames/library/decor/bookmark.png",
+        "floating_book": "images/minigames/library/decor/floating_book.png",
+        "magic_symbol": "images/minigames/library/decor/magic_symbol.png",
+    }
+
+####################################################################################################################
+# END SPRITE CONFIGURATION
+####################################################################################################################
+
 init python:
     # ── YOUR RUNE FONT TRANSLATION TABLE ───────────────────────
     # Left = normal English letter (what the player must type)

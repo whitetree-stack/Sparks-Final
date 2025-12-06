@@ -11,6 +11,200 @@ init python in gear_rush:
     import math
     from pygame.locals import *
 
+    ####################################################################################################################
+    # SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+    ####################################################################################################################
+
+    USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Gear sprites - one for each gear material type
+    # Each gear should be a centered sprite with transparency
+    GEAR_SPRITES = {
+        "bronze": "images/minigames/gearrush/gears/gear_bronze.png",
+        "silver": "images/minigames/gearrush/gears/gear_silver.png",
+        "gold": "images/minigames/gearrush/gears/gear_gold.png",
+        "copper": "images/minigames/gearrush/gears/gear_copper.png",
+        "steel": "images/minigames/gearrush/gears/gear_steel.png",
+    }
+
+    # Gear glow sprites (rendered behind gear when highlighted)
+    GEAR_GLOW_SPRITES = {
+        "bronze": "images/minigames/gearrush/glows/glow_bronze.png",
+        "silver": "images/minigames/gearrush/glows/glow_silver.png",
+        "gold": "images/minigames/gearrush/glows/glow_gold.png",
+        "copper": "images/minigames/gearrush/glows/glow_copper.png",
+        "steel": "images/minigames/gearrush/glows/glow_steel.png",
+    }
+
+    # Target ring sprite (pulsing ring around next gear to click)
+    TARGET_RING_SPRITE = "images/minigames/gearrush/effects/target_ring.png"
+
+    # Wrong click flash sprite
+    WRONG_CLICK_SPRITE = "images/minigames/gearrush/effects/wrong_flash.png"
+
+    # Number sprites for gear order (0-9 plus "10")
+    NUMBER_SPRITES = {
+        1: "images/minigames/gearrush/numbers/num_1.png",
+        2: "images/minigames/gearrush/numbers/num_2.png",
+        3: "images/minigames/gearrush/numbers/num_3.png",
+        4: "images/minigames/gearrush/numbers/num_4.png",
+        5: "images/minigames/gearrush/numbers/num_5.png",
+        6: "images/minigames/gearrush/numbers/num_6.png",
+        7: "images/minigames/gearrush/numbers/num_7.png",
+        8: "images/minigames/gearrush/numbers/num_8.png",
+        9: "images/minigames/gearrush/numbers/num_9.png",
+        10: "images/minigames/gearrush/numbers/num_10.png",
+    }
+
+    # Click effect particles
+    CLICK_PARTICLE_SPRITES = {
+        "success": "images/minigames/gearrush/particles/particle_success.png",
+        "fail": "images/minigames/gearrush/particles/particle_fail.png",
+        "spark_gold": "images/minigames/gearrush/particles/spark_gold.png",
+        "spark_green": "images/minigames/gearrush/particles/spark_green.png",
+        "spark_red": "images/minigames/gearrush/particles/spark_red.png",
+    }
+
+    # Background decorative gears (larger, slower, faded)
+    BG_GEAR_SPRITES = {
+        "small": "images/minigames/gearrush/background/bg_gear_small.png",
+        "medium": "images/minigames/gearrush/background/bg_gear_medium.png",
+        "large": "images/minigames/gearrush/background/bg_gear_large.png",
+    }
+
+    # UI element sprites
+    UI_SPRITES = {
+        "time_bar_bg": "images/minigames/gearrush/ui/time_bar_bg.png",
+        "time_bar_fill_green": "images/minigames/gearrush/ui/time_bar_fill_green.png",
+        "time_bar_fill_yellow": "images/minigames/gearrush/ui/time_bar_fill_yellow.png",
+        "time_bar_fill_red": "images/minigames/gearrush/ui/time_bar_fill_red.png",
+        "time_bar_frame": "images/minigames/gearrush/ui/time_bar_frame.png",
+        "score_panel": "images/minigames/gearrush/ui/score_panel.png",
+        "wave_panel": "images/minigames/gearrush/ui/wave_panel.png",
+    }
+
+    # Countdown sprites
+    COUNTDOWN_SPRITES = {
+        3: "images/minigames/gearrush/countdown/count_3.png",
+        2: "images/minigames/gearrush/countdown/count_2.png",
+        1: "images/minigames/gearrush/countdown/count_1.png",
+        "go": "images/minigames/gearrush/countdown/count_go.png",
+    }
+
+    # End screen overlays
+    OVERLAY_SPRITES = {
+        "victory": "images/minigames/gearrush/overlays/victory_banner.png",
+        "gameover": "images/minigames/gearrush/overlays/gameover_banner.png",
+    }
+
+    # Background image
+    BACKGROUND_SPRITE = "images/minigames/gearrush/background.png"
+
+    # Sprite cache
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path with optional scaling.
+
+        Args:
+            path: Path to the sprite image
+            scale: Optional (width, height) tuple to scale to
+
+        Returns:
+            pygame.Surface or None if loading fails
+        """
+        cache_key = (path, scale)
+        if cache_key in _sprite_cache:
+            return _sprite_cache[cache_key]
+
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[cache_key] = sprite
+            return sprite
+        except (pygame.error, FileNotFoundError):
+            return None
+
+    def get_gear_sprite(gear_name, size=None):
+        """Get sprite for a gear type.
+
+        Args:
+            gear_name: 'bronze', 'silver', 'gold', 'copper', or 'steel'
+            size: Optional (width, height) tuple
+
+        Returns:
+            pygame.Surface or None
+        """
+        if not USE_SPRITES:
+            return None
+        path = GEAR_SPRITES.get(gear_name)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_gear_glow_sprite(gear_name, size=None):
+        """Get glow sprite for a gear type."""
+        if not USE_SPRITES:
+            return None
+        path = GEAR_GLOW_SPRITES.get(gear_name)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_number_sprite(number, size=None):
+        """Get sprite for a number (1-10)."""
+        if not USE_SPRITES:
+            return None
+        path = NUMBER_SPRITES.get(number)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_particle_sprite(particle_type, size=None):
+        """Get a particle effect sprite."""
+        if not USE_SPRITES:
+            return None
+        path = CLICK_PARTICLE_SPRITES.get(particle_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_bg_gear_sprite(gear_size, dimensions=None):
+        """Get a background decorative gear sprite."""
+        if not USE_SPRITES:
+            return None
+        path = BG_GEAR_SPRITES.get(gear_size)
+        if not path:
+            return None
+        return load_sprite(path, dimensions)
+
+    def get_ui_sprite(element, size=None):
+        """Get a UI element sprite."""
+        if not USE_SPRITES:
+            return None
+        path = UI_SPRITES.get(element)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_countdown_sprite(count, size=None):
+        """Get a countdown number sprite."""
+        if not USE_SPRITES:
+            return None
+        path = COUNTDOWN_SPRITES.get(count)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def clear_sprite_cache():
+        """Clear the sprite cache to free memory."""
+        _sprite_cache.clear()
+
+    ####################################################################################################################
+    # END SPRITE CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
 

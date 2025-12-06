@@ -11,6 +11,97 @@ init python in crystal_match:
     import math
     from pygame.locals import *
 
+    # ==================================================================================
+    # SPRITE CONFIGURATION - Replace these paths with actual sprite images
+    # ==================================================================================
+
+    # Set to True when you have real sprites to use instead of procedural graphics
+    USE_SPRITES = False
+
+    # Gem/Crystal sprites - one for each crystal type
+    # Recommended size: 80x80 pixels with transparency
+    GEM_SPRITES = {
+        "ruby": "images/minigames/match3/gems/ruby.png",
+        "sapphire": "images/minigames/match3/gems/sapphire.png",
+        "emerald": "images/minigames/match3/gems/emerald.png",
+        "topaz": "images/minigames/match3/gems/topaz.png",
+        "amethyst": "images/minigames/match3/gems/amethyst.png",
+        "diamond": "images/minigames/match3/gems/diamond.png",
+    }
+
+    # Selected/highlighted gem overlay
+    GEM_SELECTED_SPRITE = "images/minigames/match3/gems/selected_overlay.png"
+
+    # Match effect sprites (optional animated sequence)
+    MATCH_EFFECT_SPRITES = [
+        "images/minigames/match3/effects/match_01.png",
+        "images/minigames/match3/effects/match_02.png",
+        "images/minigames/match3/effects/match_03.png",
+        "images/minigames/match3/effects/match_04.png",
+    ]
+
+    # Particle sprites for match explosions
+    PARTICLE_SPRITES = {
+        "ruby": "images/minigames/match3/particles/ruby_particle.png",
+        "sapphire": "images/minigames/match3/particles/sapphire_particle.png",
+        "emerald": "images/minigames/match3/particles/emerald_particle.png",
+        "topaz": "images/minigames/match3/particles/topaz_particle.png",
+        "amethyst": "images/minigames/match3/particles/amethyst_particle.png",
+        "diamond": "images/minigames/match3/particles/diamond_particle.png",
+    }
+
+    # Background and UI sprites
+    BACKGROUND_SPRITE = "images/minigames/match3/background.png"
+    GRID_FRAME_SPRITE = "images/minigames/match3/grid_frame.png"
+    SCORE_PANEL_SPRITE = "images/minigames/match3/score_panel.png"
+
+    # Combo/chain effect sprites
+    COMBO_SPRITES = {
+        3: "images/minigames/match3/combo/combo_3.png",
+        4: "images/minigames/match3/combo/combo_4.png",
+        5: "images/minigames/match3/combo/combo_5.png",
+    }
+
+    # ==================================================================================
+    # SPRITE CACHE - Loaded sprites are cached here
+    # ==================================================================================
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path, with optional scaling. Returns None if not found."""
+        if path in _sprite_cache:
+            return _sprite_cache[path]
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[path] = sprite
+            return sprite
+        except:
+            return None
+
+    def get_gem_sprite(gem_name, size=None):
+        """Get the sprite for a gem type. Returns None if USE_SPRITES is False or sprite not found."""
+        if not USE_SPRITES:
+            return None
+        path = GEM_SPRITES.get(gem_name)
+        if path:
+            return load_sprite(path, size)
+        return None
+
+    def get_particle_sprite(gem_name):
+        """Get particle sprite for a gem type."""
+        if not USE_SPRITES:
+            return None
+        path = PARTICLE_SPRITES.get(gem_name)
+        if path:
+            return load_sprite(path)
+        return None
+
+    # ==================================================================================
+    # END SPRITE CONFIGURATION
+    # ==================================================================================
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     GRID_COLS = 8
@@ -19,7 +110,7 @@ init python in crystal_match:
     GRID_OFFSET_X = (WIDTH - GRID_COLS * CELL_SIZE) // 2
     GRID_OFFSET_Y = (HEIGHT - GRID_ROWS * CELL_SIZE) // 2 + 30
 
-    # Crystal types (colors)
+    # Crystal types (colors for procedural fallback)
     CRYSTAL_TYPES = [
         {"name": "ruby", "color": (220, 50, 70), "glow": (255, 100, 120)},
         {"name": "sapphire", "color": (50, 100, 220), "glow": (100, 150, 255)},
@@ -54,6 +145,9 @@ init python in crystal_match:
             self.matched = False
             self.falling = False
             self.glow_phase = random.random() * math.pi * 2
+            # Cache sprite reference
+            self._sprite = None
+            self._sprite_loaded = False
 
         def update(self, dt):
             # Smooth movement towards target position
@@ -82,6 +176,41 @@ init python in crystal_match:
             if self.alpha <= 0:
                 return
 
+            crystal_info = CRYSTAL_TYPES[self.type]
+            gem_name = crystal_info["name"]
+
+            # Try to use sprite if available
+            if not self._sprite_loaded:
+                self._sprite = get_gem_sprite(gem_name, (CELL_SIZE, CELL_SIZE))
+                self._sprite_loaded = True
+
+            if self._sprite:
+                # === SPRITE RENDERING PATH ===
+                self._draw_with_sprite(surf, time_ms)
+            else:
+                # === PROCEDURAL FALLBACK ===
+                self._draw_procedural(surf, time_ms)
+
+        def _draw_with_sprite(self, surf, time_ms):
+            """Draw crystal using loaded sprite."""
+            # Apply scale and alpha transformations
+            scaled_size = int(CELL_SIZE * self.scale)
+            if scaled_size <= 0:
+                return
+
+            # Scale sprite
+            scaled_sprite = pygame.transform.scale(self._sprite, (scaled_size, scaled_size))
+
+            # Apply alpha
+            if self.alpha < 255:
+                scaled_sprite.set_alpha(self.alpha)
+
+            # Center the scaled sprite
+            offset = (CELL_SIZE - scaled_size) // 2
+            surf.blit(scaled_sprite, (int(self.x) + offset, int(self.y) + offset))
+
+        def _draw_procedural(self, surf, time_ms):
+            """Draw crystal using procedural graphics (fallback)."""
             crystal_info = CRYSTAL_TYPES[self.type]
             color = crystal_info["color"]
             glow_color = crystal_info["glow"]

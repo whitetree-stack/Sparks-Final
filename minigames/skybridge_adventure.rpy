@@ -11,6 +11,315 @@ init python in beacon_quest:
     import math
     from pygame.locals import *
 
+    ####################################################################################################################
+    # SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+    ####################################################################################################################
+
+    USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Player character sprites
+    # Each direction has idle + 4 walking frames, plus attack animation
+    PLAYER_SPRITES = {
+        # Idle sprites (one per direction)
+        "idle_up": "images/minigames/beaconquest/player/idle_up.png",
+        "idle_down": "images/minigames/beaconquest/player/idle_down.png",
+        "idle_left": "images/minigames/beaconquest/player/idle_left.png",
+        "idle_right": "images/minigames/beaconquest/player/idle_right.png",
+
+        # Walking animation frames (4 frames per direction)
+        "walk_up_0": "images/minigames/beaconquest/player/walk_up_0.png",
+        "walk_up_1": "images/minigames/beaconquest/player/walk_up_1.png",
+        "walk_up_2": "images/minigames/beaconquest/player/walk_up_2.png",
+        "walk_up_3": "images/minigames/beaconquest/player/walk_up_3.png",
+        "walk_down_0": "images/minigames/beaconquest/player/walk_down_0.png",
+        "walk_down_1": "images/minigames/beaconquest/player/walk_down_1.png",
+        "walk_down_2": "images/minigames/beaconquest/player/walk_down_2.png",
+        "walk_down_3": "images/minigames/beaconquest/player/walk_down_3.png",
+        "walk_left_0": "images/minigames/beaconquest/player/walk_left_0.png",
+        "walk_left_1": "images/minigames/beaconquest/player/walk_left_1.png",
+        "walk_left_2": "images/minigames/beaconquest/player/walk_left_2.png",
+        "walk_left_3": "images/minigames/beaconquest/player/walk_left_3.png",
+        "walk_right_0": "images/minigames/beaconquest/player/walk_right_0.png",
+        "walk_right_1": "images/minigames/beaconquest/player/walk_right_1.png",
+        "walk_right_2": "images/minigames/beaconquest/player/walk_right_2.png",
+        "walk_right_3": "images/minigames/beaconquest/player/walk_right_3.png",
+
+        # Attack animation (3 frames per direction showing sword swing)
+        "attack_up_0": "images/minigames/beaconquest/player/attack_up_0.png",
+        "attack_up_1": "images/minigames/beaconquest/player/attack_up_1.png",
+        "attack_up_2": "images/minigames/beaconquest/player/attack_up_2.png",
+        "attack_down_0": "images/minigames/beaconquest/player/attack_down_0.png",
+        "attack_down_1": "images/minigames/beaconquest/player/attack_down_1.png",
+        "attack_down_2": "images/minigames/beaconquest/player/attack_down_2.png",
+        "attack_left_0": "images/minigames/beaconquest/player/attack_left_0.png",
+        "attack_left_1": "images/minigames/beaconquest/player/attack_left_1.png",
+        "attack_left_2": "images/minigames/beaconquest/player/attack_left_2.png",
+        "attack_right_0": "images/minigames/beaconquest/player/attack_right_0.png",
+        "attack_right_1": "images/minigames/beaconquest/player/attack_right_1.png",
+        "attack_right_2": "images/minigames/beaconquest/player/attack_right_2.png",
+
+        # Shadow (drawn beneath player)
+        "shadow": "images/minigames/beaconquest/player/shadow.png",
+    }
+
+    # Alternative: Player spritesheet (single image with all frames)
+    PLAYER_SPRITESHEET = "images/minigames/beaconquest/player/player_spritesheet.png"
+    # Format: 4 rows (down, up, left, right), 8 cols (idle, walk x4, attack x3)
+
+    # Enemy sprites - shadow creature
+    ENEMY_SPRITES = {
+        "shadow_idle": "images/minigames/beaconquest/enemies/shadow_idle.png",
+        "shadow_move_0": "images/minigames/beaconquest/enemies/shadow_move_0.png",
+        "shadow_move_1": "images/minigames/beaconquest/enemies/shadow_move_1.png",
+        "shadow_hit": "images/minigames/beaconquest/enemies/shadow_hit.png",
+        "shadow_glow": "images/minigames/beaconquest/enemies/shadow_glow.png",
+        "shadow_eyes": "images/minigames/beaconquest/enemies/shadow_eyes.png",
+    }
+
+    # Additional enemy types (for future expansion)
+    ENEMY_TYPE_SPRITES = {
+        "shadow": ENEMY_SPRITES,
+        "wraith": {
+            "idle": "images/minigames/beaconquest/enemies/wraith_idle.png",
+            "move_0": "images/minigames/beaconquest/enemies/wraith_move_0.png",
+            "move_1": "images/minigames/beaconquest/enemies/wraith_move_1.png",
+            "hit": "images/minigames/beaconquest/enemies/wraith_hit.png",
+        },
+        "phantom": {
+            "idle": "images/minigames/beaconquest/enemies/phantom_idle.png",
+            "move_0": "images/minigames/beaconquest/enemies/phantom_move_0.png",
+            "move_1": "images/minigames/beaconquest/enemies/phantom_move_1.png",
+            "hit": "images/minigames/beaconquest/enemies/phantom_hit.png",
+        },
+    }
+
+    # Tile sprites for the game map
+    TILE_SPRITES = {
+        "floor_light": "images/minigames/beaconquest/tiles/floor_light.png",
+        "floor_dark": "images/minigames/beaconquest/tiles/floor_dark.png",
+        "floor_pattern": "images/minigames/beaconquest/tiles/floor_pattern.png",
+        "wall": "images/minigames/beaconquest/tiles/wall.png",
+        "wall_top": "images/minigames/beaconquest/tiles/wall_top.png",
+        "wall_corner_tl": "images/minigames/beaconquest/tiles/wall_corner_tl.png",
+        "wall_corner_tr": "images/minigames/beaconquest/tiles/wall_corner_tr.png",
+        "wall_corner_bl": "images/minigames/beaconquest/tiles/wall_corner_bl.png",
+        "wall_corner_br": "images/minigames/beaconquest/tiles/wall_corner_br.png",
+        "beacon_base": "images/minigames/beaconquest/tiles/beacon_base.png",
+        "beacon_active": "images/minigames/beaconquest/tiles/beacon_active.png",
+        "beacon_inactive": "images/minigames/beaconquest/tiles/beacon_inactive.png",
+        "beacon_glow": "images/minigames/beaconquest/tiles/beacon_glow.png",
+        "bridge": "images/minigames/beaconquest/tiles/bridge.png",
+        "door_closed": "images/minigames/beaconquest/tiles/door_closed.png",
+        "door_open": "images/minigames/beaconquest/tiles/door_open.png",
+        "chest_closed": "images/minigames/beaconquest/tiles/chest_closed.png",
+        "chest_open": "images/minigames/beaconquest/tiles/chest_open.png",
+    }
+
+    # Collectible shard sprites
+    SHARD_SPRITES = {
+        "shard": "images/minigames/beaconquest/items/shard.png",
+        "shard_glow": "images/minigames/beaconquest/items/shard_glow.png",
+        "shard_sparkle": "images/minigames/beaconquest/items/shard_sparkle.png",
+    }
+
+    # Other collectible items (for future expansion)
+    ITEM_SPRITES = {
+        "health_potion": "images/minigames/beaconquest/items/health_potion.png",
+        "key": "images/minigames/beaconquest/items/key.png",
+        "coin": "images/minigames/beaconquest/items/coin.png",
+        "powerup_speed": "images/minigames/beaconquest/items/powerup_speed.png",
+        "powerup_attack": "images/minigames/beaconquest/items/powerup_attack.png",
+    }
+
+    # Weapon/attack effect sprites
+    WEAPON_SPRITES = {
+        "sword": "images/minigames/beaconquest/weapons/sword.png",
+        "sword_swing": "images/minigames/beaconquest/weapons/sword_swing.png",
+        "sword_sparkle": "images/minigames/beaconquest/weapons/sword_sparkle.png",
+        "slash_effect_0": "images/minigames/beaconquest/weapons/slash_effect_0.png",
+        "slash_effect_1": "images/minigames/beaconquest/weapons/slash_effect_1.png",
+        "slash_effect_2": "images/minigames/beaconquest/weapons/slash_effect_2.png",
+    }
+
+    # Projectile sprites (for ranged attacks/enemies)
+    PROJECTILE_SPRITES = {
+        "arrow": "images/minigames/beaconquest/projectiles/arrow.png",
+        "magic_bolt": "images/minigames/beaconquest/projectiles/magic_bolt.png",
+        "shadow_ball": "images/minigames/beaconquest/projectiles/shadow_ball.png",
+        "light_beam": "images/minigames/beaconquest/projectiles/light_beam.png",
+    }
+
+    # Effect/particle sprites
+    EFFECT_SPRITES = {
+        "death_particle_purple": "images/minigames/beaconquest/effects/death_particle_purple.png",
+        "death_particle_dark": "images/minigames/beaconquest/effects/death_particle_dark.png",
+        "hit_spark": "images/minigames/beaconquest/effects/hit_spark.png",
+        "collect_sparkle": "images/minigames/beaconquest/effects/collect_sparkle.png",
+        "dust_cloud": "images/minigames/beaconquest/effects/dust_cloud.png",
+        "magic_circle": "images/minigames/beaconquest/effects/magic_circle.png",
+    }
+
+    # UI element sprites
+    UI_SPRITES = {
+        "heart_full": "images/minigames/beaconquest/ui/heart_full.png",
+        "heart_empty": "images/minigames/beaconquest/ui/heart_empty.png",
+        "heart_half": "images/minigames/beaconquest/ui/heart_half.png",
+        "shard_icon": "images/minigames/beaconquest/ui/shard_icon.png",
+        "shard_icon_empty": "images/minigames/beaconquest/ui/shard_icon_empty.png",
+        "panel_bg": "images/minigames/beaconquest/ui/panel_bg.png",
+        "objective_panel": "images/minigames/beaconquest/ui/objective_panel.png",
+    }
+
+    # Background elements
+    BACKGROUND_SPRITES = {
+        "sky": "images/minigames/beaconquest/background/sky.png",
+        "star_small": "images/minigames/beaconquest/background/star_small.png",
+        "star_large": "images/minigames/beaconquest/background/star_large.png",
+        "cloud": "images/minigames/beaconquest/background/cloud.png",
+        "distant_island": "images/minigames/beaconquest/background/distant_island.png",
+    }
+
+    # Overlay sprites for end screens
+    OVERLAY_SPRITES = {
+        "victory_banner": "images/minigames/beaconquest/overlays/victory_banner.png",
+        "gameover_banner": "images/minigames/beaconquest/overlays/gameover_banner.png",
+        "vignette": "images/minigames/beaconquest/overlays/vignette.png",
+    }
+
+    # Tileset (alternative: single image containing all tiles)
+    TILESET_SPRITE = "images/minigames/beaconquest/tiles/tileset.png"
+    # Tileset layout: 8 tiles per row, includes all floor/wall variations
+
+    # Sprite cache
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path with optional scaling."""
+        cache_key = (path, scale)
+        if cache_key in _sprite_cache:
+            return _sprite_cache[cache_key]
+
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[cache_key] = sprite
+            return sprite
+        except (pygame.error, FileNotFoundError):
+            return None
+
+    def get_player_sprite(state, direction, frame=0):
+        """Get player sprite for current state.
+
+        Args:
+            state: 'idle', 'walk', or 'attack'
+            direction: 'up', 'down', 'left', or 'right'
+            frame: Animation frame number (0-3 for walk, 0-2 for attack)
+
+        Returns:
+            pygame.Surface or None
+        """
+        if not USE_SPRITES:
+            return None
+
+        if state == 'idle':
+            key = f"idle_{direction}"
+        elif state == 'walk':
+            key = f"walk_{direction}_{frame % 4}"
+        elif state == 'attack':
+            key = f"attack_{direction}_{frame % 3}"
+        else:
+            return None
+
+        path = PLAYER_SPRITES.get(key)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_enemy_sprite(enemy_type, state, frame=0):
+        """Get enemy sprite for current state."""
+        if not USE_SPRITES:
+            return None
+
+        sprites = ENEMY_TYPE_SPRITES.get(enemy_type, ENEMY_SPRITES)
+        if state == 'idle':
+            path = sprites.get('idle') or sprites.get('shadow_idle')
+        elif state == 'move':
+            key = f"move_{frame % 2}" if f"move_{frame % 2}" in sprites else f"shadow_move_{frame % 2}"
+            path = sprites.get(key)
+        elif state == 'hit':
+            path = sprites.get('hit') or sprites.get('shadow_hit')
+        else:
+            return None
+
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_tile_sprite(tile_type, variant=None):
+        """Get tile sprite for map rendering."""
+        if not USE_SPRITES:
+            return None
+
+        key = tile_type if variant is None else f"{tile_type}_{variant}"
+        path = TILE_SPRITES.get(key)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_shard_sprite(state="shard"):
+        """Get shard collectible sprite."""
+        if not USE_SPRITES:
+            return None
+        path = SHARD_SPRITES.get(state)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_weapon_sprite(weapon, state="sword"):
+        """Get weapon or attack effect sprite."""
+        if not USE_SPRITES:
+            return None
+        path = WEAPON_SPRITES.get(state)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_effect_sprite(effect_type, size=None):
+        """Get particle/effect sprite."""
+        if not USE_SPRITES:
+            return None
+        path = EFFECT_SPRITES.get(effect_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_ui_sprite(element, size=None):
+        """Get UI element sprite."""
+        if not USE_SPRITES:
+            return None
+        path = UI_SPRITES.get(element)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_projectile_sprite(projectile_type, size=None):
+        """Get projectile sprite for ranged attacks."""
+        if not USE_SPRITES:
+            return None
+        path = PROJECTILE_SPRITES.get(projectile_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def clear_sprite_cache():
+        """Clear the sprite cache to free memory."""
+        _sprite_cache.clear()
+
+    ####################################################################################################################
+    # END SPRITE CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     TILE_SIZE = 64

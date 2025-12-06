@@ -11,6 +11,272 @@ init python in boss_rush:
     import math
     from pygame.locals import *
 
+    ####################################################################################################################
+    # SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+    ####################################################################################################################
+
+    USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Hero twin sprites (Tristan and Henry)
+    HERO_SPRITES = {
+        # Tristan (green hero) - Arrow key controls
+        "tristan_idle": "images/minigames/bossrush/heroes/tristan_idle.png",
+        "tristan_move_left": "images/minigames/bossrush/heroes/tristan_move_left.png",
+        "tristan_move_right": "images/minigames/bossrush/heroes/tristan_move_right.png",
+        "tristan_shoot": "images/minigames/bossrush/heroes/tristan_shoot.png",
+        "tristan_hit": "images/minigames/bossrush/heroes/tristan_hit.png",
+        "tristan_glow": "images/minigames/bossrush/heroes/tristan_glow.png",
+
+        # Henry (blue hero) - WASD controls
+        "henry_idle": "images/minigames/bossrush/heroes/henry_idle.png",
+        "henry_move_left": "images/minigames/bossrush/heroes/henry_move_left.png",
+        "henry_move_right": "images/minigames/bossrush/heroes/henry_move_right.png",
+        "henry_shoot": "images/minigames/bossrush/heroes/henry_shoot.png",
+        "henry_hit": "images/minigames/bossrush/heroes/henry_hit.png",
+        "henry_glow": "images/minigames/bossrush/heroes/henry_glow.png",
+    }
+
+    # Hero projectile sprites (light orbs fired by heroes)
+    HERO_PROJECTILE_SPRITES = {
+        "orb_green": "images/minigames/bossrush/projectiles/orb_green.png",
+        "orb_green_glow": "images/minigames/bossrush/projectiles/orb_green_glow.png",
+        "orb_green_trail": "images/minigames/bossrush/projectiles/orb_green_trail.png",
+        "orb_blue": "images/minigames/bossrush/projectiles/orb_blue.png",
+        "orb_blue_glow": "images/minigames/bossrush/projectiles/orb_blue_glow.png",
+        "orb_blue_trail": "images/minigames/bossrush/projectiles/orb_blue_trail.png",
+    }
+
+    # Shadow King boss sprites (multi-phase)
+    BOSS_SPRITES = {
+        # Phase 1 (full health)
+        "phase1_idle": "images/minigames/bossrush/boss/phase1_idle.png",
+        "phase1_attack": "images/minigames/bossrush/boss/phase1_attack.png",
+        "phase1_hit": "images/minigames/bossrush/boss/phase1_hit.png",
+        "phase1_aura": "images/minigames/bossrush/boss/phase1_aura.png",
+
+        # Phase 2 (below 66% health)
+        "phase2_idle": "images/minigames/bossrush/boss/phase2_idle.png",
+        "phase2_attack": "images/minigames/bossrush/boss/phase2_attack.png",
+        "phase2_hit": "images/minigames/bossrush/boss/phase2_hit.png",
+        "phase2_aura": "images/minigames/bossrush/boss/phase2_aura.png",
+
+        # Phase 3 (below 33% health - enraged)
+        "phase3_idle": "images/minigames/bossrush/boss/phase3_idle.png",
+        "phase3_attack": "images/minigames/bossrush/boss/phase3_attack.png",
+        "phase3_hit": "images/minigames/bossrush/boss/phase3_hit.png",
+        "phase3_aura": "images/minigames/bossrush/boss/phase3_aura.png",
+
+        # Common elements
+        "crown": "images/minigames/bossrush/boss/crown.png",
+        "crown_glow": "images/minigames/bossrush/boss/crown_glow.png",
+        "eyes": "images/minigames/bossrush/boss/eyes.png",
+        "eyes_glow": "images/minigames/bossrush/boss/eyes_glow.png",
+        "shadow": "images/minigames/bossrush/boss/shadow.png",
+        "death_anim_0": "images/minigames/bossrush/boss/death_anim_0.png",
+        "death_anim_1": "images/minigames/bossrush/boss/death_anim_1.png",
+        "death_anim_2": "images/minigames/bossrush/boss/death_anim_2.png",
+    }
+
+    # Boss projectile sprites (dark orbs and spikes)
+    BOSS_PROJECTILE_SPRITES = {
+        "orb_dark": "images/minigames/bossrush/projectiles/orb_dark.png",
+        "orb_dark_glow": "images/minigames/bossrush/projectiles/orb_dark_glow.png",
+        "spike": "images/minigames/bossrush/projectiles/spike.png",
+        "spike_glow": "images/minigames/bossrush/projectiles/spike_glow.png",
+        "shadow_bolt": "images/minigames/bossrush/projectiles/shadow_bolt.png",
+        "void_sphere": "images/minigames/bossrush/projectiles/void_sphere.png",
+    }
+
+    # Attack effect sprites (special attack visuals)
+    ATTACK_EFFECT_SPRITES = {
+        "spread_warning": "images/minigames/bossrush/effects/spread_warning.png",
+        "rain_warning": "images/minigames/bossrush/effects/rain_warning.png",
+        "spiral_charge": "images/minigames/bossrush/effects/spiral_charge.png",
+        "targeted_lock": "images/minigames/bossrush/effects/targeted_lock.png",
+    }
+
+    # Hit/particle effect sprites
+    HIT_EFFECT_SPRITES = {
+        "spark_green": "images/minigames/bossrush/effects/spark_green.png",
+        "spark_blue": "images/minigames/bossrush/effects/spark_blue.png",
+        "spark_purple": "images/minigames/bossrush/effects/spark_purple.png",
+        "spark_red": "images/minigames/bossrush/effects/spark_red.png",
+        "explosion_small": "images/minigames/bossrush/effects/explosion_small.png",
+        "explosion_large": "images/minigames/bossrush/effects/explosion_large.png",
+        "hit_flash": "images/minigames/bossrush/effects/hit_flash.png",
+    }
+
+    # Background sprites
+    BACKGROUND_SPRITES = {
+        "sky_gradient": "images/minigames/bossrush/background/sky_gradient.png",
+        "floating_particle": "images/minigames/bossrush/background/floating_particle.png",
+        "lightning_flash": "images/minigames/bossrush/background/lightning_flash.png",
+        "arena_floor": "images/minigames/bossrush/background/arena_floor.png",
+        "arena_edge": "images/minigames/bossrush/background/arena_edge.png",
+    }
+
+    # UI element sprites
+    UI_SPRITES = {
+        "heart_full": "images/minigames/bossrush/ui/heart_full.png",
+        "heart_empty": "images/minigames/bossrush/ui/heart_empty.png",
+        "boss_health_bar_bg": "images/minigames/bossrush/ui/boss_health_bar_bg.png",
+        "boss_health_bar_fill": "images/minigames/bossrush/ui/boss_health_bar_fill.png",
+        "boss_health_bar_frame": "images/minigames/bossrush/ui/boss_health_bar_frame.png",
+        "phase_indicator": "images/minigames/bossrush/ui/phase_indicator.png",
+        "controls_panel": "images/minigames/bossrush/ui/controls_panel.png",
+    }
+
+    # Overlay sprites for intro/end screens
+    OVERLAY_SPRITES = {
+        "intro_title": "images/minigames/bossrush/overlays/intro_title.png",
+        "intro_subtitle": "images/minigames/bossrush/overlays/intro_subtitle.png",
+        "victory_banner": "images/minigames/bossrush/overlays/victory_banner.png",
+        "defeat_banner": "images/minigames/bossrush/overlays/defeat_banner.png",
+        "vignette": "images/minigames/bossrush/overlays/vignette.png",
+    }
+
+    # Sprite cache
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path with optional scaling."""
+        cache_key = (path, scale)
+        if cache_key in _sprite_cache:
+            return _sprite_cache[cache_key]
+
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[cache_key] = sprite
+            return sprite
+        except (pygame.error, FileNotFoundError):
+            return None
+
+    def get_hero_sprite(hero_name, state):
+        """Get hero sprite for current state.
+
+        Args:
+            hero_name: 'tristan' or 'henry'
+            state: 'idle', 'move_left', 'move_right', 'shoot', 'hit', or 'glow'
+
+        Returns:
+            pygame.Surface or None
+        """
+        if not USE_SPRITES:
+            return None
+
+        key = f"{hero_name.lower()}_{state}"
+        path = HERO_SPRITES.get(key)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_hero_projectile_sprite(color, state="orb"):
+        """Get hero projectile sprite.
+
+        Args:
+            color: 'green' (Tristan) or 'blue' (Henry)
+            state: 'orb', 'glow', or 'trail'
+        """
+        if not USE_SPRITES:
+            return None
+
+        key = f"orb_{color}" if state == "orb" else f"orb_{color}_{state}"
+        path = HERO_PROJECTILE_SPRITES.get(key)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_boss_sprite(phase, state):
+        """Get boss sprite for current phase and state.
+
+        Args:
+            phase: 1, 2, or 3
+            state: 'idle', 'attack', 'hit', 'aura', 'crown', 'eyes', etc.
+        """
+        if not USE_SPRITES:
+            return None
+
+        # Handle common elements that don't change by phase
+        if state in ('crown', 'crown_glow', 'eyes', 'eyes_glow', 'shadow'):
+            path = BOSS_SPRITES.get(state)
+        elif state.startswith('death_anim'):
+            path = BOSS_SPRITES.get(state)
+        else:
+            key = f"phase{phase}_{state}"
+            path = BOSS_SPRITES.get(key)
+
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_boss_projectile_sprite(proj_type, state="normal"):
+        """Get boss projectile sprite.
+
+        Args:
+            proj_type: 'orb', 'spike', 'shadow_bolt', 'void_sphere'
+            state: 'normal' or 'glow'
+        """
+        if not USE_SPRITES:
+            return None
+
+        if proj_type == "orb":
+            key = "orb_dark" if state == "normal" else "orb_dark_glow"
+        elif proj_type == "spike":
+            key = "spike" if state == "normal" else "spike_glow"
+        else:
+            key = proj_type
+
+        path = BOSS_PROJECTILE_SPRITES.get(key)
+        if not path:
+            return None
+        return load_sprite(path)
+
+    def get_hit_effect_sprite(effect_type, size=None):
+        """Get hit/particle effect sprite."""
+        if not USE_SPRITES:
+            return None
+        path = HIT_EFFECT_SPRITES.get(effect_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_ui_sprite(element, size=None):
+        """Get UI element sprite."""
+        if not USE_SPRITES:
+            return None
+        path = UI_SPRITES.get(element)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_background_sprite(element, size=None):
+        """Get background element sprite."""
+        if not USE_SPRITES:
+            return None
+        path = BACKGROUND_SPRITES.get(element)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_attack_effect_sprite(attack_type, size=None):
+        """Get attack warning/effect sprite."""
+        if not USE_SPRITES:
+            return None
+        path = ATTACK_EFFECT_SPRITES.get(attack_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def clear_sprite_cache():
+        """Clear the sprite cache to free memory."""
+        _sprite_cache.clear()
+
+    ####################################################################################################################
+    # END SPRITE CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     ARENA_MARGIN = 100

@@ -2,6 +2,191 @@
 # Contains: Tree Climb Scroller + Vine Blaster (Beacon Rescue)
 
 ####################################################################################################################
+# SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+# This configuration applies to both Vine Blaster and Valley Climb minigames
+####################################################################################################################
+
+init python:
+    ################################################################################################
+    # VALLEY MINIGAMES SPRITE CONFIGURATION
+    ################################################################################################
+
+    VALLEY_USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Character sprites (Tristan and Henry for both minigames)
+    VALLEY_CHARACTER_SPRITES = {
+        # Tristan (green/older brother)
+        "tristan_idle": "images/minigames/valley/characters/tristan_idle.png",
+        "tristan_walk_left": "images/minigames/valley/characters/tristan_walk_left.png",
+        "tristan_walk_right": "images/minigames/valley/characters/tristan_walk_right.png",
+        "tristan_jump": "images/minigames/valley/characters/tristan_jump.png",
+        "tristan_climb_0": "images/minigames/valley/characters/tristan_climb_0.png",
+        "tristan_climb_1": "images/minigames/valley/characters/tristan_climb_1.png",
+        "tristan_aim": "images/minigames/valley/characters/tristan_aim.png",
+        "tristan_hurt": "images/minigames/valley/characters/tristan_hurt.png",
+        "tristan_glow": "images/minigames/valley/characters/tristan_glow.png",
+
+        # Henry (blue/younger brother)
+        "henry_idle": "images/minigames/valley/characters/henry_idle.png",
+        "henry_walk_left": "images/minigames/valley/characters/henry_walk_left.png",
+        "henry_walk_right": "images/minigames/valley/characters/henry_walk_right.png",
+        "henry_jump": "images/minigames/valley/characters/henry_jump.png",
+        "henry_climb_0": "images/minigames/valley/characters/henry_climb_0.png",
+        "henry_climb_1": "images/minigames/valley/characters/henry_climb_1.png",
+        "henry_aim": "images/minigames/valley/characters/henry_aim.png",
+        "henry_hurt": "images/minigames/valley/characters/henry_hurt.png",
+        "henry_glow": "images/minigames/valley/characters/henry_glow.png",
+    }
+
+    # Spider enemy sprites (used in both minigames)
+    SPIDER_SPRITES = {
+        # Walking animation frames (5 frames per direction)
+        "walk_up_0": "images/minigames/valley/enemies/spider_walk_up_0.png",
+        "walk_up_1": "images/minigames/valley/enemies/spider_walk_up_1.png",
+        "walk_up_2": "images/minigames/valley/enemies/spider_walk_up_2.png",
+        "walk_up_3": "images/minigames/valley/enemies/spider_walk_up_3.png",
+        "walk_up_4": "images/minigames/valley/enemies/spider_walk_up_4.png",
+        "walk_down_0": "images/minigames/valley/enemies/spider_walk_down_0.png",
+        "walk_down_1": "images/minigames/valley/enemies/spider_walk_down_1.png",
+        "walk_down_2": "images/minigames/valley/enemies/spider_walk_down_2.png",
+        "walk_down_3": "images/minigames/valley/enemies/spider_walk_down_3.png",
+        "walk_down_4": "images/minigames/valley/enemies/spider_walk_down_4.png",
+        "walk_left_0": "images/minigames/valley/enemies/spider_walk_left_0.png",
+        "walk_left_1": "images/minigames/valley/enemies/spider_walk_left_1.png",
+        "walk_left_2": "images/minigames/valley/enemies/spider_walk_left_2.png",
+        "walk_left_3": "images/minigames/valley/enemies/spider_walk_left_3.png",
+        "walk_left_4": "images/minigames/valley/enemies/spider_walk_left_4.png",
+        "walk_right_0": "images/minigames/valley/enemies/spider_walk_right_0.png",
+        "walk_right_1": "images/minigames/valley/enemies/spider_walk_right_1.png",
+        "walk_right_2": "images/minigames/valley/enemies/spider_walk_right_2.png",
+        "walk_right_3": "images/minigames/valley/enemies/spider_walk_right_3.png",
+        "walk_right_4": "images/minigames/valley/enemies/spider_walk_right_4.png",
+        # Death animation (4 frames)
+        "death_0": "images/minigames/valley/enemies/spider_death_0.png",
+        "death_1": "images/minigames/valley/enemies/spider_death_1.png",
+        "death_2": "images/minigames/valley/enemies/spider_death_2.png",
+        "death_3": "images/minigames/valley/enemies/spider_death_3.png",
+        # Hit flash
+        "hit": "images/minigames/valley/enemies/spider_hit.png",
+    }
+
+    # Vine sprites for Vine Blaster
+    VINE_SPRITES = {
+        # Vine segment images (rotated to follow path)
+        "segment_1": "images/minigames/valley/vines/segment_1.png",
+        "segment_2": "images/minigames/valley/vines/segment_2.png",
+        "segment_3": "images/minigames/valley/vines/segment_3.png",
+        "segment_4": "images/minigames/valley/vines/segment_4.png",
+        # Vine tip (animated, dangerous part)
+        "tip": "images/minigames/valley/vines/tip.png",
+        "tip_open": "images/minigames/valley/vines/tip_open.png",
+        "tip_attack": "images/minigames/valley/vines/tip_attack.png",
+        # Root/base where vine spawns
+        "root": "images/minigames/valley/vines/root.png",
+    }
+
+    # Projectile/Fireball sprites
+    PROJECTILE_SPRITES = {
+        # Tristan's fireballs (orange/yellow)
+        "fireball_orange_0": "images/minigames/valley/projectiles/fireball_orange_0.png",
+        "fireball_orange_1": "images/minigames/valley/projectiles/fireball_orange_1.png",
+        "fireball_orange_2": "images/minigames/valley/projectiles/fireball_orange_2.png",
+        "fireball_orange_3": "images/minigames/valley/projectiles/fireball_orange_3.png",
+        "fireball_orange_trail": "images/minigames/valley/projectiles/fireball_orange_trail.png",
+        # Henry's fireballs (blue)
+        "fireball_blue_0": "images/minigames/valley/projectiles/fireball_blue_0.png",
+        "fireball_blue_1": "images/minigames/valley/projectiles/fireball_blue_1.png",
+        "fireball_blue_2": "images/minigames/valley/projectiles/fireball_blue_2.png",
+        "fireball_blue_3": "images/minigames/valley/projectiles/fireball_blue_3.png",
+        "fireball_blue_trail": "images/minigames/valley/projectiles/fireball_blue_trail.png",
+        # Impact effects
+        "impact_orange": "images/minigames/valley/projectiles/impact_orange.png",
+        "impact_blue": "images/minigames/valley/projectiles/impact_blue.png",
+    }
+
+    # Beacon sprites (central objective in Vine Blaster)
+    BEACON_SPRITES = {
+        "beacon_base": "images/minigames/valley/beacon/beacon_base.png",
+        "beacon_light": "images/minigames/valley/beacon/beacon_light.png",
+        "beacon_glow": "images/minigames/valley/beacon/beacon_glow.png",
+        "beacon_danger": "images/minigames/valley/beacon/beacon_danger.png",
+        "beacon_shield": "images/minigames/valley/beacon/beacon_shield.png",
+    }
+
+    # Tree/Platform sprites for Valley Climb
+    PLATFORM_SPRITES = {
+        "branch_left": "images/minigames/valley/platforms/branch_left.png",
+        "branch_right": "images/minigames/valley/platforms/branch_right.png",
+        "branch_middle": "images/minigames/valley/platforms/branch_middle.png",
+        "platform_wood": "images/minigames/valley/platforms/platform_wood.png",
+        "platform_moss": "images/minigames/valley/platforms/platform_moss.png",
+        "vine_swing": "images/minigames/valley/platforms/vine_swing.png",
+        "mushroom": "images/minigames/valley/platforms/mushroom.png",
+    }
+
+    # Tree trunk and background for Valley Climb
+    TREE_SPRITES = {
+        "trunk_segment": "images/minigames/valley/tree/trunk_segment.png",
+        "trunk_knot": "images/minigames/valley/tree/trunk_knot.png",
+        "trunk_hollow": "images/minigames/valley/tree/trunk_hollow.png",
+        "bark_detail": "images/minigames/valley/tree/bark_detail.png",
+        "leaves_bg": "images/minigames/valley/tree/leaves_bg.png",
+        "canopy": "images/minigames/valley/tree/canopy.png",
+    }
+
+    # Collectible sprites for Valley Climb
+    COLLECTIBLE_SPRITES = {
+        "acorn": "images/minigames/valley/collectibles/acorn.png",
+        "acorn_glow": "images/minigames/valley/collectibles/acorn_glow.png",
+        "leaf_green": "images/minigames/valley/collectibles/leaf_green.png",
+        "leaf_gold": "images/minigames/valley/collectibles/leaf_gold.png",
+        "berry": "images/minigames/valley/collectibles/berry.png",
+        "feather": "images/minigames/valley/collectibles/feather.png",
+    }
+
+    # Effect sprites
+    VALLEY_EFFECT_SPRITES = {
+        "hit_spark": "images/minigames/valley/effects/hit_spark.png",
+        "death_puff": "images/minigames/valley/effects/death_puff.png",
+        "collect_sparkle": "images/minigames/valley/effects/collect_sparkle.png",
+        "dust_cloud": "images/minigames/valley/effects/dust_cloud.png",
+        "leaf_particle": "images/minigames/valley/effects/leaf_particle.png",
+        "second_wind_burst": "images/minigames/valley/effects/second_wind_burst.png",
+    }
+
+    # UI sprites
+    VALLEY_UI_SPRITES = {
+        "health_bar_bg": "images/minigames/valley/ui/health_bar_bg.png",
+        "health_bar_fill": "images/minigames/valley/ui/health_bar_fill.png",
+        "health_bar_danger": "images/minigames/valley/ui/health_bar_danger.png",
+        "wave_indicator": "images/minigames/valley/ui/wave_indicator.png",
+        "score_panel": "images/minigames/valley/ui/score_panel.png",
+        "timer_panel": "images/minigames/valley/ui/timer_panel.png",
+        "heart_icon": "images/minigames/valley/ui/heart_icon.png",
+    }
+
+    # Background sprites
+    VALLEY_BACKGROUND_SPRITES = {
+        "forest_bg": "images/minigames/valley/background/forest_bg.png",
+        "sky_gradient": "images/minigames/valley/background/sky_gradient.png",
+        "distant_trees": "images/minigames/valley/background/distant_trees.png",
+        "mist_layer": "images/minigames/valley/background/mist_layer.png",
+        "sunbeam": "images/minigames/valley/background/sunbeam.png",
+    }
+
+    # Overlay sprites
+    VALLEY_OVERLAY_SPRITES = {
+        "victory_banner": "images/minigames/valley/overlays/victory_banner.png",
+        "gameover_banner": "images/minigames/valley/overlays/gameover_banner.png",
+        "wave_complete": "images/minigames/valley/overlays/wave_complete.png",
+        "second_wind_flash": "images/minigames/valley/overlays/second_wind_flash.png",
+    }
+
+    ################################################################################################
+    # END SPRITE CONFIGURATION
+    ################################################################################################
+
+####################################################################################################################
 # VINE BLASTER - Beacon Rescue Minigame
 ####################################################################################################################
 

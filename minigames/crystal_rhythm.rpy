@@ -11,6 +11,137 @@ init python in crystal_rhythm:
     import math
     from pygame.locals import *
 
+    # ==================================================================================
+    # SPRITE CONFIGURATION - Replace these paths with actual sprite images
+    # ==================================================================================
+
+    # Set to True when you have real sprites to use instead of procedural graphics
+    USE_SPRITES = False
+
+    # Note sprites - one for each lane color
+    # Recommended size: 120x40 pixels with transparency
+    NOTE_SPRITES = {
+        0: "images/minigames/rhythm/notes/note_red.png",      # D lane
+        1: "images/minigames/rhythm/notes/note_green.png",    # F lane
+        2: "images/minigames/rhythm/notes/note_blue.png",     # J lane
+        3: "images/minigames/rhythm/notes/note_yellow.png",   # K lane
+    }
+
+    # Hold note sprites (for long notes - optional)
+    HOLD_NOTE_SPRITES = {
+        0: "images/minigames/rhythm/notes/hold_red.png",
+        1: "images/minigames/rhythm/notes/hold_green.png",
+        2: "images/minigames/rhythm/notes/hold_blue.png",
+        3: "images/minigames/rhythm/notes/hold_yellow.png",
+    }
+
+    # Hit zone receptor sprites (the targets at the bottom)
+    RECEPTOR_SPRITES = {
+        0: "images/minigames/rhythm/receptors/receptor_red.png",
+        1: "images/minigames/rhythm/receptors/receptor_green.png",
+        2: "images/minigames/rhythm/receptors/receptor_blue.png",
+        3: "images/minigames/rhythm/receptors/receptor_yellow.png",
+    }
+
+    # Receptor glow/press effect sprites
+    RECEPTOR_GLOW_SPRITES = {
+        0: "images/minigames/rhythm/receptors/glow_red.png",
+        1: "images/minigames/rhythm/receptors/glow_green.png",
+        2: "images/minigames/rhythm/receptors/glow_blue.png",
+        3: "images/minigames/rhythm/receptors/glow_yellow.png",
+    }
+
+    # Hit feedback sprites
+    HIT_EFFECT_SPRITES = {
+        "perfect": "images/minigames/rhythm/effects/hit_perfect.png",
+        "good": "images/minigames/rhythm/effects/hit_good.png",
+        "ok": "images/minigames/rhythm/effects/hit_ok.png",
+        "miss": "images/minigames/rhythm/effects/hit_miss.png",
+    }
+
+    # Judgment text sprites
+    JUDGMENT_SPRITES = {
+        "perfect": "images/minigames/rhythm/judgments/perfect.png",
+        "good": "images/minigames/rhythm/judgments/good.png",
+        "ok": "images/minigames/rhythm/judgments/ok.png",
+        "miss": "images/minigames/rhythm/judgments/miss.png",
+    }
+
+    # Combo number sprites (0-9)
+    COMBO_NUMBER_SPRITES = [
+        "images/minigames/rhythm/combo/num_0.png",
+        "images/minigames/rhythm/combo/num_1.png",
+        "images/minigames/rhythm/combo/num_2.png",
+        "images/minigames/rhythm/combo/num_3.png",
+        "images/minigames/rhythm/combo/num_4.png",
+        "images/minigames/rhythm/combo/num_5.png",
+        "images/minigames/rhythm/combo/num_6.png",
+        "images/minigames/rhythm/combo/num_7.png",
+        "images/minigames/rhythm/combo/num_8.png",
+        "images/minigames/rhythm/combo/num_9.png",
+    ]
+
+    # Background and UI
+    BACKGROUND_SPRITE = "images/minigames/rhythm/background.png"
+    LANE_BACKGROUND_SPRITE = "images/minigames/rhythm/lane_bg.png"
+    SCORE_PANEL_SPRITE = "images/minigames/rhythm/score_panel.png"
+
+    # Particle effects for hits
+    HIT_PARTICLE_SPRITES = [
+        "images/minigames/rhythm/particles/sparkle_01.png",
+        "images/minigames/rhythm/particles/sparkle_02.png",
+        "images/minigames/rhythm/particles/sparkle_03.png",
+    ]
+
+    # ==================================================================================
+    # SPRITE CACHE
+    # ==================================================================================
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path, with optional scaling. Returns None if not found."""
+        if path in _sprite_cache:
+            return _sprite_cache[path]
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[path] = sprite
+            return sprite
+        except:
+            return None
+
+    def get_note_sprite(lane, size=None):
+        """Get the sprite for a note in a specific lane."""
+        if not USE_SPRITES:
+            return None
+        path = NOTE_SPRITES.get(lane)
+        if path:
+            return load_sprite(path, size)
+        return None
+
+    def get_receptor_sprite(lane):
+        """Get the receptor sprite for a lane."""
+        if not USE_SPRITES:
+            return None
+        path = RECEPTOR_SPRITES.get(lane)
+        if path:
+            return load_sprite(path)
+        return None
+
+    def get_hit_effect_sprite(judgment):
+        """Get the hit effect sprite for a judgment type."""
+        if not USE_SPRITES:
+            return None
+        path = HIT_EFFECT_SPRITES.get(judgment)
+        if path:
+            return load_sprite(path)
+        return None
+
+    # ==================================================================================
+    # END SPRITE CONFIGURATION
+    # ==================================================================================
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     NUM_LANES = 4
@@ -30,7 +161,7 @@ init python in crystal_rhythm:
     NOTE_HEIGHT = 40
     NOTE_SPEED = 400  # pixels per second (adjustable for difficulty)
 
-    # Lane colors and keys
+    # Lane colors and keys (for procedural fallback)
     LANE_CONFIGS = [
         {"color": (220, 50, 100), "glow": (255, 100, 150), "key": K_d, "key_name": "D"},
         {"color": (50, 200, 100), "glow": (100, 255, 150), "key": K_f, "key_name": "F"},

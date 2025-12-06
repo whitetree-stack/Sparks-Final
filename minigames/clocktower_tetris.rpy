@@ -11,6 +11,181 @@ init python in clockwork_tetris:
     import math
     from pygame.locals import *
 
+    ####################################################################################################################
+    # SPRITE CONFIGURATION - Set USE_SPRITES = True and provide sprite paths to use custom graphics
+    ####################################################################################################################
+
+    USE_SPRITES = False  # Set to True when sprites are ready
+
+    # Block/Tetromino sprites - one for each piece type
+    # Each sprite should be a single block tile that tiles together
+    BLOCK_SPRITES = {
+        'I': "images/minigames/tetris/blocks/gear_shaft.png",      # Cyan - Gear Shaft piece
+        'O': "images/minigames/tetris/blocks/cog.png",             # Yellow - Cog piece
+        'T': "images/minigames/tetris/blocks/pivot.png",           # Purple - Pivot piece
+        'S': "images/minigames/tetris/blocks/spring.png",          # Green - Spring piece
+        'Z': "images/minigames/tetris/blocks/lever.png",           # Red - Lever piece
+        'J': "images/minigames/tetris/blocks/hook.png",            # Blue - Hook piece
+        'L': "images/minigames/tetris/blocks/bracket.png",         # Orange - Bracket piece
+    }
+
+    # Ghost piece sprites (semi-transparent versions shown where piece will land)
+    GHOST_SPRITES = {
+        'I': "images/minigames/tetris/ghosts/gear_shaft_ghost.png",
+        'O': "images/minigames/tetris/ghosts/cog_ghost.png",
+        'T': "images/minigames/tetris/ghosts/pivot_ghost.png",
+        'S': "images/minigames/tetris/ghosts/spring_ghost.png",
+        'Z': "images/minigames/tetris/ghosts/lever_ghost.png",
+        'J': "images/minigames/tetris/ghosts/hook_ghost.png",
+        'L': "images/minigames/tetris/ghosts/bracket_ghost.png",
+    }
+
+    # Block glow effect sprites (rendered behind blocks when active piece glows)
+    BLOCK_GLOW_SPRITES = {
+        'I': "images/minigames/tetris/glows/gear_shaft_glow.png",
+        'O': "images/minigames/tetris/glows/cog_glow.png",
+        'T': "images/minigames/tetris/glows/pivot_glow.png",
+        'S': "images/minigames/tetris/glows/spring_glow.png",
+        'Z': "images/minigames/tetris/glows/lever_glow.png",
+        'J': "images/minigames/tetris/glows/hook_glow.png",
+        'L': "images/minigames/tetris/glows/bracket_glow.png",
+    }
+
+    # Decorative gear sprites (background decoration)
+    GEAR_SPRITES = {
+        "small": "images/minigames/tetris/gears/gear_small.png",       # ~60px diameter
+        "medium": "images/minigames/tetris/gears/gear_medium.png",     # ~90px diameter
+        "large": "images/minigames/tetris/gears/gear_large.png",       # ~120px diameter
+    }
+
+    # Line clear effect sprites
+    LINE_CLEAR_SPRITES = {
+        "flash": "images/minigames/tetris/effects/line_flash.png",          # Full row flash effect
+        "particle_gold": "images/minigames/tetris/effects/particle_gold.png",
+        "particle_purple": "images/minigames/tetris/effects/particle_purple.png",
+        "particle_white": "images/minigames/tetris/effects/particle_white.png",
+    }
+
+    # UI panel sprites
+    UI_SPRITES = {
+        "grid_frame": "images/minigames/tetris/ui/grid_frame.png",         # Frame around playfield
+        "grid_bg": "images/minigames/tetris/ui/grid_background.png",       # Grid background
+        "panel_next": "images/minigames/tetris/ui/panel_next.png",         # "NEXT" piece panel
+        "panel_hold": "images/minigames/tetris/ui/panel_hold.png",         # "HOLD" piece panel
+        "panel_score": "images/minigames/tetris/ui/panel_score.png",       # Score/stats panel
+        "panel_controls": "images/minigames/tetris/ui/panel_controls.png", # Controls hint panel
+    }
+
+    # Overlay sprites
+    OVERLAY_SPRITES = {
+        "victory": "images/minigames/tetris/overlays/victory_banner.png",
+        "gameover": "images/minigames/tetris/overlays/gameover_banner.png",
+    }
+
+    # Background sprite
+    BACKGROUND_SPRITE = "images/minigames/tetris/background.png"
+
+    # Sprite cache
+    _sprite_cache = {}
+
+    def load_sprite(path, scale=None):
+        """Load a sprite from path with optional scaling.
+
+        Args:
+            path: Path to the sprite image
+            scale: Optional (width, height) tuple to scale to
+
+        Returns:
+            pygame.Surface or None if loading fails
+        """
+        cache_key = (path, scale)
+        if cache_key in _sprite_cache:
+            return _sprite_cache[cache_key]
+
+        try:
+            sprite = pygame.image.load(path).convert_alpha()
+            if scale:
+                sprite = pygame.transform.scale(sprite, scale)
+            _sprite_cache[cache_key] = sprite
+            return sprite
+        except (pygame.error, FileNotFoundError):
+            return None
+
+    def get_block_sprite(piece_type, size=None):
+        """Get sprite for a tetromino block type.
+
+        Args:
+            piece_type: 'I', 'O', 'T', 'S', 'Z', 'J', or 'L'
+            size: Optional (width, height) tuple
+
+        Returns:
+            pygame.Surface or None
+        """
+        if not USE_SPRITES:
+            return None
+        path = BLOCK_SPRITES.get(piece_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_ghost_sprite(piece_type, size=None):
+        """Get ghost sprite for a tetromino block type."""
+        if not USE_SPRITES:
+            return None
+        path = GHOST_SPRITES.get(piece_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_glow_sprite(piece_type, size=None):
+        """Get glow sprite for a tetromino block type."""
+        if not USE_SPRITES:
+            return None
+        path = BLOCK_GLOW_SPRITES.get(piece_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_gear_sprite(gear_size, dimensions=None):
+        """Get a decorative gear sprite.
+
+        Args:
+            gear_size: 'small', 'medium', or 'large'
+            dimensions: Optional (width, height) tuple
+        """
+        if not USE_SPRITES:
+            return None
+        path = GEAR_SPRITES.get(gear_size)
+        if not path:
+            return None
+        return load_sprite(path, dimensions)
+
+    def get_particle_sprite(particle_type, size=None):
+        """Get a line clear particle sprite."""
+        if not USE_SPRITES:
+            return None
+        path = LINE_CLEAR_SPRITES.get(particle_type)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def get_ui_sprite(element, size=None):
+        """Get a UI element sprite."""
+        if not USE_SPRITES:
+            return None
+        path = UI_SPRITES.get(element)
+        if not path:
+            return None
+        return load_sprite(path, size)
+
+    def clear_sprite_cache():
+        """Clear the sprite cache to free memory."""
+        _sprite_cache.clear()
+
+    ####################################################################################################################
+    # END SPRITE CONFIGURATION
+    ####################################################################################################################
+
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
     GRID_COLS = 10
