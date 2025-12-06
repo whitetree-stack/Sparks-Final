@@ -166,11 +166,13 @@ init python in crystal_rhythm:
     }
 
     # Background music for rhythm game (the song to play along with)
-    RHYTHM_MUSIC = "audio/music/regions/conservatory_rhythm_base.ogg"
+    # This is the actual rhythm track that notes are synchronized to!
+    MUSIC_PATH = "audio/music/minigames/crystal_rhythm.ogg"
 
     # Audio cache
     _audio_cache = {}
     _audio_initialized = False
+    _music_playing = False
 
     def init_audio():
         """Initialize pygame mixer for audio playback."""
@@ -225,6 +227,49 @@ init python in crystal_rhythm:
             play_sound("streak_10")
         elif streak == 5:
             play_sound("streak_5")
+
+    def start_music(volume=0.7):
+        """Start playing the rhythm game music track."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        init_audio()
+        try:
+            pygame.mixer.music.load(MUSIC_PATH)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(0)  # Play once (rhythm games typically don't loop)
+            _music_playing = True
+        except:
+            pass
+
+    def stop_music(fadeout_ms=500):
+        """Stop the rhythm music with optional fadeout."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        try:
+            pygame.mixer.music.fadeout(fadeout_ms)
+            _music_playing = False
+        except:
+            pass
+
+    def get_music_position():
+        """Get current position in the music track (in seconds)."""
+        if not USE_AUDIO or not _music_playing:
+            return 0
+        try:
+            return pygame.mixer.music.get_pos() / 1000.0
+        except:
+            return 0
+
+    def is_music_playing():
+        """Check if music is still playing."""
+        if not USE_AUDIO:
+            return False
+        try:
+            return pygame.mixer.music.get_busy()
+        except:
+            return False
 
     # ==================================================================================
     # END AUDIO CONFIGURATION
@@ -917,7 +962,13 @@ screen crystal_rhythm_screen(difficulty="easy"):
 label crystal_rhythm_start(difficulty="easy"):
     $ quick_menu = False
 
+    # Start the rhythm game music (this IS the gameplay - notes are synced to this!)
+    $ crystal_rhythm.start_music()
+
     call screen crystal_rhythm_screen(difficulty)
+
+    # Stop music when game ends
+    $ crystal_rhythm.stop_music()
 
     $ quick_menu = True
     $ result = _return

@@ -210,11 +210,12 @@ init python in clockwork_tetris:
         "game_start": "audio/sfx/minigames/common/game_start.ogg",
     }
 
-    # Background music
-    TETRIS_MUSIC = "audio/music/regions/clocktower_tetris.ogg"
+    # Background music - mechanical, building tension theme
+    MUSIC_PATH = "audio/music/minigames/clocktower_tetris.ogg"
 
     _audio_cache = {}
     _audio_initialized = False
+    _music_playing = False
 
     def init_audio():
         global _audio_initialized
@@ -259,6 +260,31 @@ init python in clockwork_tetris:
             play_sound("line_clear_double")
         elif lines_cleared == 1:
             play_sound("line_clear")
+
+    def start_music(volume=0.6):
+        """Start playing the Tetris music."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        init_audio()
+        try:
+            pygame.mixer.music.load(MUSIC_PATH)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)  # Loop indefinitely
+            _music_playing = True
+        except:
+            pass
+
+    def stop_music(fadeout_ms=500):
+        """Stop the Tetris music with optional fadeout."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        try:
+            pygame.mixer.music.fadeout(fadeout_ms)
+            _music_playing = False
+        except:
+            pass
 
     ####################################################################################################################
     # END AUDIO CONFIGURATION
@@ -1055,7 +1081,13 @@ screen clockwork_tetris_screen(target_lines=20, time_limit=None):
 label clockwork_tetris_start(target_lines=20, time_limit=None):
     $ quick_menu = False
 
+    # Start minigame music
+    $ clockwork_tetris.start_music()
+
     call screen clockwork_tetris_screen(target_lines, time_limit)
+
+    # Stop minigame music
+    $ clockwork_tetris.stop_music()
 
     $ quick_menu = True
     $ result = _return

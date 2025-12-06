@@ -72,6 +72,33 @@ init python:
     MUSIC_BOSS_PHASE3 = "audio/music/regions/boss_battle_finale.ogg"
 
     # ===========================================
+    # MINIGAME MUSIC - Unique tracks for each minigame
+    # ===========================================
+
+    # Library Minigames
+    MUSIC_MINIGAME_RUNE_DECODER = "audio/music/minigames/library_rune_decoder.ogg"  # Mysterious, puzzle-solving
+    MUSIC_MINIGAME_WORD_PUZZLE = "audio/music/minigames/library_word_puzzle.ogg"    # Thoughtful, scholarly
+
+    # Valley Minigames
+    MUSIC_MINIGAME_VINE_BLASTER = "audio/music/minigames/valley_vine_blaster.ogg"   # Action, intense defense
+    MUSIC_MINIGAME_VALLEY_CLIMB = "audio/music/minigames/valley_climb.ogg"          # Upbeat, adventurous climbing
+
+    # Crystal Conservatory Minigames
+    MUSIC_MINIGAME_CRYSTAL_MATCH = "audio/music/minigames/crystal_match3.ogg"       # Sparkling, puzzle casual
+    MUSIC_MINIGAME_CRYSTAL_RHYTHM = "audio/music/minigames/crystal_rhythm.ogg"      # Melodic, rhythm-focused (this IS the rhythm game music)
+
+    # Clocktower Minigames
+    MUSIC_MINIGAME_CLOCKWORK_TETRIS = "audio/music/minigames/clocktower_tetris.ogg" # Mechanical, building tension
+    MUSIC_MINIGAME_GEAR_RUSH = "audio/music/minigames/clocktower_gear_rush.ogg"     # Fast-paced, time pressure
+
+    # Skybridge Minigames
+    MUSIC_MINIGAME_BEACON_QUEST = "audio/music/minigames/skybridge_beacon_quest.ogg"  # Heroic, exploration
+    MUSIC_MINIGAME_BOSS_INTRO = "audio/music/minigames/skybridge_boss_intro.ogg"      # Ominous, buildup
+    MUSIC_MINIGAME_BOSS_PHASE1 = "audio/music/minigames/skybridge_boss_phase1.ogg"    # Battle, determined
+    MUSIC_MINIGAME_BOSS_PHASE2 = "audio/music/minigames/skybridge_boss_phase2.ogg"    # Battle, intensifying
+    MUSIC_MINIGAME_BOSS_PHASE3 = "audio/music/minigames/skybridge_boss_phase3.ogg"    # Battle, epic finale
+
+    # ===========================================
     # EMOTIONAL/CUTSCENE MUSIC
     # ===========================================
 

@@ -217,6 +217,83 @@ init python:
         "game_start": "audio/sfx/minigames/common/game_start.ogg",
     }
 
+    # Music tracks for Valley minigames
+    VALLEY_MUSIC_PATHS = {
+        "vine_blaster": "audio/music/minigames/valley_vine_blaster.ogg",  # Action, intense defense
+        "valley_climb": "audio/music/minigames/valley_climb.ogg",         # Upbeat, adventurous climbing
+    }
+
+    # Audio state
+    _valley_audio_cache = {}
+    _valley_audio_initialized = False
+    _valley_music_playing = False
+
+    def valley_init_audio():
+        """Initialize pygame mixer for Valley minigames."""
+        global _valley_audio_initialized
+        if not _valley_audio_initialized:
+            try:
+                import pygame
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                _valley_audio_initialized = True
+            except:
+                pass
+
+    def valley_play_sound(sound_key, volume=1.0):
+        """Play a sound effect for Valley minigames."""
+        if not VALLEY_USE_AUDIO:
+            return
+        valley_init_audio()
+        import pygame
+        if sound_key in _valley_audio_cache:
+            sound = _valley_audio_cache[sound_key]
+        else:
+            path = VALLEY_AUDIO_PATHS.get(sound_key)
+            if path:
+                try:
+                    sound = pygame.mixer.Sound(path)
+                    _valley_audio_cache[sound_key] = sound
+                except:
+                    return
+            else:
+                return
+        sound.set_volume(volume)
+        sound.play()
+
+    def valley_start_music(game_type, volume=0.6):
+        """Start playing music for a Valley minigame.
+
+        Args:
+            game_type: 'vine_blaster' or 'valley_climb'
+            volume: Music volume (0.0 to 1.0)
+        """
+        global _valley_music_playing
+        if not VALLEY_USE_AUDIO:
+            return
+        valley_init_audio()
+        import pygame
+        music_path = VALLEY_MUSIC_PATHS.get(game_type)
+        if music_path:
+            try:
+                pygame.mixer.music.load(music_path)
+                pygame.mixer.music.set_volume(volume)
+                pygame.mixer.music.play(-1)  # Loop indefinitely
+                _valley_music_playing = True
+            except:
+                pass
+
+    def valley_stop_music(fadeout_ms=500):
+        """Stop Valley minigame music with optional fadeout."""
+        global _valley_music_playing
+        if not VALLEY_USE_AUDIO:
+            return
+        try:
+            import pygame
+            pygame.mixer.music.fadeout(fadeout_ms)
+            _valley_music_playing = False
+        except:
+            pass
+
     ################################################################################################
     # END AUDIO CONFIGURATION
     ################################################################################################
@@ -2288,10 +2365,17 @@ screen vine_blaster_screen():
 ############################################################################
 
 label play_valley_climb:
+    # Start minigame music
+    $ valley_start_music("valley_climb")
+
     show screen valley_climb_screen
     "Arrow Keys to climb! SPACE to attack! ESC to exit."
     $ score = ui.interact()
     hide screen valley_climb_screen
+
+    # Stop minigame music
+    $ valley_stop_music()
+
     "You finished climbing with a score of [score]!"
     menu:
         "Continue":
@@ -2301,10 +2385,17 @@ label play_valley_climb:
     return
 
 label play_vine_blaster:
+    # Start minigame music
+    $ valley_start_music("vine_blaster")
+
     show screen vine_blaster_screen
     "Tristan: Arrow Keys + SPACE | Henry: WASD + E | Destroy the vines!"
     $ score = ui.interact()
     hide screen vine_blaster_screen
+
+    # Stop minigame music
+    $ valley_stop_music()
+
     $ game_display = VineBlasterDisplayable()
     if game_display.victory:
         "The beacon is saved! Score: [score]"

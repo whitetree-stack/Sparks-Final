@@ -227,8 +227,12 @@ init python in gear_rush:
         "game_start": "audio/sfx/minigames/common/game_start.ogg",
     }
 
+    # Background music - fast-paced, time pressure theme
+    MUSIC_PATH = "audio/music/minigames/clocktower_gear_rush.ogg"
+
     _audio_cache = {}
     _audio_initialized = False
+    _music_playing = False
 
     def init_audio():
         global _audio_initialized
@@ -262,6 +266,31 @@ init python in gear_rush:
         if sound:
             sound.set_volume(volume)
             sound.play()
+
+    def start_music(volume=0.6):
+        """Start playing the Gear Rush music."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        init_audio()
+        try:
+            pygame.mixer.music.load(MUSIC_PATH)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)  # Loop indefinitely
+            _music_playing = True
+        except:
+            pass
+
+    def stop_music(fadeout_ms=500):
+        """Stop the Gear Rush music with optional fadeout."""
+        global _music_playing
+        if not USE_AUDIO:
+            return
+        try:
+            pygame.mixer.music.fadeout(fadeout_ms)
+            _music_playing = False
+        except:
+            pass
 
     ####################################################################################################################
     # END AUDIO CONFIGURATION
@@ -848,7 +877,13 @@ screen gear_rush_screen(target_waves=5, time_limit=60):
 label gear_rush_start(target_waves=5, time_limit=60):
     $ quick_menu = False
 
+    # Start minigame music
+    $ gear_rush.start_music()
+
     call screen gear_rush_screen(target_waves, time_limit)
+
+    # Stop minigame music
+    $ gear_rush.stop_music()
 
     $ quick_menu = True
     $ result = _return

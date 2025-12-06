@@ -301,15 +301,18 @@ init python in boss_rush:
         "game_start": "audio/sfx/minigames/common/game_start.ogg",
     }
 
-    # Boss battle music by phase
+    # Boss battle music by phase - unique tracks for each phase
     BOSS_MUSIC = {
-        1: "audio/music/regions/boss_battle_intense.ogg",
-        2: "audio/music/regions/boss_battle_phase2.ogg",
-        3: "audio/music/regions/boss_battle_finale.ogg",
+        "intro": "audio/music/minigames/skybridge_boss_intro.ogg",
+        1: "audio/music/minigames/skybridge_boss_phase1.ogg",
+        2: "audio/music/minigames/skybridge_boss_phase2.ogg",
+        3: "audio/music/minigames/skybridge_boss_phase3.ogg",
     }
 
     _audio_cache = {}
     _audio_initialized = False
+    _music_playing = False
+    _current_phase_music = None
 
     def init_audio():
         global _audio_initialized
@@ -343,6 +346,53 @@ init python in boss_rush:
         if sound:
             sound.set_volume(volume)
             sound.play()
+
+    def start_music(phase=1, volume=0.7, crossfade_ms=1000):
+        """Start playing boss battle music for a specific phase.
+
+        Args:
+            phase: 'intro', 1, 2, or 3 for different battle phases
+            volume: Music volume (0.0 to 1.0)
+            crossfade_ms: Crossfade duration if switching tracks
+        """
+        global _music_playing, _current_phase_music
+        if not USE_AUDIO:
+            return
+        init_audio()
+
+        music_path = BOSS_MUSIC.get(phase)
+        if not music_path or music_path == _current_phase_music:
+            return
+
+        try:
+            # Fadeout current if playing
+            if _music_playing:
+                pygame.mixer.music.fadeout(crossfade_ms // 2)
+                pygame.time.wait(crossfade_ms // 2)
+
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)  # Loop indefinitely
+            _music_playing = True
+            _current_phase_music = music_path
+        except:
+            pass
+
+    def change_phase_music(phase, crossfade_ms=1000):
+        """Change to a different phase's music with crossfade."""
+        start_music(phase=phase, crossfade_ms=crossfade_ms)
+
+    def stop_music(fadeout_ms=1000):
+        """Stop boss battle music with fadeout."""
+        global _music_playing, _current_phase_music
+        if not USE_AUDIO:
+            return
+        try:
+            pygame.mixer.music.fadeout(fadeout_ms)
+            _music_playing = False
+            _current_phase_music = None
+        except:
+            pass
 
     ####################################################################################################################
     # END AUDIO CONFIGURATION
@@ -1188,7 +1238,13 @@ screen boss_rush_screen():
 label boss_rush_start():
     $ quick_menu = False
 
+    # Start boss battle music (intro phase)
+    $ boss_rush.start_music(phase="intro")
+
     call screen boss_rush_screen()
+
+    # Stop boss battle music
+    $ boss_rush.stop_music()
 
     $ quick_menu = True
     $ result = _return

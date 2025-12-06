@@ -326,6 +326,9 @@ label region_1_library:
     jump start_rune_decode
 
 label library_conclusion:
+    # Stop minigame music when library games complete
+    $ library_stop_music()
+
     scene bg_library_int
     show k cheering
     show h a_cheer_eyes_closed:

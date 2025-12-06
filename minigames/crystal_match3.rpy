@@ -127,6 +127,10 @@ init python in crystal_match:
         "game_start": "audio/sfx/minigames/common/game_start.ogg",
     }
 
+    # Music track for this minigame - sparkling, puzzle casual vibe
+    MUSIC_PATH = "audio/music/minigames/crystal_match3.ogg"
+    _music_channel = None
+
     # Audio cache for loaded sounds
     _audio_cache = {}
     _audio_initialized = False
@@ -186,6 +190,28 @@ init python in crystal_match:
             play_sound("combo_2")
         elif combo_level >= 1:
             play_sound("combo_1")
+
+    def start_music(volume=0.6):
+        """Start playing the minigame music."""
+        global _music_channel
+        if not USE_AUDIO:
+            return
+        init_audio()
+        try:
+            pygame.mixer.music.load(MUSIC_PATH)
+            pygame.mixer.music.set_volume(volume)
+            pygame.mixer.music.play(-1)  # Loop indefinitely
+        except:
+            pass  # Silently fail if music file not found
+
+    def stop_music(fadeout_ms=500):
+        """Stop the minigame music with optional fadeout."""
+        if not USE_AUDIO:
+            return
+        try:
+            pygame.mixer.music.fadeout(fadeout_ms)
+        except:
+            pass
 
     # ==================================================================================
     # END AUDIO CONFIGURATION
@@ -904,8 +930,14 @@ screen crystal_match_instructions():
 label crystal_match_start(target_score=1000, moves_limit=30):
     $ quick_menu = False
 
+    # Start minigame music
+    $ crystal_match.start_music()
+
     show screen crystal_match_instructions
     call screen crystal_match_screen(target_score, moves_limit)
+
+    # Stop minigame music
+    $ crystal_match.stop_music()
 
     $ quick_menu = True
     $ result = _return

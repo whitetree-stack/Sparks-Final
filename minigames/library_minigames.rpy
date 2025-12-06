@@ -122,6 +122,12 @@ init python:
         "defeat": "audio/sfx/minigames/common/defeat.ogg",
     }
 
+    # Music tracks for Library minigames
+    LIBRARY_MUSIC_PATHS = {
+        "rune_decoder": "audio/music/minigames/library_rune_decoder.ogg",  # Mysterious, puzzle-solving
+        "word_puzzle": "audio/music/minigames/library_word_puzzle.ogg",    # Thoughtful, scholarly
+    }
+
     def play_library_sound(sound_key, volume=1.0):
         """Play a library minigame sound effect using Ren'Py's audio system."""
         if not LIBRARY_USE_AUDIO:
@@ -129,6 +135,25 @@ init python:
         path = LIBRARY_AUDIO_PATHS.get(sound_key)
         if path and renpy.loadable(path):
             renpy.sound.play(path)
+
+    def library_start_music(game_type, volume=0.6):
+        """Start playing music for a Library minigame.
+
+        Args:
+            game_type: 'rune_decoder' or 'word_puzzle'
+            volume: Music volume (0.0 to 1.0)
+        """
+        if not LIBRARY_USE_AUDIO:
+            return
+        music_path = LIBRARY_MUSIC_PATHS.get(game_type)
+        if music_path and renpy.loadable(music_path):
+            renpy.music.play(music_path, channel="minigame_music", loop=True, fadein=1.0)
+
+    def library_stop_music(fadeout=0.5):
+        """Stop Library minigame music with optional fadeout."""
+        if not LIBRARY_USE_AUDIO:
+            return
+        renpy.music.stop(channel="minigame_music", fadeout=fadeout)
 
 ####################################################################################################################
 # END AUDIO CONFIGURATION
@@ -385,6 +410,9 @@ label start_rune_decode:
     $ decode_state = "playing"
     scene bg_library with fade
 
+    # Start minigame music
+    $ library_start_music("rune_decoder")
+
     "The boys found articles and scrolls filled with peculiar symbols."
     "Some of the symbols looked as if they were recently written, while others had faded with age."
     "Some of the symbols appeared to be English letters, but others were unfamiliar."
@@ -398,6 +426,8 @@ label start_rune_decode:
 label next_phrase:
     if current_phrase_idx + 1 >= len(DECODE_PHRASES):
         $ decode_state = "victory"
+        # Stop minigame music on victory
+        $ library_stop_music()
 
     else:
         $ current_phrase_idx += 1
@@ -757,8 +787,11 @@ label start_rune_wordle:
     $ past_rows     = []
     $ corrupted_slots = set()
     $ game_state    = "playing"
-    scene bg_library 
-    
+    scene bg_library
+
+    # Start minigame music
+    $ library_start_music("word_puzzle")
+
     if current_book == 0:
         show k talking_facing_viewer:
             xalign 0.55 yalign 1.0 zoom 0.6
