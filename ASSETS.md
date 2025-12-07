@@ -2,6 +2,18 @@
 
 This document lists all image and audio assets needed for the game.
 
+## Placeholder System
+
+The game includes a **procedural placeholder system** (`00_placeholders.rpy`) that automatically generates visual stand-ins for any missing assets. This allows you to playtest the entire game without having all media files.
+
+**How it works:**
+- Missing backgrounds display as colored gradients with thematic decorations
+- Missing character sprites display as colored silhouettes with name labels
+- Missing effects display as animated procedural graphics
+- Each placeholder is color-coded to match the intended character/region
+
+**To playtest:** Simply run the game. Any missing images will automatically show placeholders.
+
 ---
 
 ## BACKGROUND IMAGES
