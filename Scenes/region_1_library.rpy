@@ -197,7 +197,8 @@ label region_1_library:
     p "Good luck, Twin Sparks!"
     show light_burst at light_burst_grow_2:
         alpha 0.0
-        xoffset -100
+        xoffset 120
+        yoffset 30
         ease 0.2 alpha 1.0
         ease 0.4 alpha 0.0
     pause 0.2
@@ -251,13 +252,14 @@ label region_1_library:
     show k annoyed_talking
     k "Left behind nothing but muddy pawprints and knocked-over candles."
 
+    show k annoyed
     show t a_pointing_confused_talking:
         xzoom 1
     t "Why doesn't someone just... stop him?"
 
     show t a_pointing_confused
-    show k hands_on_hips_talking:
-        xzoom -1
+    show k annoyed_talking
+    
     k "He's slippery. And he knows every dark corner better than anyone."
     k "By the time you spot his shadow, he's already vanished into the night."
 

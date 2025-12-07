@@ -10,7 +10,7 @@ label region_3_conservatory:
     scene image "#ffffff" with dissolve
 
     scene bg_crystal_conservatory:
-        zoom 0.85
+
         yalign 1.0
         xalign 0.5
     with fade
@@ -32,46 +32,35 @@ label region_3_conservatory:
 
     show t a_back:
         alpha 1.0
-        zoom 0.4
+        zoom 0.15
         xalign 0.42
-        yalign 0.8
+        yalign 0.9
     show h a_back:
         alpha 1.0
-        zoom 0.36
-        xalign 0.52
-        yalign 0.8
+        zoom 0.12
+        xalign 0.45
+        yalign 0.89
     show p facing_away:
         alpha 1.0
-        zoom 0.25
-        xalign 0.62
-        yalign 0.85
+        zoom 0.08
+        xalign 0.49
+        yalign 0.92
 
     "The light faded, and the brothers found themselves in a place of breathtaking beauty."
-    "Towering crystalline structures rose all around them, catching and refracting what little light remained."
+    "A towering crystalline structure rose before them, catching and refracting what little light remained."
     "But something was wrong. The crystals, which should have been gleaming with radiant color, were dull and gray."
 
-    show t a_surprised:
-        xzoom 1
-    show h a_surprised_looking_down:
-        xzoom -1
 
     t "Whoa..."
 
-    show t a_pointing_confused_talking
-    t "It's like being inside a giant chandelier..."
 
-    show t a_pointing_confused
-    show h a_skeptical_talking
+    t "It's like a giant chandelier..."
+
     h "A broken chandelier. These crystals look... sick."
-
-    show h a_skeptical
-    show p happy_talking:
-        xzoom 1
-        zoom 0.30
 
     p "Welcome to the Crystal Conservatory, Twin Sparks!"
 
-    show p worried
+
     p "Though I must say... it looked much more impressive the last time I was here."
 
     show t a_hands_on_hips_expressionless_talking:

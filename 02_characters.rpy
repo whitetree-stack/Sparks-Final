@@ -3,7 +3,7 @@
 # --------------------------------------------------------
 
 # Main heroes - Tristan (red/crimson) and Henry (blue/azure)
-define t = Character("Tristan", color="#ff6b6b", who_outlines=[(2, "#4a1a1a", 0, 0)])
+define t = Character("Tristan", color="#b20000", who_outlines=[(2, "#4a1a1a", 0, 0)])
 define h = Character("Henry", color="#6bb5ff", who_outlines=[(2, "#1a3a4a", 0, 0)])
 
 # Family members - warm earth tones

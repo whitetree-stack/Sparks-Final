@@ -294,7 +294,7 @@ default quick_menu = True
 ## A small floating Pipwick in the corner showing the magical companion is with you
 ## Toggle with show_pipwick_companion variable
 
-default show_pipwick_companion = True
+default show_pipwick_companion = False
 
 screen pipwick_companion():
     zorder 50

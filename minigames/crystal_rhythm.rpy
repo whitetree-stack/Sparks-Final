@@ -308,28 +308,7 @@ init python in crystal_rhythm:
     STATE_VICTORY = "victory"
     STATE_GAMEOVER = "gameover"
 
-    # Pre-defined songs (patterns of notes)
-    # Each note is (time_ms, lane) - time when note should be hit
-    SONGS = {
-        "easy": {
-            "name": "Crystal Waltz",
-            "bpm": 100,
-            "speed": 350,
-            "notes": generate_easy_song()
-        },
-        "medium": {
-            "name": "Gem Symphony",
-            "bpm": 120,
-            "speed": 450,
-            "notes": generate_medium_song()
-        },
-        "hard": {
-            "name": "Diamond Storm",
-            "bpm": 140,
-            "speed": 550,
-            "notes": generate_hard_song()
-        }
-    }
+    
 
     def generate_easy_song():
         """Generate an easy song pattern."""
@@ -405,6 +384,29 @@ init python in crystal_rhythm:
             time = notes[-1][0] + beat_time * 4
 
         return notes
+
+    # Pre-defined songs (patterns of notes)
+    # Each note is (time_ms, lane) - time when note should be hit
+    SONGS = {
+        "easy": {
+            "name": "Crystal Waltz",
+            "bpm": 100,
+            "speed": 350,
+            "notes": generate_easy_song()
+        },
+        "medium": {
+            "name": "Gem Symphony",
+            "bpm": 120,
+            "speed": 450,
+            "notes": generate_medium_song()
+        },
+        "hard": {
+            "name": "Diamond Storm",
+            "bpm": 140,
+            "speed": 550,
+            "notes": generate_hard_song()
+        }
+    }
 
     class Note:
         """A falling note that the player must hit."""
@@ -527,7 +529,7 @@ init python in crystal_rhythm:
 
             effect_surf = pygame.Surface((radius * 2 + 20, radius * 2 + 20), pygame.SRCALPHA)
             pygame.draw.circle(effect_surf, (*self.color, alpha),
-                             (radius + 10, radius + 10), radius, width=4)
+                                (radius + 10, radius + 10), radius, width=4)
             surf.blit(effect_surf, (x + LANE_WIDTH // 2 - radius - 10, y - radius - 10))
 
     class RhythmGame:
@@ -726,8 +728,8 @@ init python in crystal_rhythm:
 
             # Hit zone line
             pygame.draw.line(surf, (200, 150, 255),
-                           (LANES_START_X, HIT_ZONE_Y),
-                           (LANES_START_X + TOTAL_LANES_WIDTH, HIT_ZONE_Y), 3)
+                            (LANES_START_X, HIT_ZONE_Y),
+                            (LANES_START_X + TOTAL_LANES_WIDTH, HIT_ZONE_Y), 3)
 
             # Key indicators
             for i in range(NUM_LANES):
@@ -808,7 +810,7 @@ init python in crystal_rhythm:
                 count_text = font.render("GO!", True, (100, 255, 150))
 
             surf.blit(count_text, (WIDTH // 2 - count_text.get_width() // 2,
-                                  HEIGHT // 2 - count_text.get_height() // 2))
+                                    HEIGHT // 2 - count_text.get_height() // 2))
 
         def draw_end_screen(self, surf):
             """Draw victory or game over screen."""
