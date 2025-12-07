@@ -63,6 +63,12 @@ init -100 python:
             pygame.draw.line(surface, color, (x, y + radius), (x, y + h - radius), width)
             pygame.draw.line(surface, color, (x + w - 1, y + radius), (x + w - 1, y + h - radius), width)
 
+    # Register function globally so minigames can access it
+    renpy.store.draw_rounded_rect = draw_rounded_rect
+    # Also add to Python builtins for universal access
+    import builtins
+    builtins.draw_rounded_rect = draw_rounded_rect
+
     # ============================================================================
     # PLACEHOLDER COLOR SCHEMES
     # ============================================================================
