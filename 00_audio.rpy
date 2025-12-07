@@ -35,8 +35,9 @@ init python:
     MUSIC_BEDROOM_STORM = "audio/music/story/bedroom_storm.ogg"
     MUSIC_PROLOGUE = "audio/music/story/prologue_mysterious.ogg"
 
-    # Main Theme
+    # Main Theme / Title Screen
     MUSIC_MAIN_THEME = "audio/music/story/main_theme.ogg"
+    MUSIC_TITLE_REVEAL = "audio/music/story/title_reveal.ogg"  # Epic stinger for title screen
     MUSIC_HOME_RETURN = "audio/music/story/home_warm.ogg"
 
     # ===========================================

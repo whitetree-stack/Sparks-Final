@@ -76,6 +76,92 @@ image bg_hub_crossroads = "images/bg/bg_hub_crossroads.png"
 image bg_act_2_with_boys = "images/bg/bg_act_2_with_boys.png"
 image bg_act_2_closeup = "images/bg/bg_act_2_closeup.png"
 
+# --------------------------------------------------------
+# Title Screen Elements (layered animated title card)
+# --------------------------------------------------------
+
+# Background layer - dark starfield/beacon realm vista
+image title_bg = "images/title/title_background.png"
+
+# Beacon glow - central glowing beacon element
+image title_beacon = "images/title/title_beacon.png"
+
+# Main title text - "Sparks of the Beacon"
+image title_text = "images/title/title_text.png"
+
+# Subtitle - "A Twin Sparks Adventure"
+image title_subtitle = "images/title/title_subtitle.png"
+
+# Decorative elements
+image title_sparks = "images/title/title_sparks.png"
+image title_rays = "images/title/title_rays.png"
+
+# Animated transforms for title elements
+transform title_beacon_glow:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.45
+    alpha 0.0
+    zoom 0.8
+    ease 1.5 alpha 1.0 zoom 1.0
+    block:
+        ease 2.0 zoom 1.05
+        ease 2.0 zoom 1.0
+        repeat
+
+transform title_beacon_pulse:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.45
+    alpha 0.0
+    pause 0.5
+    ease 1.0 alpha 0.8
+    block:
+        ease 1.5 alpha 1.0
+        ease 1.5 alpha 0.7
+        repeat
+
+transform title_text_fade:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.5
+    alpha 0.0
+    zoom 0.95
+    pause 1.0
+    ease 1.5 alpha 1.0 zoom 1.0
+
+transform title_subtitle_fade:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.65
+    alpha 0.0
+    pause 2.0
+    ease 1.0 alpha 1.0
+
+transform title_rays_spin:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.45
+    alpha 0.0
+    rotate 0
+    pause 0.3
+    ease 1.0 alpha 0.4
+    block:
+        linear 20.0 rotate 360
+        repeat
+
+transform title_sparks_float:
+    anchor (0.5, 0.5)
+    xpos 0.5
+    ypos 0.5
+    alpha 0.0
+    pause 1.5
+    ease 1.0 alpha 0.7
+    block:
+        ease 3.0 yoffset -20
+        ease 3.0 yoffset 20
+        repeat
+
 
 # --------------------------------------------------------
 # Video Helper Function and Screen

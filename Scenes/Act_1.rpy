@@ -582,8 +582,67 @@ label prologue:
 
     "And so, their adventure began."
 
-    scene image "#ffffff" with dissolve
-    pause 2.0
+    # ================================================================
+    # TITLE SCREEN SEQUENCE - Epic reveal before the adventure begins
+    # ================================================================
+
+    # Fade to black as we transition to title
+    scene image "#000000" with dissolve
+    pause 0.5
+
+    # Stop any current music, prepare for title reveal
+    stop music fadeout 1.0
+    pause 0.5
+
+    # Layer 1: Background with starfield
+    show title_bg:
+        alpha 0.0
+        ease 1.5 alpha 1.0
+
+    # Layer 2: Light rays (behind beacon, slowly rotating)
+    show title_rays at title_rays_spin
+
+    pause 0.3
+
+    # Layer 3: Beacon glow appears
+    show title_beacon at title_beacon_glow
+
+    # Play the epic title reveal music/stinger
+    $ renpy.music.play(MUSIC_TITLE_REVEAL, fadein=0.5)
+
+    pause 1.0
+
+    # Layer 4: Floating sparks
+    show title_sparks at title_sparks_float
+
+    pause 0.5
+
+    # Layer 5: Main title text fades in
+    show title_text at title_text_fade
+
+    pause 1.5
+
+    # Layer 6: Subtitle appears
+    show title_subtitle at title_subtitle_fade
+
+    # Hold on full title screen
+    pause 3.0
+
+    # Fade out title elements
+    hide title_subtitle with dissolve
+    hide title_text with dissolve
+    pause 0.3
+    hide title_sparks with dissolve
+    hide title_beacon with dissolve
+    pause 0.3
+    hide title_rays with dissolve
+    hide title_bg with dissolve
+
+    # Brief pause before starting the adventure
+    pause 0.5
+
+    # Crossfade to library music
+    $ renpy.music.play(MUSIC_LIBRARY, fadein=2.0)
 
     jump region_1_library
 

@@ -285,6 +285,113 @@ init -100 python:
             return []
 
 
+    class PlaceholderTitle(renpy.Displayable):
+        """A procedural title screen element placeholder."""
+
+        def __init__(self, name, **kwargs):
+            super(PlaceholderTitle, self).__init__(**kwargs)
+            self.name = name
+
+        def render(self, width, height, st, at):
+            # Full screen size for title elements
+            w, h = 1920, 1080
+
+            render = renpy.Render(w, h)
+
+            import pygame
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+
+            name_lower = self.name.lower()
+            cx, cy = w // 2, h // 2
+
+            if "background" in name_lower or "title_bg" in name_lower:
+                # Dark starfield background
+                for y in range(h):
+                    ratio = y / float(h)
+                    r = int(10 + 20 * ratio)
+                    g = int(5 + 15 * ratio)
+                    b = int(30 + 40 * ratio)
+                    pygame.draw.line(surf, (r, g, b), (0, y), (w, y))
+
+                # Add stars
+                import random
+                random.seed(42)  # Consistent stars
+                for _ in range(200):
+                    sx = random.randint(0, w)
+                    sy = random.randint(0, h)
+                    brightness = random.randint(100, 255)
+                    size = random.choice([1, 1, 1, 2])
+                    pygame.draw.circle(surf, (brightness, brightness, brightness), (sx, sy), size)
+
+            elif "beacon" in name_lower:
+                # Central glowing beacon
+                beacon_y = int(h * 0.45)
+                # Outer glow
+                for radius in range(150, 30, -10):
+                    alpha = int(50 * (1 - radius / 150))
+                    pygame.draw.circle(surf, (255, 220, 100, alpha), (cx, beacon_y), radius)
+                # Inner beacon
+                pygame.draw.circle(surf, (255, 240, 180), (cx, beacon_y), 40)
+                pygame.draw.circle(surf, (255, 255, 220), (cx, beacon_y), 25)
+
+            elif "text" in name_lower and "sub" not in name_lower:
+                # Main title text
+                font = pygame.font.Font(None, 80)
+                title = "SPARKS OF THE BEACON"
+                text_surf = font.render(title, True, (255, 220, 150))
+                text_rect = text_surf.get_rect(center=(cx, int(h * 0.5)))
+                # Glow effect
+                glow_font = pygame.font.Font(None, 84)
+                glow_surf = glow_font.render(title, True, (255, 180, 50, 100))
+                glow_rect = glow_surf.get_rect(center=(cx, int(h * 0.5)))
+                surf.blit(glow_surf, glow_rect)
+                surf.blit(text_surf, text_rect)
+
+            elif "subtitle" in name_lower:
+                # Subtitle
+                font = pygame.font.Font(None, 40)
+                subtitle = "A Twin Sparks Adventure"
+                text_surf = font.render(subtitle, True, (200, 200, 220))
+                text_rect = text_surf.get_rect(center=(cx, int(h * 0.65)))
+                surf.blit(text_surf, text_rect)
+
+            elif "rays" in name_lower:
+                # Light rays emanating from center
+                beacon_y = int(h * 0.45)
+                for i in range(16):
+                    angle = i * (3.14159 * 2 / 16) + st * 0.1
+                    x2 = cx + int(600 * math.cos(angle))
+                    y2 = beacon_y + int(600 * math.sin(angle))
+                    pygame.draw.line(surf, (255, 220, 100, 60), (cx, beacon_y), (x2, y2), 8)
+
+            elif "sparks" in name_lower:
+                # Floating sparks/particles
+                import random
+                random.seed(int(st * 10) % 100)
+                for i in range(30):
+                    sx = random.randint(int(w * 0.2), int(w * 0.8))
+                    sy = random.randint(int(h * 0.3), int(h * 0.7))
+                    sy += int(math.sin(st + i) * 20)  # Gentle floating
+                    size = random.randint(2, 5)
+                    brightness = random.randint(180, 255)
+                    pygame.draw.circle(surf, (brightness, brightness, 100), (sx, sy), size)
+
+            else:
+                # Generic title element
+                font = pygame.font.Font(None, 36)
+                text_surf = font.render(f"[TITLE: {self.name}]", True, (255, 255, 255))
+                text_rect = text_surf.get_rect(center=(cx, cy))
+                surf.blit(text_surf, text_rect)
+
+            render.blit(surf, (0, 0))
+            if "rays" in name_lower or "sparks" in name_lower:
+                renpy.redraw(self, 0.05)  # Animate
+            return render
+
+        def visit(self):
+            return []
+
+
     class PlaceholderEffect(renpy.Displayable):
         """A procedural effect placeholder (for light_burst, rain, etc.)."""
 
@@ -349,6 +456,9 @@ init -99 python:
         # Determine type of placeholder needed
         if name_lower.startswith("bg") or "background" in name_lower:
             return PlaceholderBackground(name_str)
+
+        elif name_lower.startswith("title") or "title_" in name_lower:
+            return PlaceholderTitle(name_str)
 
         elif "light_burst" in name_lower or "rain" in name_lower or "effect" in name_lower:
             return PlaceholderEffect(name_str)

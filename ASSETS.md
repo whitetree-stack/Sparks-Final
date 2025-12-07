@@ -16,6 +16,29 @@ The game includes a **procedural placeholder system** (`00_placeholders.rpy`) th
 
 ---
 
+## TITLE SCREEN
+
+**Location:** `images/title/`
+
+| Filename | Description |
+|----------|-------------|
+| `title_background.png` | Dark starfield/beacon realm vista (1920x1080) |
+| `title_beacon.png` | Central glowing beacon element (transparent) |
+| `title_text.png` | Main title "Sparks of the Beacon" text (transparent) |
+| `title_subtitle.png` | Subtitle "A Twin Sparks Adventure" (transparent) |
+| `title_rays.png` | Light rays emanating from beacon center (transparent, for rotation) |
+| `title_sparks.png` | Floating spark particles overlay (transparent) |
+
+**Audio:** `audio/music/story/title_reveal.ogg` - Epic stinger/swell for title reveal
+
+**Animation Notes:**
+- `title_rays` rotates slowly (20 second full rotation)
+- `title_beacon` pulses with gentle zoom
+- `title_sparks` float gently up and down
+- Elements fade in sequentially for dramatic effect
+
+---
+
 ## BACKGROUND IMAGES
 
 **Location:** `images/bg/`
