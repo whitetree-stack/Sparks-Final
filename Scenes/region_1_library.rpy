@@ -245,11 +245,11 @@ label region_1_library:
 
     show h a_unsure_looking_right
     show k hands_on_hips_talking
-    k "That grumpy old mole? Yes, I'm afraid so."
-    k "He tunneled up from below and drained the lantern's light while I was shelving books."
+    k "That grumpy old raccoon? Yes, I'm afraid so."
+    k "He snuck in through the shadows and drained the lantern's light while I was shelving books."
 
     show k annoyed_talking
-    k "Left behind nothing but claw marks and the smell of damp earth."
+    k "Left behind nothing but muddy pawprints and knocked-over candles."
 
     show t a_pointing_confused_talking:
         xzoom 1
@@ -258,8 +258,8 @@ label region_1_library:
     show t a_pointing_confused
     show k hands_on_hips_talking:
         xzoom -1
-    k "He's slippery. And he knows these tunnels better than anyone."
-    k "By the time you spot his shadow, he's already three burrows away."
+    k "He's slippery. And he knows every dark corner better than anyone."
+    k "By the time you spot his shadow, he's already vanished into the night."
 
     show k annoyed
     show t a_hands_on_hips_expressionless_talking

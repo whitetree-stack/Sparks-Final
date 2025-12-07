@@ -250,7 +250,7 @@ label prologue:
 
     show t bd_on_knees
     show p frustrated_night
-    p "A mole. A very grumpy, very determined mole named Bedimurk."
+    p "A raccoon. A very grumpy, very sneaky raccoon named Bedimurk."
     p "He wants to plunge the entire realm into eternal darkness!"
 
     show h bd_sitting_up_worried_talking
@@ -258,8 +258,8 @@ label prologue:
 
     show h bd_sitting_up_worried
     show p sad_night
-    p "Bedimurk has terrible eyesight—even for a mole. He's always struggled to see."
-    p "He believes if {i}everyone{/i} lives in darkness, then no one will have an advantage over him."
+    p "Bedimurk is nocturnal—he only feels comfortable at night. Bright light hurts his sensitive eyes."
+    p "He believes if {i}everyone{/i} lives in darkness, then it will always be nighttime for him."
 
     show t bd_on_knees_talking
     t "That's... kind of sad, actually."

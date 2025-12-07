@@ -259,7 +259,7 @@ label region_5_skybridge:
 
     show h a_unsure_looking_right
     show g frustrated_talking
-    g "Yes. That poor, misguided mole."
+    g "Yes. That poor, misguided raccoon."
 
     show g worried
     g "He's been gathering power at the far end of the bridge. Drawing in all the darkness of the realm."
@@ -493,7 +493,7 @@ label skybridge_quest_victory:
     with vpunch
 
     "A bridge of pure light materialized before them, stretching toward a dark platform in the distance."
-    "Upon it stood a hunched figure in an oversized cape—a mole with comically thick glasses perched on his snout."
+    "Upon it stood a hunched figure in an oversized cape—a raccoon with a dark mask across his face, shielding his eyes."
 
     show t a_surprised:
         zoom 0.35
@@ -509,11 +509,11 @@ label skybridge_quest_victory:
     t "There he is..."
     h "He's... smaller than I expected."
 
-    "Bedimurk squinted in their direction, adjusting his glasses repeatedly."
+    "Bedimurk winced in their direction, pulling his cape over his eyes."
 
     b "Who's there?! I can hear footsteps! Is that the Twin Sparks?"
 
-    b "Ugh, this light is hurting my eyes! You've restored the beacons, haven't you?!"
+    b "Ugh, this light is BLINDING! You've restored the beacons, haven't you?!"
 
     b "Why can't you just leave things DARK like they're supposed to be?!"
 
@@ -530,10 +530,10 @@ label skybridge_quest_victory:
 
     b "Stop ME?! I'm trying to make things FAIR!"
 
-    b "You don't know what it's like! Everyone else gets to see perfectly fine!"
-    b "Beautiful sunsets! Pretty colors! Reading books without squinting!"
+    b "You don't know what it's like! Everyone else loves the daylight!"
+    b "Picnics in the sun! Playing outside! Staying awake when everyone else is!"
 
-    b "Well if {i}I{/i} can't see, then NOBODY gets to see! That's FAIR!"
+    b "Well if {i}I{/i} can't enjoy the light, then NOBODY gets any! That's FAIR!"
 
     show t a_hands_on_hips_expressionless_talking
     t "That's not fair at all! That's just making everyone miserable!"
@@ -687,8 +687,8 @@ label skybridge_victory:
 
     b "AAAAGH! Too bright! TOO BRIGHT!"
 
-    "He tripped over his own cape and tumbled to the ground, his thick glasses flying off."
-    "Without them, he looked smaller. Vulnerable. Just a frightened mole squinting at the world."
+    "He tripped over his own cape and tumbled to the ground, curling up in a ball."
+    "Without his bravado, he looked smaller. Vulnerable. Just a frightened raccoon hiding from the light."
 
     show t a_surprised:
         zoom 0.35
@@ -704,11 +704,11 @@ label skybridge_victory:
 
     t "Wait... he's not fighting back?"
 
-    b "My glasses! Where are my glasses?! I can't see anything!"
+    b "Make it stop! Please, the light HURTS!"
 
-    "Bedimurk patted the ground frantically, tears forming in his squinted eyes."
+    "Bedimurk covered his eyes with his paws, tears streaming down his masked face."
 
-    b "Please... everything's just blurs and shapes without them..."
+    b "Please... it's too bright... it's always too bright..."
 
     show h a_unsure_looking_right_talking
     h "Tristan... he looks really scared."
@@ -717,30 +717,31 @@ label skybridge_victory:
     show t a_hands_on_hips_expressionless_talking
     t "Yeah..."
 
-    "Henry spotted the glasses nearby. He walked over and picked them up."
+    "Henry walked over slowly and knelt beside the trembling raccoon."
 
     show h a_thumbs_up_smile_talking:
         xzoom 1
-    h "Here. I found your glasses."
+    h "Hey. We're not going to hurt you. You can open your eyes."
 
     show h a_thumbs_up_smile
-    b "You... you're giving them back? But I tried to destroy everything you love!"
+    b "You... you're not attacking? But I tried to destroy everything you love!"
 
     show t a_hands_on_hips_smile_talking
-    t "You're not a bad mole, Bedimurk. You're just... really frustrated."
+    t "You're not a bad raccoon, Bedimurk. You're just... really lonely."
 
     show t a_hands_on_hips_smile
-    b "I just... I just wanted to fit in. I wanted things to be equal."
+    b "I just... I just wanted to fit in. Everyone else is awake during the day. Everyone else loves the sunshine."
+    b "But for me, it just HURTS."
 
     show h a_smile_looking_right_talking
-    h "But making everyone blind doesn't make things equal. It just makes everyone sad."
+    h "But making everyone live in darkness doesn't help anyone. It just makes everyone sad."
 
     show h a_smile_looking_right
     show t a_pointing_smile_talking
-    t "What if instead of making the world darker, we helped you see better?"
+    t "What if instead of blocking the light... we found a way to make it not hurt?"
 
     show t a_pointing_smile
-    b "See... better? But I've always had terrible eyesight. Even these glasses barely help."
+    b "Not... hurt? But light has always hurt my eyes. That's just how it is for nocturnal creatures."
 
     show p happy_talking:
         zoom 0.28
@@ -752,7 +753,7 @@ label skybridge_victory:
     p "Light infused with the power of knowledge, harmony, nature, and time!"
 
     show p proud
-    p "Perhaps... we could use that light to help Bedimurk's eyes?"
+    p "Perhaps... we could use that gentle light to soothe Bedimurk's eyes?"
 
     show g presenting_talking:
         zoom 0.3
@@ -803,13 +804,13 @@ label skybridge_victory:
     g "It's about trying to do better."
 
     b "Then I'll try. I'll try really hard."
-    b "I'll help maintain the beacons! I'll keep the tunnels clear!"
+    b "I'll help maintain the beacons! I'll watch over them at night when everyone else is asleep!"
     b "And I'll never, EVER try to dim the lights again!"
 
-    "Bedimurk stood up straight—well, as straight as a mole can stand—with new determination in his now-clear eyes."
+    "Bedimurk stood up straight, his masked face beaming with new determination."
 
     b "Thank you, Twin Sparks. You've given me something I never had before."
-    b "Hope. And really good glasses."
+    b "Hope. And friends who are awake when I am."
 
     "The Skybridge Beacon blazed to life—brighter than ever before."
 

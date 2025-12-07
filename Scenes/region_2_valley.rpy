@@ -245,15 +245,15 @@ label region_2_valley:
     r "Those vines showed up about a week ago. They've been squeezing the life out of it ever since."
 
     show t a_pointing_confused_talking
-    t "Was it Bedimurk? The mole?"
+    t "Was it Bedimurk? The raccoon?"
 
     show t a_pointing_confused
     show r surprised_talking
     r "You've heard of him? Yeah, that furry menace planted these vines himself."
-    r "Saw him scurrying away with my own eyes. Big ol' mole in a cape, squinting at everything."
+    r "Saw him scurrying away with my own eyes. Big ol' raccoon in a cape, shielding his eyes from the light."
 
     show r frustrated_talking
-    r "He's got some kind of grudge against the light. Keeps muttering about 'fairness' and 'equal darkness.'"
+    r "He's got some kind of grudge against the light. Keeps muttering about 'too bright' and 'eternal night.'"
 
     show r frustrated
     

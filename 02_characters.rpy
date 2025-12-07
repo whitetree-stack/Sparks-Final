@@ -16,13 +16,13 @@ define g = Character("G-Mom", color="#ddb892")
 # Magical companion - golden sparkle
 define p = Character("Pipwick", color="#ffd700", who_outlines=[(2, "#5a4500", 0, 0)])
 
-# Villain - Bedimurk the Mole (deep purple/shadow)
+# Villain - Bedimurk the Raccoon (deep purple/shadow)
 define b = Character("Bedimurk", color="#6b4c8a", who_outlines=[(2, "#1a0a2a", 0, 0)])
 
-# Bedimurk image placeholder (anthropomorphic mole with thick glasses)
+# Bedimurk image placeholder (anthropomorphic raccoon with mask markings)
 image bedimurk neutral = "images/characters/Bedimurk/rmbg/neutral.png"
 image bedimurk angry = "images/characters/Bedimurk/rmbg/angry.png"
-image bedimurk squinting = "images/characters/Bedimurk/rmbg/squinting.png"
+image bedimurk shielding = "images/characters/Bedimurk/rmbg/shielding.png"
 image bedimurk defeated = "images/characters/Bedimurk/rmbg/defeated.png"
 image bedimurk sad = "images/characters/Bedimurk/rmbg/sad.png"
 image bedimurk surprised = "images/characters/Bedimurk/rmbg/surprised.png"

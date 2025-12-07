@@ -1,5 +1,5 @@
 # skybridge_bossrush.rpy - Skybridge Boss Rush Minigame
-# Epic finale confrontation with Bedimurk the Mole
+# Epic finale confrontation with Bedimurk the Raccoon
 
 ####################################################################################################################
 # BEDIMURK BOSS RUSH MINIGAME
@@ -46,7 +46,7 @@ init python in boss_rush:
         "orb_blue_trail": "images/minigames/bossrush/projectiles/orb_blue_trail.png",
     }
 
-    # Bedimurk boss sprites (multi-phase mole villain)
+    # Bedimurk boss sprites (multi-phase raccoon villain)
     BOSS_SPRITES = {
         # Phase 1 (full health)
         "phase1_idle": "images/minigames/bossrush/boss/phase1_idle.png",
@@ -595,7 +595,7 @@ init python in boss_rush:
             pygame.draw.circle(surf, (255, 200, 255), (int(self.x), int(self.y)), int(self.radius * 0.4 * pulse))
 
     class ShadowKing:
-        """The final boss - Bedimurk the Mole."""
+        """The final boss - Bedimurk the Raccoon."""
         def __init__(self):
             self.x = WIDTH // 2
             self.y = 200
@@ -1126,7 +1126,7 @@ init python in boss_rush:
                 font_title = pygame.font.Font(None, 96)
                 font_sub = pygame.font.Font(None, 48)
 
-                title = font_title.render("BEDIMURK THE MOLE", True, (200, 100, 255))
+                title = font_title.render("BEDIMURK THE RACCOON", True, (200, 100, 255))
                 surf.blit(title, (WIDTH // 2 - title.get_width() // 2, HEIGHT // 2 - 50))
 
                 if self.intro_timer > 1000:
