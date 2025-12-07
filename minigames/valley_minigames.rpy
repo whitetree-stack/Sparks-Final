@@ -2284,8 +2284,8 @@ init python:
 
             meter_x = (width - 300) // 2
             meter_y = 30
-            pygame.draw.rect(self.surface, (30, 30, 40), (meter_x - 2, meter_y - 2, 304, 34), border_radius=5)
-            pygame.draw.rect(self.surface, (50, 50, 60), (meter_x, meter_y, 300, 30), border_radius=4)
+            draw_rounded_rect(self.surface, (30, 30, 40), (meter_x - 2, meter_y - 2, 304, 34), radius=5)
+            draw_rounded_rect(self.surface, (50, 50, 60), (meter_x, meter_y, 300, 30), radius=4)
             fill = int((self.encroachment / 100) * 300)
             if self.encroachment > 75:
                 color = (255, 80, 80)
@@ -2294,8 +2294,8 @@ init python:
             else:
                 color = (100, 255, 150)
             if fill > 0:
-                pygame.draw.rect(self.surface, color, (meter_x, meter_y, fill, 30), border_radius=4)
-            pygame.draw.rect(self.surface, (200, 200, 220), (meter_x, meter_y, 300, 30), 2, border_radius=4)
+                draw_rounded_rect(self.surface, color, (meter_x, meter_y, fill, 30), radius=4)
+            draw_rounded_rect(self.surface, (200, 200, 220), (meter_x, meter_y, 300, 30), radius=4, width=2)
             
             for i in range(vine_blaster.MAX_SECOND_WINDS):
                 sw_x = meter_x + 310 + i * 25

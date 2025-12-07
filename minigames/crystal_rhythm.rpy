@@ -472,17 +472,17 @@ init python in crystal_rhythm:
             glow_alpha = int(60 + 30 * math.sin(self.glow_phase))
             glow_rect = pygame.Rect(-10, -10, LANE_WIDTH + 20, NOTE_HEIGHT + 20)
             glow_surf = pygame.Surface((LANE_WIDTH + 20, NOTE_HEIGHT + 20), pygame.SRCALPHA)
-            pygame.draw.rect(glow_surf, (*glow_color, glow_alpha), glow_surf.get_rect(), border_radius=12)
+            draw_rounded_rect(glow_surf, (*glow_color, glow_alpha), glow_surf.get_rect(), radius=12)
             surf.blit(glow_surf, (x - 10, y - 10))
 
             # Main note body
             note_alpha = int(self.alpha)
-            pygame.draw.rect(note_surf, (*color, note_alpha), note_surf.get_rect(), border_radius=10)
+            draw_rounded_rect(note_surf, (*color, note_alpha), note_surf.get_rect(), radius=10)
 
             # Highlight
             highlight_rect = pygame.Rect(5, 5, LANE_WIDTH - 10, NOTE_HEIGHT // 3)
             highlight_color = tuple(min(255, c + 50) for c in color)
-            pygame.draw.rect(note_surf, (*highlight_color, note_alpha), highlight_rect, border_radius=5)
+            draw_rounded_rect(note_surf, (*highlight_color, note_alpha), highlight_rect, radius=5)
 
             surf.blit(note_surf, (x, y))
 
@@ -723,7 +723,7 @@ init python in crystal_rhythm:
 
             # Hit zone
             hz_surf = pygame.Surface((TOTAL_LANES_WIDTH, HIT_ZONE_HEIGHT), pygame.SRCALPHA)
-            pygame.draw.rect(hz_surf, (80, 60, 120, 180), hz_surf.get_rect(), border_radius=5)
+            draw_rounded_rect(hz_surf, (80, 60, 120, 180), hz_surf.get_rect(), radius=5)
             surf.blit(hz_surf, (LANES_START_X, HIT_ZONE_Y - HIT_ZONE_HEIGHT // 2))
 
             # Hit zone line
@@ -745,9 +745,9 @@ init python in crystal_rhythm:
                 key_alpha = 255 if self.lane_pressed[i] else 180
 
                 key_surf = pygame.Surface((key_size, key_size), pygame.SRCALPHA)
-                pygame.draw.rect(key_surf, (*key_color, key_alpha), key_surf.get_rect(), border_radius=10)
+                draw_rounded_rect(key_surf, (*key_color, key_alpha), key_surf.get_rect(), radius=10)
                 if self.lane_pressed[i]:
-                    pygame.draw.rect(key_surf, (255, 255, 255, 100), key_surf.get_rect(), border_radius=10)
+                    draw_rounded_rect(key_surf, (255, 255, 255, 100), key_surf.get_rect(), radius=10)
                 surf.blit(key_surf, (key_x, key_y))
 
                 # Key label
@@ -791,10 +791,10 @@ init python in crystal_rhythm:
             bar_x = WIDTH // 2 - bar_width // 2
             bar_y = 80
 
-            pygame.draw.rect(surf, (40, 30, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=5)
+            draw_rounded_rect(surf, (40, 30, 60), (bar_x, bar_y, bar_width, bar_height), radius=5)
             fill_width = int(bar_width * progress)
             if fill_width > 0:
-                pygame.draw.rect(surf, (150, 100, 200), (bar_x, bar_y, fill_width, bar_height), border_radius=5)
+                draw_rounded_rect(surf, (150, 100, 200), (bar_x, bar_y, fill_width, bar_height), radius=5)
 
         def draw_countdown(self, surf):
             """Draw countdown before song starts."""

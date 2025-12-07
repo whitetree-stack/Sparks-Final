@@ -714,17 +714,17 @@ init python in gear_rush:
             bar_y = 30
 
             # Background
-            pygame.draw.rect(surf, (40, 30, 60), (bar_x - 5, bar_y - 5, bar_width + 10, bar_height + 10), border_radius=10)
+            draw_rounded_rect(surf, (40, 30, 60), (bar_x - 5, bar_y - 5, bar_width + 10, bar_height + 10), radius=10)
 
             # Fill
             fill_ratio = self.time_remaining / self.time_limit
             fill_width = int(bar_width * fill_ratio)
             fill_color = (100, 200, 100) if fill_ratio > 0.3 else (255, 150, 50) if fill_ratio > 0.15 else (255, 80, 80)
             if fill_width > 0:
-                pygame.draw.rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), border_radius=8)
+                draw_rounded_rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), radius=8)
 
             # Border
-            pygame.draw.rect(surf, (150, 130, 180), (bar_x - 5, bar_y - 5, bar_width + 10, bar_height + 10), width=3, border_radius=10)
+            draw_rounded_rect(surf, (150, 130, 180), (bar_x - 5, bar_y - 5, bar_width + 10, bar_height + 10), radius=10, width=3)
 
             # Time text
             time_text = font_medium.render(f"{self.time_remaining:.1f}s", True, (255, 255, 255))

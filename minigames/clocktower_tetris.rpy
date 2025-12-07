@@ -800,8 +800,8 @@ init python in clockwork_tetris:
             grid_height = GRID_ROWS * CELL_SIZE
 
             grid_surf = pygame.Surface((grid_width + 20, grid_height + 20), pygame.SRCALPHA)
-            pygame.draw.rect(grid_surf, (20, 15, 35, 220), grid_surf.get_rect(), border_radius=10)
-            pygame.draw.rect(grid_surf, (100, 80, 140), grid_surf.get_rect(), width=3, border_radius=10)
+            draw_rounded_rect(grid_surf, (20, 15, 35, 220), grid_surf.get_rect(), radius=10)
+            draw_rounded_rect(grid_surf, (100, 80, 140), grid_surf.get_rect(), radius=10, width=3)
             surf.blit(grid_surf, (GRID_OFFSET_X - 10, GRID_OFFSET_Y - 10))
 
             # Grid lines
@@ -822,8 +822,8 @@ init python in clockwork_tetris:
                     x = GRID_OFFSET_X + bx * CELL_SIZE
                     y = GRID_OFFSET_Y + by * CELL_SIZE
                     ghost_surf = pygame.Surface((CELL_SIZE - 2, CELL_SIZE - 2), pygame.SRCALPHA)
-                    pygame.draw.rect(ghost_surf, (*color, 50), ghost_surf.get_rect(), border_radius=4)
-                    pygame.draw.rect(ghost_surf, (*color, 100), ghost_surf.get_rect(), width=2, border_radius=4)
+                    draw_rounded_rect(ghost_surf, (*color, 50), ghost_surf.get_rect(), radius=4)
+                    draw_rounded_rect(ghost_surf, (*color, 100), ghost_surf.get_rect(), radius=4, width=2)
                     surf.blit(ghost_surf, (x + 1, y + 1))
 
         def draw_blocks(self, surf, time_ms):
@@ -841,15 +841,15 @@ init python in clockwork_tetris:
             block_surf = pygame.Surface((CELL_SIZE - 2, CELL_SIZE - 2), pygame.SRCALPHA)
 
             # Main block
-            pygame.draw.rect(block_surf, color, block_surf.get_rect(), border_radius=4)
+            draw_rounded_rect(block_surf, color, block_surf.get_rect(), radius=4)
 
             # Highlight
             highlight = tuple(min(255, c + 40) for c in color)
-            pygame.draw.rect(block_surf, highlight, (2, 2, CELL_SIZE - 10, CELL_SIZE // 3), border_radius=2)
+            draw_rounded_rect(block_surf, highlight, (2, 2, CELL_SIZE - 10, CELL_SIZE // 3), radius=2)
 
             # Shadow
             shadow = tuple(max(0, c - 40) for c in color)
-            pygame.draw.rect(block_surf, shadow, (2, CELL_SIZE - 12, CELL_SIZE - 10, 6), border_radius=2)
+            draw_rounded_rect(block_surf, shadow, (2, CELL_SIZE - 12, CELL_SIZE - 10, 6), radius=2)
 
             surf.blit(block_surf, (x + 1, y + 1))
 
@@ -871,7 +871,7 @@ init python in clockwork_tetris:
                     glow_surf = pygame.Surface((int(CELL_SIZE * scale) + glow_size * 2,
                                                int(CELL_SIZE * scale) + glow_size * 2), pygame.SRCALPHA)
                     glow_alpha = int(80 * glow_intensity)
-                    pygame.draw.rect(glow_surf, (*glow, glow_alpha), glow_surf.get_rect(), border_radius=8)
+                    draw_rounded_rect(glow_surf, (*glow, glow_alpha), glow_surf.get_rect(), radius=8)
                     surf.blit(glow_surf, (x - glow_size, y - glow_size))
 
                     self.draw_block(surf, x, y, color, time_ms, piece.glow_phase)
@@ -887,8 +887,8 @@ init python in clockwork_tetris:
             panel_y = GRID_OFFSET_Y
 
             next_panel = pygame.Surface((180, 200), pygame.SRCALPHA)
-            pygame.draw.rect(next_panel, (30, 20, 50, 200), next_panel.get_rect(), border_radius=10)
-            pygame.draw.rect(next_panel, (100, 80, 140), next_panel.get_rect(), width=2, border_radius=10)
+            draw_rounded_rect(next_panel, (30, 20, 50, 200), next_panel.get_rect(), radius=10)
+            draw_rounded_rect(next_panel, (100, 80, 140), next_panel.get_rect(), radius=10, width=2)
             surf.blit(next_panel, (panel_x, panel_y))
 
             next_label = font_medium.render("NEXT", True, (200, 180, 255))
@@ -905,14 +905,14 @@ init python in clockwork_tetris:
                     y = preview_y + by * 30
                     color = self.next_piece.data['color']
                     block_surf = pygame.Surface((28, 28), pygame.SRCALPHA)
-                    pygame.draw.rect(block_surf, color, block_surf.get_rect(), border_radius=3)
+                    draw_rounded_rect(block_surf, color, block_surf.get_rect(), radius=3)
                     surf.blit(block_surf, (x, y))
 
             # Hold piece panel (left)
             hold_x = GRID_OFFSET_X - 220
             hold_panel = pygame.Surface((180, 200), pygame.SRCALPHA)
-            pygame.draw.rect(hold_panel, (30, 20, 50, 200), hold_panel.get_rect(), border_radius=10)
-            pygame.draw.rect(hold_panel, (100, 80, 140), hold_panel.get_rect(), width=2, border_radius=10)
+            draw_rounded_rect(hold_panel, (30, 20, 50, 200), hold_panel.get_rect(), radius=10)
+            draw_rounded_rect(hold_panel, (100, 80, 140), hold_panel.get_rect(), radius=10, width=2)
             surf.blit(hold_panel, (hold_x, panel_y))
 
             hold_label = font_medium.render("HOLD", True, (200, 180, 255))
@@ -927,14 +927,14 @@ init python in clockwork_tetris:
                     color = self.held_piece.data['color']
                     alpha = 255 if self.can_hold else 100
                     block_surf = pygame.Surface((28, 28), pygame.SRCALPHA)
-                    pygame.draw.rect(block_surf, (*color, alpha), block_surf.get_rect(), border_radius=3)
+                    draw_rounded_rect(block_surf, (*color, alpha), block_surf.get_rect(), radius=3)
                     surf.blit(block_surf, (x, y))
 
             # Score panel
             score_y = panel_y + 220
             score_panel = pygame.Surface((180, 280), pygame.SRCALPHA)
-            pygame.draw.rect(score_panel, (30, 20, 50, 200), score_panel.get_rect(), border_radius=10)
-            pygame.draw.rect(score_panel, (100, 80, 140), score_panel.get_rect(), width=2, border_radius=10)
+            draw_rounded_rect(score_panel, (30, 20, 50, 200), score_panel.get_rect(), radius=10)
+            draw_rounded_rect(score_panel, (100, 80, 140), score_panel.get_rect(), radius=10, width=2)
             surf.blit(score_panel, (panel_x, score_y))
 
             # Score
@@ -971,8 +971,8 @@ init python in clockwork_tetris:
             # Controls hint (left panel)
             controls_y = panel_y + 220
             controls_panel = pygame.Surface((180, 280), pygame.SRCALPHA)
-            pygame.draw.rect(controls_panel, (30, 20, 50, 200), controls_panel.get_rect(), border_radius=10)
-            pygame.draw.rect(controls_panel, (100, 80, 140), controls_panel.get_rect(), width=2, border_radius=10)
+            draw_rounded_rect(controls_panel, (30, 20, 50, 200), controls_panel.get_rect(), radius=10)
+            draw_rounded_rect(controls_panel, (100, 80, 140), controls_panel.get_rect(), radius=10, width=2)
             surf.blit(controls_panel, (hold_x, controls_y))
 
             controls_label = font_small.render("CONTROLS", True, (180, 160, 220))

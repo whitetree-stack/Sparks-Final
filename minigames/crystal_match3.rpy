@@ -701,8 +701,8 @@ init python in crystal_match:
 
             # Draw grid background
             grid_bg = pygame.Surface((GRID_COLS * CELL_SIZE + 20, GRID_ROWS * CELL_SIZE + 20), pygame.SRCALPHA)
-            pygame.draw.rect(grid_bg, (20, 10, 40, 200), grid_bg.get_rect(), border_radius=15)
-            pygame.draw.rect(grid_bg, (100, 80, 150, 150), grid_bg.get_rect(), width=3, border_radius=15)
+            draw_rounded_rect(grid_bg, (20, 10, 40, 200), grid_bg.get_rect(), radius=15)
+            draw_rounded_rect(grid_bg, (100, 80, 150, 150), grid_bg.get_rect(), radius=15, width=3)
             surf.blit(grid_bg, (GRID_OFFSET_X - 10, GRID_OFFSET_Y - 10))
 
             # Draw grid cells
@@ -713,7 +713,7 @@ init python in crystal_match:
                     # Cell background
                     cell_color = (40, 25, 60, 100) if (row + col) % 2 == 0 else (50, 35, 70, 100)
                     cell_surf = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4), pygame.SRCALPHA)
-                    pygame.draw.rect(cell_surf, cell_color, cell_surf.get_rect(), border_radius=8)
+                    draw_rounded_rect(cell_surf, cell_color, cell_surf.get_rect(), radius=8)
                     surf.blit(cell_surf, (x + 2, y + 2))
 
             # Draw selection highlight
@@ -722,8 +722,8 @@ init python in crystal_match:
                 sel_x = sel_col * CELL_SIZE + GRID_OFFSET_X
                 sel_y = sel_row * CELL_SIZE + GRID_OFFSET_Y
                 pulse = math.sin(time_ms * 0.008) * 5
-                sel_surf = pygame.Surface((CELL_SIZE + pulse * 2, CELL_SIZE + pulse * 2), pygame.SRCALPHA)
-                pygame.draw.rect(sel_surf, (255, 255, 200, 150), sel_surf.get_rect(), width=4, border_radius=10)
+                sel_surf = pygame.Surface((int(CELL_SIZE + pulse * 2), int(CELL_SIZE + pulse * 2)), pygame.SRCALPHA)
+                draw_rounded_rect(sel_surf, (255, 255, 200, 150), sel_surf.get_rect(), radius=10, width=4)
                 surf.blit(sel_surf, (sel_x - pulse, sel_y - pulse))
 
             # Draw crystals
@@ -744,8 +744,8 @@ init python in crystal_match:
             """Draw score, moves, and other UI elements."""
             # Score panel (left)
             panel_surf = pygame.Surface((280, 120), pygame.SRCALPHA)
-            pygame.draw.rect(panel_surf, (20, 10, 40, 220), panel_surf.get_rect(), border_radius=15)
-            pygame.draw.rect(panel_surf, (150, 100, 200), panel_surf.get_rect(), width=2, border_radius=15)
+            draw_rounded_rect(panel_surf, (20, 10, 40, 220), panel_surf.get_rect(), radius=15)
+            draw_rounded_rect(panel_surf, (150, 100, 200), panel_surf.get_rect(), radius=15, width=2)
             surf.blit(panel_surf, (50, 50))
 
             # Score text
@@ -784,7 +784,7 @@ init python in crystal_match:
             bar_y = HEIGHT - 60
 
             # Background
-            pygame.draw.rect(surf, (40, 20, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=10)
+            draw_rounded_rect(surf, (40, 20, 60), (bar_x, bar_y, bar_width, bar_height), radius=10)
 
             # Fill
             progress = min(1.0, self.score / self.target_score)
@@ -792,10 +792,10 @@ init python in crystal_match:
             if fill_width > 0:
                 # Gradient effect
                 fill_color = (100, 200, 100) if progress < 1.0 else (255, 220, 100)
-                pygame.draw.rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), border_radius=10)
+                draw_rounded_rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), radius=10)
 
             # Border
-            pygame.draw.rect(surf, (150, 100, 200), (bar_x, bar_y, bar_width, bar_height), width=2, border_radius=10)
+            draw_rounded_rect(surf, (150, 100, 200), (bar_x, bar_y, bar_width, bar_height), radius=10, width=2)
 
             # State overlays
             if self.state == STATE_VICTORY:

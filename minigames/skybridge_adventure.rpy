@@ -604,8 +604,8 @@ init python in beacon_quest:
             if self.moving:
                 body_offset = math.sin(time_ms * 0.015) * 3
 
-            pygame.draw.rect(surf, outline, (self.x + 4, self.y + body_offset + 4, self.width - 8, self.height - 8), border_radius=8)
-            pygame.draw.rect(surf, color, (self.x + 6, self.y + body_offset + 6, self.width - 12, self.height - 12), border_radius=6)
+            draw_rounded_rect(surf, outline, (self.x + 4, self.y + body_offset + 4, self.width - 8, self.height - 8), radius=8)
+            draw_rounded_rect(surf, color, (self.x + 6, self.y + body_offset + 6, self.width - 12, self.height - 12), radius=6)
 
             # Draw face based on direction
             face_x = self.x + self.width // 2

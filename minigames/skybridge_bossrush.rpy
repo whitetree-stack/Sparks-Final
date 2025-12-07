@@ -843,7 +843,7 @@ init python in boss_rush:
             bar_y = 50
 
             # Background
-            pygame.draw.rect(surf, (40, 20, 60), (bar_x - 3, bar_y - 3, bar_width + 6, bar_height + 6), border_radius=5)
+            draw_rounded_rect(surf, (40, 20, 60), (bar_x - 3, bar_y - 3, bar_width + 6, bar_height + 6), radius=5)
 
             # Fill
             fill_width = int(bar_width * (self.health / self.max_health))
@@ -851,11 +851,11 @@ init python in boss_rush:
                           (255, 200, 50) if self.health > self.max_health * 0.25 else (255, 80, 80)
 
             if fill_width > 0:
-                pygame.draw.rect(surf, health_color, (bar_x, bar_y, fill_width, bar_height), border_radius=3)
+                draw_rounded_rect(surf, health_color, (bar_x, bar_y, fill_width, bar_height), radius=3)
 
             # Border
-            pygame.draw.rect(surf, (150, 100, 180), (bar_x - 3, bar_y - 3, bar_width + 6, bar_height + 6),
-                           width=2, border_radius=5)
+            draw_rounded_rect(surf, (150, 100, 180), (bar_x - 3, bar_y - 3, bar_width + 6, bar_height + 6),
+                           radius=5, width=2)
 
             # Phase indicator
             font = pygame.font.Font(None, 36)

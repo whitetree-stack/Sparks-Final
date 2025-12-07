@@ -7,6 +7,63 @@ init -100 python:
     import hashlib
 
     # ============================================================================
+    # PYGAME_SDL2 COMPATIBLE ROUNDED RECTANGLE
+    # ============================================================================
+    # pygame_sdl2 (used by Ren'Py) doesn't support border_radius parameter
+    # This helper function draws rounded rectangles manually
+
+    def draw_rounded_rect(surface, color, rect, radius=0, width=0):
+        """
+        Draw a rounded rectangle compatible with pygame_sdl2.
+
+        Args:
+            surface: pygame surface to draw on
+            color: color tuple (R, G, B) or (R, G, B, A)
+            rect: (x, y, width, height) or pygame.Rect
+            radius: corner radius (default 0 = sharp corners)
+            width: border width (0 = filled, >0 = outline only)
+        """
+        import pygame
+
+        # Handle rect input
+        if isinstance(rect, pygame.Rect):
+            x, y, w, h = rect.x, rect.y, rect.width, rect.height
+        else:
+            x, y, w, h = rect
+
+        # Clamp radius to half of smallest dimension
+        radius = min(radius, w // 2, h // 2)
+
+        if radius <= 0:
+            # No rounding, just draw regular rect
+            pygame.draw.rect(surface, color, (x, y, w, h), width)
+            return
+
+        if width == 0:
+            # Filled rounded rectangle
+            # Draw center rectangle
+            pygame.draw.rect(surface, color, (x + radius, y, w - 2 * radius, h))
+            # Draw side rectangles
+            pygame.draw.rect(surface, color, (x, y + radius, w, h - 2 * radius))
+            # Draw four corner circles
+            pygame.draw.circle(surface, color, (x + radius, y + radius), radius)
+            pygame.draw.circle(surface, color, (x + w - radius, y + radius), radius)
+            pygame.draw.circle(surface, color, (x + radius, y + h - radius), radius)
+            pygame.draw.circle(surface, color, (x + w - radius, y + h - radius), radius)
+        else:
+            # Outlined rounded rectangle
+            # Draw four corner arcs (using circles with width)
+            pygame.draw.circle(surface, color, (x + radius, y + radius), radius, width)
+            pygame.draw.circle(surface, color, (x + w - radius, y + radius), radius, width)
+            pygame.draw.circle(surface, color, (x + radius, y + h - radius), radius, width)
+            pygame.draw.circle(surface, color, (x + w - radius, y + h - radius), radius, width)
+            # Draw four straight lines
+            pygame.draw.line(surface, color, (x + radius, y), (x + w - radius, y), width)
+            pygame.draw.line(surface, color, (x + radius, y + h - 1), (x + w - radius, y + h - 1), width)
+            pygame.draw.line(surface, color, (x, y + radius), (x, y + h - radius), width)
+            pygame.draw.line(surface, color, (x + w - 1, y + radius), (x + w - 1, y + h - radius), width)
+
+    # ============================================================================
     # PLACEHOLDER COLOR SCHEMES
     # ============================================================================
 
