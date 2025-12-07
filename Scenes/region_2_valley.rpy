@@ -9,7 +9,8 @@ label region_2_valley:
 
     scene image "#ffffff" with dissolve
 
-    scene bg_valley:
+    # --- EXTERIOR: Arrival at the Valley entrance ---
+    scene bg_valley_ext:
         zoom 0.85
         yalign 1.0
         xalign 0.5
@@ -46,70 +47,76 @@ label region_2_valley:
         xalign 0.62
         yalign 0.85
 
-    "The light faded, and the brothers found themselves standing in a forest unlike anything they'd ever seen."
+    "The light faded, and the brothers found themselves at the edge of a forest unlike anything they'd ever seen."
     "Towering trees of gleaming metal stretched toward a dark sky, their branches humming with faint electrical pulses."
 
     show t a_surprised:
         xzoom 1
     show h a_surprised_looking_down:
         xzoom -1
-    
+
     t "Whoa..."
-    
+
     show t a_pointing_confused_talking
     t "Are those trees made of... metal?"
-    
+
     show t a_pointing_confused
     show h a_skeptical_talking
     h "They're buzzing. Why are they buzzing?"
-    
+
     show h a_skeptical
     show p happy_talking:
         xzoom 1
         zoom 0.30
-    
+
     p "Welcome to the Ironwood Valley, Twin Sparks!"
-    
+
     show p proud
     p "The trees here are infused with a special kind of energy. They conduct light from the Ironwood Beacon throughout the entire forest."
-    
+    p "And the Guardian of Nature watches over it all from deep within."
+
     show t a_hands_on_hips_expressionless_talking:
         xzoom -1
     t "Ironwood Valley... that's a cool name, at least."
-    
+
     show t a_hands_on_hips_expressionless
     show h a_unsure_looking_right_talking:
         xzoom -1
     h "It's giving me the creeps. Everything here feels... alive."
-    
+
     show h a_unsure_looking_right
     show p nervous_laugh
     p "Well, that's because it {i}is{/i} alive, in a manner of speaking."
-    
+
     show p offended
     p "But we must press on! The Beacon here is in grave danger."
-    
+
     show t a_pointing_confused_talking:
         xzoom 1
     t "Danger? What kind of danger?"
-    
+
     show t a_pointing_confused
     show p frustrated
     p "The worst kind! But I think it's better if you see for yourselves."
-    p "This way, quickly!"
+    p "Follow me into the forest!"
 
     "Pipwick floated ahead, his lantern casting dancing shadows through the metallic branches."
+
+    show t a_back:
+        xzoom 1
+    show h a_back:
+        xzoom 1
     "The boys followed, stepping carefully over roots that sparked with each footfall."
-    
+
     hide t
     hide h
     hide p
     with dissolve
-    
+
     pause 0.5
-    
-    # --- MEETING UNCLE RYAN ---
-    
+
+    # --- INTERIOR: Deep within the Valley ---
+
     scene bg_valley:
         zoom 0.85
         yalign 1.0

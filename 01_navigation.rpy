@@ -199,7 +199,3 @@ label navigation_transition_skybridge:
     pause 0.5
 
     jump region_5_skybridge
-
-# --- Placeholder background for hub ---
-# Replace with actual crossroads/hub artwork when available
-image bg_hub_crossroads = Solid("#2a1a3a")

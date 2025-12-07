@@ -59,6 +59,23 @@ image bg crystal_conservatory = "images/bg/bg_crystal_conservatory.png"
 image bg skybridge = "images/bg/bg_skybridge.png"
 image bg act_2_start = "images/bg/bg_act_2_start.png"
 
+# Region Exteriors (arrival scenes with Pipwick exposition)
+image bg_library_ext = "images/bg/bg_library_ext.png"
+image bg_valley_ext = "images/bg/bg_valley_ext.png"
+image bg_conservatory_ext = "images/bg/bg_conservatory_ext.png"
+image bg_clocktower_ext = "images/bg/bg_clocktower_ext.png"
+image bg_skybridge_ext = "images/bg/bg_skybridge_ext.png"
+
+# Region Interiors (main gameplay scenes)
+image bg_library_int = "images/bg/bg_library_int.png"
+image bg_library_int_new = "images/bg/bg_library_int_new.png"
+image bg_valley = "images/bg/bg_valley.png"
+image bg_clocktower = "images/bg/bg_clocktower.png"
+image bg_living_room = "images/bg/bg_living_room.png"
+image bg_hub_crossroads = "images/bg/bg_hub_crossroads.png"
+image bg_act_2_with_boys = "images/bg/bg_act_2_with_boys.png"
+image bg_act_2_closeup = "images/bg/bg_act_2_closeup.png"
+
 
 # --------------------------------------------------------
 # Video Helper Function and Screen

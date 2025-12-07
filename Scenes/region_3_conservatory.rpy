@@ -9,8 +9,9 @@ label region_3_conservatory:
 
     scene image "#ffffff" with dissolve
 
-    scene bg_crystal_conservatory:
-
+    # --- EXTERIOR: Arrival outside the Conservatory ---
+    scene bg_conservatory_ext:
+        zoom 0.85
         yalign 1.0
         xalign 0.5
     with fade
@@ -46,22 +47,34 @@ label region_3_conservatory:
         xalign 0.49
         yalign 0.92
 
-    "The light faded, and the brothers found themselves in a place of breathtaking beauty."
-    "A towering crystalline structure rose before them, catching and refracting what little light remained."
+    "The light faded, and the brothers found themselves before a magnificent glass dome."
+    "Towering crystalline spires stretched toward the sky, catching and refracting what little light remained."
     "But something was wrong. The crystals, which should have been gleaming with radiant color, were dull and gray."
 
+    show t a_surprised:
+        xzoom 1
+    show h a_surprised_looking_down:
+        xzoom -1
 
     t "Whoa..."
 
+    show t a_pointing_confused_talking
+    t "It's like a giant greenhouse made of crystals..."
 
-    t "It's like a giant chandelier..."
+    show t a_pointing_confused
+    show h a_skeptical_talking
+    h "A broken greenhouse. Everything looks... sick."
 
-    h "A broken chandelier. These crystals look... sick."
+    show h a_skeptical
+    show p happy_talking:
+        xzoom 1
+        zoom 0.30
 
     p "Welcome to the Crystal Conservatory, Twin Sparks!"
 
 
     p "Though I must say... it looked much more impressive the last time I was here."
+    p "The Guardian of Harmony tends to the crystals within. She'll know what's happened."
 
     show t a_hands_on_hips_expressionless_talking:
         xzoom -1
@@ -82,7 +95,7 @@ label region_3_conservatory:
     show p sad
     p "They used to. Now they're completely silent. The conservatory has lost its voice."
 
-    "A faint, discordant hum echoed through the chamber—like an instrument badly out of tune."
+    "A faint, discordant hum echoed from within the dome—like an instrument badly out of tune."
 
     show t a_surprised:
         xzoom 1
@@ -112,9 +125,13 @@ label region_3_conservatory:
 
     show t a_hands_on_hips_expressionless
     show p happy_talking
-    p "But fear not! The Guardian of Harmony should be nearby. She can help!"
+    p "But fear not! The Guardian of Harmony is inside. Let's find her!"
 
-    "Pipwick floated ahead, leading the brothers deeper into the silent conservatory."
+    show t a_back:
+        xzoom 1
+    show h a_back:
+        xzoom 1
+    "Pipwick floated ahead, leading the brothers through the crystalline archway."
 
     hide t
     hide h
@@ -123,7 +140,7 @@ label region_3_conservatory:
 
     pause 0.5
 
-    # --- MEETING MOM ---
+    # --- INTERIOR: Inside the Crystal Conservatory ---
 
     scene bg_crystal_conservatory:
         zoom 0.85

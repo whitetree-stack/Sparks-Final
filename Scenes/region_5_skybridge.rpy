@@ -15,7 +15,8 @@ label region_5_skybridge:
 
     scene image "#ffffff" with dissolve
 
-    scene bg_skybridge:
+    # --- EXTERIOR: Arrival at the approach to the Skybridge ---
+    scene bg_skybridge_ext:
         zoom 0.85
         yalign 1.0
         xalign 0.5
@@ -52,8 +53,9 @@ label region_5_skybridge:
         xalign 0.62
         yalign 0.85
 
-    "The light faded, and the brothers found themselves standing on a bridge that stretched into infinity."
-    "Beneath them, clouds swirled in an endless ocean of white and gold."
+    "The light faded, and the brothers found themselves at the edge of the sky itself."
+    "Before them stretched a magnificent bridge of shimmering light and ancient stone."
+    "Beneath, clouds swirled in an endless ocean of white and gold."
     "Above, stars glittered despite the light—a sky that held both day and night at once."
 
     show t a_surprised:
@@ -79,9 +81,10 @@ label region_5_skybridge:
 
     show p proud
     p "This is the heart of the realm—where all the beacons' light converges."
+    p "The Keeper of Light watches over this sacred place from the platform ahead."
 
     show p worried
-    p "Or at least... it should be."
+    p "Or at least... she did, before the darkness came."
 
     "The bridge ahead was dark. Where light should have blazed, only shadows lurked."
     "A cold wind swept across the bridge, carrying whispers of despair."
@@ -127,12 +130,16 @@ label region_5_skybridge:
 
     show t a_pointing_confused
     show p happy_talking
-    p "The Keeper of Light. The guardian who protects the Skybridge itself."
+    p "The Keeper of Light herself. She's been waiting for you."
 
     show p nervous_laugh
-    p "She's been waiting for you. And she brought... company."
+    p "And she brought... company."
 
-    "Pipwick floated ahead, leading the brothers toward a gentle glow in the distance."
+    show t a_back:
+        xzoom 1
+    show h a_back:
+        xzoom 1
+    "Pipwick floated ahead as the brothers stepped onto the ancient bridge."
 
     hide t
     hide h
@@ -141,7 +148,7 @@ label region_5_skybridge:
 
     pause 0.5
 
-    # --- MEETING G-MOM ---
+    # --- INTERIOR: On the Skybridge platform ---
 
     scene bg_skybridge:
         zoom 0.85

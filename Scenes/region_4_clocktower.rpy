@@ -9,7 +9,8 @@ label region_4_clocktower:
 
     scene image "#ffffff" with dissolve
 
-    scene bg_clocktower:
+    # --- EXTERIOR: Arrival at the base of the Clocktower ---
+    scene bg_clocktower_ext:
         zoom 0.85
         yalign 1.0
         xalign 0.5
@@ -46,8 +47,8 @@ label region_4_clocktower:
         xalign 0.62
         yalign 0.85
 
-    "The light faded, and the brothers found themselves surrounded by the rhythmic ticking of countless clocks."
-    "Enormous gears turned overhead, brass and bronze spinning in an intricate dance of precision."
+    "The light faded, and the brothers found themselves at the base of an impossibly tall tower."
+    "Enormous gears and clockwork mechanisms covered its exterior, spinning and clicking."
     "But something was wrong—the gears stuttered and jerked, their movements erratic and unpredictable."
 
     show t a_surprised:
@@ -58,11 +59,11 @@ label region_4_clocktower:
     t "Whoa..."
 
     show t a_pointing_confused_talking
-    t "It's like being inside a giant watch!"
+    t "It's like a giant clock made into a building!"
 
     show t a_pointing_confused
     show h a_skeptical_talking
-    h "A broken giant watch. Listen—the ticking is all messed up."
+    h "A broken clock building. Listen—the ticking is all messed up."
 
     show h a_skeptical
 
@@ -76,6 +77,7 @@ label region_4_clocktower:
 
     show p worried
     p "Though I must warn you... time here has become quite unstable."
+    p "The Guardian of Time maintains the clocks from within. We should find him."
 
     show t a_hands_on_hips_expressionless_talking:
         xzoom -1
@@ -109,10 +111,49 @@ label region_4_clocktower:
 
     show h a_skeptical
     show p happy_talking
-    p "Fear not! The Guardian of Time should be here somewhere."
+    p "Fear not! The Guardian of Time is inside. Let's climb!"
 
     show p proud
     p "And from what I've heard, he's quite... enthusiastic about challenges."
+
+    show t a_back:
+        xzoom 1
+    show h a_back:
+        xzoom 1
+    "Pipwick floated ahead as the boys pushed open the heavy brass doors."
+
+    hide t
+    hide h
+    hide p
+    with dissolve
+
+    pause 0.5
+
+    # --- INTERIOR: Inside the Clocktower ---
+    scene bg_clocktower:
+        zoom 0.85
+        yalign 1.0
+        xalign 0.5
+    with fade
+
+    show t a_back:
+        alpha 1.0
+        zoom 0.4
+        xalign 0.42
+        yalign 0.8
+    show h a_back:
+        alpha 1.0
+        zoom 0.36
+        xalign 0.52
+        yalign 0.8
+    show p facing_away:
+        alpha 1.0
+        zoom 0.25
+        xalign 0.62
+        yalign 0.85
+
+    "Inside, the rhythmic ticking was deafening. Countless clocks of all sizes lined the walls."
+    "Pendulums swung, gears turned, and cuckoos popped out at random intervals."
 
     if conservatory_complete:
         show t a_pointing_confused_talking:
