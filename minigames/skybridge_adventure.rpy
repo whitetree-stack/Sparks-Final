@@ -130,6 +130,70 @@ init python in beacon_quest:
         index = (x * 7 + y * 13 + (x * y) % 5) % len(floor_keys)
         return TILE_SPRITES.get(floor_keys[index])
 
+    # ----------------------------------------------------------------
+    # SLIME ENEMY SPRITES
+    # ----------------------------------------------------------------
+    SLIME_SPRITESHEET_PATH = "images/enemies/slime/green_slime.png"
+    SLIME_FRAME_SIZE = 48
+    SLIME_COLS = 10
+    SLIME_ROWS = 9
+    SLIME_SPRITES_LOADED = False
+    SLIME_FRAMES = {}
+
+    # Animation definitions: (row, start_col, num_frames)
+    SLIME_ANIMATIONS = {
+        'idle': (0, 0, 4),       # Row 0, frames 0-3: idle bounce
+        'move': (1, 0, 4),       # Row 1, frames 0-3: movement
+        'attack': (4, 0, 3),     # Row 4, frames 0-2: attack (star form)
+        'hurt': (6, 0, 2),       # Row 6, frames 0-1: hurt (with hearts)
+        'death': (2, 6, 3),      # Row 2, frames 6-8: smaller/death
+    }
+
+    def load_slime_sprites():
+        """Load slime enemy sprites from spritesheet."""
+        global SLIME_SPRITES_LOADED, SLIME_FRAMES
+
+        if SLIME_SPRITES_LOADED:
+            return True
+
+        try:
+            spritesheet = load_image(SLIME_SPRITESHEET_PATH)
+            if spritesheet is None:
+                print("Failed to load slime spritesheet")
+                return False
+
+            # Extract animation frames
+            for anim_name, (row, start_col, num_frames) in SLIME_ANIMATIONS.items():
+                SLIME_FRAMES[anim_name] = []
+                for i in range(num_frames):
+                    col = start_col + i
+                    x = col * SLIME_FRAME_SIZE
+                    y = row * SLIME_FRAME_SIZE
+
+                    # Create frame surface
+                    frame = pygame.Surface((SLIME_FRAME_SIZE, SLIME_FRAME_SIZE), pygame.SRCALPHA)
+                    frame.blit(spritesheet, (0, 0), (x, y, SLIME_FRAME_SIZE, SLIME_FRAME_SIZE))
+
+                    # Scale up to match game size (48 -> 64)
+                    scaled_frame = pygame.transform.scale(frame, (TILE_SIZE, TILE_SIZE))
+                    SLIME_FRAMES[anim_name].append(scaled_frame)
+
+            SLIME_SPRITES_LOADED = True
+            print(f"Loaded slime sprites: {list(SLIME_FRAMES.keys())}")
+            return True
+        except Exception as e:
+            print(f"Error loading slime sprites: {e}")
+            return False
+
+    def get_slime_frame(anim_name, frame_index):
+        """Get a specific slime animation frame."""
+        if anim_name not in SLIME_FRAMES:
+            return None
+        frames = SLIME_FRAMES[anim_name]
+        if not frames:
+            return None
+        return frames[frame_index % len(frames)]
+
     # Map dimensions
     MAP_WIDTH = 20
     MAP_HEIGHT = 13
@@ -781,6 +845,143 @@ init python in beacon_quest:
             pygame.draw.circle(surf, (255, 200, 200), (int(self.x + 15), int(eye_y)), 3)
             pygame.draw.circle(surf, (255, 200, 200), (int(self.x + self.width - 15), int(eye_y)), 3)
 
+
+    class SlimeEnemy(Enemy):
+        """A slime enemy with sprite-based animations."""
+        def __init__(self, x, y):
+            super().__init__(x, y, enemy_type="slime")
+            self.width = TILE_SIZE
+            self.height = TILE_SIZE
+            self.speed = 1.5  # Slimes are slower
+
+            # Animation state
+            self.current_anim = 'idle'
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.anim_speed = 150  # ms per frame
+
+            # Slime-specific properties
+            self.is_attacking = False
+            self.attack_timer = 0
+            self.death_timer = 0
+            self.is_dying = False
+
+        def update(self, dt, game_map, player):
+            if self.is_dying:
+                self.death_timer += dt
+                self.anim_timer += dt
+                if self.anim_timer >= self.anim_speed:
+                    self.anim_timer = 0
+                    self.anim_frame += 1
+                if self.death_timer >= 500:
+                    self.alive = False
+                return
+
+            if not self.alive:
+                return
+
+            # Update animation
+            self.anim_timer += dt
+            if self.anim_timer >= self.anim_speed:
+                self.anim_timer = 0
+                self.anim_frame += 1
+
+            # Handle attack animation
+            if self.is_attacking:
+                self.attack_timer += dt
+                self.current_anim = 'attack'
+                if self.attack_timer >= 400:
+                    self.is_attacking = False
+                    self.attack_timer = 0
+                return
+
+            # Hit flash timer
+            if self.hit_flash > 0:
+                self.hit_flash -= dt
+                self.current_anim = 'hurt'
+                return
+
+            # Parent movement logic
+            self.move_timer += dt
+            if self.move_timer >= self.move_duration:
+                self.move_timer = 0
+                self.move_duration = random.randint(800, 2000)
+                self.direction = random.choice(['up', 'down', 'left', 'right'])
+
+            # Move towards player occasionally (less aggressive than shadow)
+            if random.random() < 0.01:
+                dx = player.x - self.x
+                dy = player.y - self.y
+                if abs(dx) > abs(dy):
+                    self.direction = 'right' if dx > 0 else 'left'
+                else:
+                    self.direction = 'down' if dy > 0 else 'up'
+
+                # Chance to attack if close
+                dist = math.sqrt(dx*dx + dy*dy)
+                if dist < TILE_SIZE * 2 and random.random() < 0.3:
+                    self.is_attacking = True
+                    self.anim_frame = 0
+
+            # Move
+            dir_vec = DIRECTIONS[self.direction]
+            new_x = self.x + dir_vec[0] * self.speed
+            new_y = self.y + dir_vec[1] * self.speed
+
+            if self.can_move_to(new_x, new_y, game_map):
+                self.x = new_x
+                self.y = new_y
+                self.current_anim = 'move'
+            else:
+                self.direction = random.choice(['up', 'down', 'left', 'right'])
+                self.current_anim = 'idle'
+
+        def take_damage(self, amount=1):
+            self.health -= amount
+            self.hit_flash = 200
+            self.anim_frame = 0
+            if self.health <= 0:
+                self.is_dying = True
+                self.current_anim = 'death'
+                self.anim_frame = 0
+                return True
+            return False
+
+        def draw(self, surf, time_ms):
+            if not self.alive and not self.is_dying:
+                return
+
+            # Get the appropriate animation frame
+            frame = get_slime_frame(self.current_anim, self.anim_frame)
+
+            if frame:
+                # Apply hit flash tint if damaged
+                if self.hit_flash > 0:
+                    # Create a red-tinted version
+                    tinted = frame.copy()
+                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+                    tint_surf.fill((255, 100, 100, 100))
+                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                    frame = tinted
+
+                # Apply death fade
+                if self.is_dying:
+                    alpha = max(0, 255 - int(self.death_timer * 0.5))
+                    frame = frame.copy()
+                    frame.set_alpha(alpha)
+
+                # Draw shadow
+                shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
+                pygame.draw.ellipse(shadow_surf, (0, 0, 0, 40), shadow_surf.get_rect())
+                surf.blit(shadow_surf, (self.x, self.y + self.height - 15))
+
+                # Draw sprite
+                surf.blit(frame, (self.x, self.y))
+            else:
+                # Fallback to parent drawing if sprites not loaded
+                super().draw(surf, time_ms)
+
+
     class Shard:
         """A collectible beacon shard."""
         def __init__(self, x, y):
@@ -882,6 +1083,9 @@ init python in beacon_quest:
 
             # Load tileset sprites
             load_tileset()
+
+            # Load enemy sprites
+            load_slime_sprites()
 
             # Create all rooms
             self.rooms = self.create_all_rooms()
@@ -985,9 +1189,9 @@ init python in beacon_quest:
             game_map[5][12] = TILE_WALL
 
             enemies = [
-                Enemy(5, 4),
-                Enemy(14, 4),
-                Enemy(10, 7),
+                SlimeEnemy(5, 4),   # Slime in start room
+                SlimeEnemy(14, 4),  # Slime in start room
+                Enemy(10, 7),       # Shadow enemy
             ]
 
             shards = [
@@ -1037,10 +1241,10 @@ init python in beacon_quest:
             game_map[4][12] = TILE_WALL
 
             enemies = [
-                Enemy(4, 6),
-                Enemy(15, 6),
-                Enemy(10, 9),
-                Enemy(6, 3),
+                SlimeEnemy(4, 6),   # Slime guardian
+                SlimeEnemy(15, 6),  # Slime guardian
+                Enemy(10, 9),       # Shadow
+                SlimeEnemy(6, 3),   # Slime near beacon
                 Enemy(13, 3),
             ]
 
@@ -1083,12 +1287,12 @@ init python in beacon_quest:
                     game_map[y][13] = TILE_WALL
 
             enemies = [
-                Enemy(4, 3),
-                Enemy(4, 9),
-                Enemy(9, 5),
-                Enemy(9, 8),
-                Enemy(15, 4),
-                Enemy(15, 8),
+                SlimeEnemy(4, 3),   # Slime gauntlet
+                SlimeEnemy(4, 9),   # Slime gauntlet
+                Enemy(9, 5),        # Shadow
+                Enemy(9, 8),        # Shadow
+                SlimeEnemy(15, 4),  # Slime at end
+                SlimeEnemy(15, 8),  # Slime at end
             ]
 
             shards = [
@@ -1130,10 +1334,10 @@ init python in beacon_quest:
             game_map[6][10] = TILE_WALL
 
             enemies = [
-                Enemy(7, 3),
-                Enemy(12, 3),
-                Enemy(7, 9),
-                Enemy(12, 9),
+                SlimeEnemy(7, 3),   # Slime in corners
+                Enemy(12, 3),       # Shadow
+                Enemy(7, 9),        # Shadow
+                SlimeEnemy(12, 9),  # Slime in corners
             ]
 
             shards = [
