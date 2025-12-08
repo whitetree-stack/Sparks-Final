@@ -292,7 +292,7 @@ init python in crystal_rhythm:
 
     # Note settings
     NOTE_HEIGHT = 40
-    NOTE_SPEED = 400  # pixels per second (adjustable for difficulty)
+    NOTE_SPEED = 250  # pixels per second (adjustable for difficulty)
 
     # Lane colors and keys (for procedural fallback)
     LANE_CONFIGS = [
@@ -391,19 +391,19 @@ init python in crystal_rhythm:
         "easy": {
             "name": "Crystal Waltz",
             "bpm": 100,
-            "speed": 350,
+            "speed": 150,
             "notes": generate_easy_song()
         },
         "medium": {
             "name": "Gem Symphony",
             "bpm": 120,
-            "speed": 450,
+            "speed": 250,
             "notes": generate_medium_song()
         },
         "hard": {
             "name": "Diamond Storm",
             "bpm": 140,
-            "speed": 550,
+            "speed": 350,
             "notes": generate_hard_song()
         }
     }

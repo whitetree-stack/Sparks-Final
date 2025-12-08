@@ -495,7 +495,7 @@ init python in clockwork_tetris:
 
     class TetrisGame:
         """Main Tetris game controller."""
-        def __init__(self, target_lines=20, time_limit=None):
+        def __init__(self, target_lines=25, time_limit=None):
             # Grid (None = empty, otherwise color tuple)
             self.grid = [[None for _ in range(GRID_COLS)] for _ in range(GRID_ROWS)]
 
@@ -609,9 +609,12 @@ init python in clockwork_tetris:
             base_points = {1: 100, 2: 300, 3: 500, 4: 800}.get(lines, 800)
             self.score += base_points * self.level * self.combo
 
-            # Remove lines
+            # Remove lines - delete all rows first, then add new empty rows at top
             for row in sorted(rows, reverse=True):
                 del self.grid[row]
+            
+            # Add new empty rows at the top for each cleared line
+            for _ in range(len(rows)):
                 self.grid.insert(0, [None for _ in range(GRID_COLS)])
 
             # Level up
@@ -774,13 +777,13 @@ init python in clockwork_tetris:
 
                     points = [
                         (cx + math.cos(angle - tooth_width) * inner_r,
-                         cy + math.sin(angle - tooth_width) * inner_r),
+                        cy + math.sin(angle - tooth_width) * inner_r),
                         (cx + math.cos(angle - tooth_width * 0.5) * outer_r,
-                         cy + math.sin(angle - tooth_width * 0.5) * outer_r),
+                        cy + math.sin(angle - tooth_width * 0.5) * outer_r),
                         (cx + math.cos(angle + tooth_width * 0.5) * outer_r,
-                         cy + math.sin(angle + tooth_width * 0.5) * outer_r),
+                        cy + math.sin(angle + tooth_width * 0.5) * outer_r),
                         (cx + math.cos(angle + tooth_width) * inner_r,
-                         cy + math.sin(angle + tooth_width) * inner_r),
+                        cy + math.sin(angle + tooth_width) * inner_r),
                     ]
                     pygame.draw.polygon(gear_surf, (50, 40, 70, 100), points)
 
@@ -869,7 +872,7 @@ init python in clockwork_tetris:
                     # Glow
                     glow_size = int(CELL_SIZE * scale * 0.3)
                     glow_surf = pygame.Surface((int(CELL_SIZE * scale) + glow_size * 2,
-                                               int(CELL_SIZE * scale) + glow_size * 2), pygame.SRCALPHA)
+                                                int(CELL_SIZE * scale) + glow_size * 2), pygame.SRCALPHA)
                     glow_alpha = int(80 * glow_intensity)
                     draw_rounded_rect(glow_surf, (*glow, glow_alpha), glow_surf.get_rect(), radius=8)
                     surf.blit(glow_surf, (x - glow_size, y - glow_size))

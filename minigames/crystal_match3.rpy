@@ -379,7 +379,7 @@ init python in crystal_match:
             sparkle_alpha = int(150 + 100 * math.sin(self.glow_phase * 2))
             sparkle_size = 3 + int(2 * math.sin(self.glow_phase * 3))
             pygame.draw.circle(gem_surf, (255, 255, 255, min(255, sparkle_alpha)),
-                             (gem_cx - base_size // 3, gem_cy - base_size // 3), sparkle_size)
+                            (gem_cx - base_size // 3, gem_cy - base_size // 3), sparkle_size)
 
             surf.blit(gem_surf, (int(self.x), int(self.y)))
 
@@ -415,12 +415,12 @@ init python in crystal_match:
                 return
             particle_surf = pygame.Surface((int(size * 2 + 4), int(size * 2 + 4)), pygame.SRCALPHA)
             pygame.draw.circle(particle_surf, (*self.color[:3], alpha),
-                             (int(size + 2), int(size + 2)), int(size))
+                            (int(size + 2), int(size + 2)), int(size))
             surf.blit(particle_surf, (int(self.x - size), int(self.y - size)))
 
     class CrystalMatchGame:
         """Main game controller for Crystal Match-3."""
-        def __init__(self, target_score=1000, moves_limit=30):
+        def __init__(self, target_score=10000, moves_limit=30):
             self.grid = [[None for _ in range(GRID_COLS)] for _ in range(GRID_ROWS)]
             self.state = STATE_PLAYING
             self.score = 0

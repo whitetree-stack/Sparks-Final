@@ -525,7 +525,7 @@ init python in boss_rush:
 
         def get_rect(self):
             return pygame.Rect(self.x - self.radius, self.y - self.radius,
-                             self.radius * 2, self.radius * 2)
+                            self.radius * 2, self.radius * 2)
 
         def draw(self, surf):
             if not self.alive:
@@ -539,7 +539,7 @@ init python in boss_rush:
                 if trail_size > 0:
                     trail_surf = pygame.Surface((trail_size * 2 + 4, trail_size * 2 + 4), pygame.SRCALPHA)
                     pygame.draw.circle(trail_surf, (*self.color, trail_alpha),
-                                     (trail_size + 2, trail_size + 2), trail_size)
+                                    (trail_size + 2, trail_size + 2), trail_size)
                     surf.blit(trail_surf, (self.x - trail_size - 2, trail_y - trail_size - 2))
 
             # Main projectile
@@ -569,7 +569,7 @@ init python in boss_rush:
 
         def get_rect(self):
             return pygame.Rect(self.x - self.radius + 5, self.y - self.radius + 5,
-                             self.radius * 2 - 10, self.radius * 2 - 10)
+                            self.radius * 2 - 10, self.radius * 2 - 10)
 
         def draw(self, surf):
             if not self.alive:
@@ -762,7 +762,7 @@ init python in boss_rush:
 
         def get_rect(self):
             return pygame.Rect(self.x - self.width // 2 + 30, self.y + 30,
-                             self.width - 60, self.height - 60)
+                                self.width - 60, self.height - 60)
 
         def draw(self, surf, time_ms):
             if not self.alive:
@@ -848,14 +848,14 @@ init python in boss_rush:
             # Fill
             fill_width = int(bar_width * (self.health / self.max_health))
             health_color = (100, 200, 100) if self.health > self.max_health * 0.5 else \
-                          (255, 200, 50) if self.health > self.max_health * 0.25 else (255, 80, 80)
+                (255, 200, 50) if self.health > self.max_health * 0.25 else (255, 80, 80)
 
             if fill_width > 0:
                 draw_rounded_rect(surf, health_color, (bar_x, bar_y, fill_width, bar_height), radius=3)
 
             # Border
             draw_rounded_rect(surf, (150, 100, 180), (bar_x - 3, bar_y - 3, bar_width + 6, bar_height + 6),
-                           radius=5, width=2)
+                            radius=5, width=2)
 
             # Phase indicator
             font = pygame.font.Font(None, 36)
@@ -907,9 +907,9 @@ init python in boss_rush:
 
             # Heroes
             self.tristan = HeroTwin("Tristan", WIDTH // 2 - 150, (100, 200, 100),
-                                   {'left': K_LEFT, 'right': K_RIGHT, 'shoot': K_UP})
+                                    {'left': K_LEFT, 'right': K_RIGHT, 'shoot': K_UP})
             self.henry = HeroTwin("Henry", WIDTH // 2 + 90, (100, 150, 255),
-                                 {'left': K_a, 'right': K_d, 'shoot': K_w})
+                                    {'left': K_a, 'right': K_d, 'shoot': K_w})
             self.heroes = [self.tristan, self.henry]
 
             # Boss
@@ -986,7 +986,7 @@ init python in boss_rush:
                             if hero.take_damage():
                                 proj.alive = False
                                 self.effects.append(HitEffect(hero.x + hero.width // 2,
-                                                             hero.y + hero.height // 2, (255, 100, 100)))
+                                                                hero.y + hero.height // 2, (255, 100, 100)))
                                 self.trigger_shake(8)
 
             self.boss_projectiles = [p for p in self.boss_projectiles if p.alive]

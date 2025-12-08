@@ -395,13 +395,13 @@ init python in gear_rush:
 
                 points = [
                     (cx + math.cos(angle - tooth_width) * inner_r,
-                     cy + math.sin(angle - tooth_width) * inner_r),
+                    cy + math.sin(angle - tooth_width) * inner_r),
                     (cx + math.cos(angle - tooth_width * 0.4) * outer_r,
-                     cy + math.sin(angle - tooth_width * 0.4) * outer_r),
+                    cy + math.sin(angle - tooth_width * 0.4) * outer_r),
                     (cx + math.cos(angle + tooth_width * 0.4) * outer_r,
-                     cy + math.sin(angle + tooth_width * 0.4) * outer_r),
+                    cy + math.sin(angle + tooth_width * 0.4) * outer_r),
                     (cx + math.cos(angle + tooth_width) * inner_r,
-                     cy + math.sin(angle + tooth_width) * inner_r),
+                    cy + math.sin(angle + tooth_width) * inner_r),
                 ]
                 pygame.draw.polygon(gear_surf, color, points)
 
@@ -476,7 +476,7 @@ init python in gear_rush:
                 if size > 0:
                     particle_surf = pygame.Surface((int(size * 2 + 4), int(size * 2 + 4)), pygame.SRCALPHA)
                     pygame.draw.circle(particle_surf, (*p['color'], alpha),
-                                     (int(size + 2), int(size + 2)), int(size))
+                                    (int(size + 2), int(size + 2)), int(size))
                     surf.blit(particle_surf, (int(p['x'] - size), int(p['y'] - size)))
 
     class GearRushGame:
@@ -638,7 +638,7 @@ init python in gear_rush:
                 return
 
             # Update timer
-            self.time_remaining -= dt / 1000
+            self.time_remaining -= dt / 5000
             if self.time_remaining <= 0:
                 self.time_remaining = 0
                 self.state = STATE_GAMEOVER
@@ -686,13 +686,13 @@ init python in gear_rush:
 
                     points = [
                         (cx + math.cos(angle - tooth_width) * inner_r,
-                         cy + math.sin(angle - tooth_width) * inner_r),
+                        cy + math.sin(angle - tooth_width) * inner_r),
                         (cx + math.cos(angle - tooth_width * 0.4) * outer_r,
-                         cy + math.sin(angle - tooth_width * 0.4) * outer_r),
+                        cy + math.sin(angle - tooth_width * 0.4) * outer_r),
                         (cx + math.cos(angle + tooth_width * 0.4) * outer_r,
-                         cy + math.sin(angle + tooth_width * 0.4) * outer_r),
+                        cy + math.sin(angle + tooth_width * 0.4) * outer_r),
                         (cx + math.cos(angle + tooth_width) * inner_r,
-                         cy + math.sin(angle + tooth_width) * inner_r),
+                        cy + math.sin(angle + tooth_width) * inner_r),
                     ]
                     pygame.draw.polygon(gear_surf, (60, 50, 80, bg['alpha']), points)
 

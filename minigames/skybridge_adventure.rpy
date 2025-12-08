@@ -462,13 +462,13 @@ init python in beacon_quest:
                 fuse_progress = self.timer / 2000
                 fuse_length = int(15 * fuse_progress)
                 pygame.draw.line(surf, (139, 90, 43),
-                               (self.x, self.y - 16),
-                               (self.x + 5, self.y - 16 - fuse_length), 3)
+                                (self.x, self.y - 16),
+                                (self.x + 5, self.y - 16 - fuse_length), 3)
 
                 # Spark
                 spark_size = 4 + int(2 * math.sin(time_ms * 0.02))
                 pygame.draw.circle(surf, (255, 220, 50),
-                                 (int(self.x + 5), int(self.y - 16 - fuse_length)), spark_size)
+                                    (int(self.x + 5), int(self.y - 16 - fuse_length)), spark_size)
 
 
     ####################################################################################################################
@@ -799,9 +799,9 @@ init python in beacon_quest:
 
             # Tunic body
             pygame.draw.ellipse(surf, tunic_dark,
-                              (self.x - 16, body_y - 8, 32, 28))
+                                (self.x - 16, body_y - 8, 32, 28))
             pygame.draw.ellipse(surf, tunic_color,
-                              (self.x - 14, body_y - 6, 28, 24))
+                                (self.x - 14, body_y - 6, 28, 24))
 
             # Head
             pygame.draw.circle(surf, skin_color, (int(self.x), int(body_y - 18)), 14)
@@ -990,14 +990,14 @@ init python in beacon_quest:
             body_width = int(self.width * squash)
             body_height = int(self.height / squash)
             pygame.draw.ellipse(surf, color,
-                              (self.x - body_width // 2, self.y - body_height // 2 - bounce,
-                               body_width, body_height))
+                                (self.x - body_width // 2, self.y - body_height // 2 - bounce,
+                                body_width, body_height))
 
             # Darker outline
             dark_color = (color[0] * 0.6, color[1] * 0.6, color[2] * 0.6)
             pygame.draw.ellipse(surf, dark_color,
-                              (self.x - body_width // 2, self.y - body_height // 2 - bounce,
-                               body_width, body_height), 2)
+                                (self.x - body_width // 2, self.y - body_height // 2 - bounce,
+                                body_width, body_height), 2)
 
             # Eyes
             eye_y = self.y - bounce - 5
@@ -1496,14 +1496,14 @@ init python in beacon_quest:
 
             # Main body
             pygame.draw.ellipse(surf, body_color,
-                              (self.x - self.width // 2, self.y - self.height // 2 + bob,
-                               self.width, self.height))
+                                (self.x - self.width // 2, self.y - self.height // 2 + bob,
+                                self.width, self.height))
 
             # Darker inner
             inner_color = (body_color[0] * 0.6, body_color[1] * 0.6, body_color[2] * 0.6)
             pygame.draw.ellipse(surf, inner_color,
-                              (self.x - self.width // 2 + 10, self.y - self.height // 2 + bob + 10,
-                               self.width - 20, self.height - 20))
+                                (self.x - self.width // 2 + 10, self.y - self.height // 2 + bob + 10,
+                                self.width - 20, self.height - 20))
 
             # Spiky protrusions
             num_spikes = 6 + self.phase * 2
@@ -1828,7 +1828,7 @@ init python in beacon_quest:
                     item.collected = True
                     self.player.collect_item(item.item_type)
                     self.effects.append(ParticleEffect(item.x * TILE_SIZE + ROOM_OFFSET_X + 32,
-                                                       item.y * TILE_SIZE + ROOM_OFFSET_Y + 32, "collect"))
+                                                        item.y * TILE_SIZE + ROOM_OFFSET_Y + 32, "collect"))
 
             # Update bombs
             for bomb in self.bombs:
