@@ -15,6 +15,121 @@ init python in beacon_quest:
     WIDTH, HEIGHT = 1920, 1080
     TILE_SIZE = 64
 
+    # ----------------------------------------------------------------
+    # TILESET LOADING
+    # ----------------------------------------------------------------
+    # Helper to load images through Ren'Py
+    def load_image(path):
+        """Load an image through Ren'Py's image system."""
+        try:
+            return renpy.display.im.Image(path).load()
+        except:
+            return None
+
+    # Tileset configuration - tile regions on the spritesheet
+    # Format: (x, y, width, height) - coordinates on dungeon_tileset.png
+    TILESET_PATH = "images/dungeon_tileset.png"
+    TILESET_LOADED = False
+    TILE_SPRITES = {}
+
+    # Floor tiles are in a 6x6 grid at bottom right of spritesheet
+    # Each floor tile is approximately 48x48 pixels
+    FLOOR_TILE_SIZE = 48
+    FLOOR_GRID_START_X = 736
+    FLOOR_GRID_START_Y = 256
+
+    # Wall/decoration tile regions (approximate positions)
+    TILE_REGIONS = {
+        # Floor variations (will be randomly selected)
+        'floor_1': (736, 256, 48, 48),
+        'floor_2': (784, 256, 48, 48),
+        'floor_3': (832, 256, 48, 48),
+        'floor_4': (880, 256, 48, 48),
+        'floor_5': (928, 256, 48, 48),
+        'floor_6': (976, 256, 48, 48),
+        'floor_7': (736, 304, 48, 48),
+        'floor_8': (784, 304, 48, 48),
+        'floor_9': (832, 304, 48, 48),
+        'floor_10': (880, 304, 48, 48),
+        'floor_11': (928, 304, 48, 48),
+        'floor_12': (976, 304, 48, 48),
+        # More floor variations from lower rows
+        'floor_13': (736, 352, 48, 48),
+        'floor_14': (784, 352, 48, 48),
+        'floor_15': (832, 352, 48, 48),
+        'floor_16': (880, 352, 48, 48),
+
+        # Wall pieces
+        'wall_top': (0, 192, 96, 48),      # Top wall section
+        'wall_shelf': (0, 64, 96, 64),     # Wall with shelf
+
+        # Doorway/arch (open archway)
+        'arch_open': (320, 0, 96, 128),
+
+        # Gate/bars doorway
+        'gate': (416, 0, 96, 128),
+
+        # Dark doorway/entrance
+        'door_dark': (576, 160, 64, 80),
+
+        # Stairs
+        'stairs': (672, 0, 64, 96),
+
+        # Bookshelf
+        'bookshelf': (736, 0, 64, 128),
+
+        # Fountain/pedestal
+        'fountain': (512, 224, 64, 64),
+
+        # Pillars
+        'pillar': (608, 80, 32, 80),
+    }
+
+    def load_tileset():
+        """Load and extract tiles from the dungeon tileset."""
+        global TILESET_LOADED, TILE_SPRITES
+
+        if TILESET_LOADED:
+            return True
+
+        try:
+            tileset = load_image(TILESET_PATH)
+            if tileset is None:
+                print("Failed to load tileset")
+                return False
+
+            # Extract each tile region
+            for name, region in TILE_REGIONS.items():
+                x, y, w, h = region
+                # Create a surface for this tile
+                tile_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+                tile_surf.blit(tileset, (0, 0), (x, y, w, h))
+
+                # Scale to game tile size (64x64) for floor tiles
+                if name.startswith('floor_'):
+                    tile_surf = pygame.transform.scale(tile_surf, (TILE_SIZE, TILE_SIZE))
+
+                TILE_SPRITES[name] = tile_surf
+
+            TILESET_LOADED = True
+            print(f"Loaded {len(TILE_SPRITES)} tiles from tileset")
+            return True
+        except Exception as e:
+            print(f"Error loading tileset: {e}")
+            return False
+
+    def get_floor_tile(x, y):
+        """Get a floor tile sprite based on position (for consistent variation)."""
+        if not TILE_SPRITES:
+            return None
+        # Use position to deterministically select a tile variation
+        floor_keys = [k for k in TILE_SPRITES.keys() if k.startswith('floor_')]
+        if not floor_keys:
+            return None
+        # Create a pattern that looks natural
+        index = (x * 7 + y * 13 + (x * y) % 5) % len(floor_keys)
+        return TILE_SPRITES.get(floor_keys[index])
+
     # Map dimensions
     MAP_WIDTH = 20
     MAP_HEIGHT = 13
@@ -765,6 +880,9 @@ init python in beacon_quest:
         def __init__(self):
             self.state = STATE_PLAYING
 
+            # Load tileset sprites
+            load_tileset()
+
             # Create all rooms
             self.rooms = self.create_all_rooms()
             self.current_room_id = "start"
@@ -1289,7 +1407,7 @@ init python in beacon_quest:
             random.seed()  # Reset seed
 
         def draw_map(self, surf, time_ms):
-            """Draw the game map."""
+            """Draw the game map using tileset sprites."""
             for y in range(MAP_HEIGHT):
                 for x in range(MAP_WIDTH):
                     tile = self.game_map[y][x]
@@ -1297,22 +1415,49 @@ init python in beacon_quest:
                     py = y * TILE_SIZE + MAP_OFFSET_Y
 
                     if tile == TILE_FLOOR:
-                        # Stone floor with pattern
-                        color = (60, 50, 80) if (x + y) % 2 == 0 else (55, 45, 75)
-                        pygame.draw.rect(surf, color, (px, py, TILE_SIZE, TILE_SIZE))
-                        pygame.draw.rect(surf, (70, 60, 90), (px, py, TILE_SIZE, TILE_SIZE), 1)
+                        # Try to use tileset sprite
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        else:
+                            # Fallback to procedural
+                            color = (60, 50, 80) if (x + y) % 2 == 0 else (55, 45, 75)
+                            pygame.draw.rect(surf, color, (px, py, TILE_SIZE, TILE_SIZE))
+                            pygame.draw.rect(surf, (70, 60, 90), (px, py, TILE_SIZE, TILE_SIZE), 1)
 
                     elif tile == TILE_WALL:
-                        # Stone wall
-                        pygame.draw.rect(surf, (80, 70, 100), (px, py, TILE_SIZE, TILE_SIZE))
-                        pygame.draw.rect(surf, (100, 90, 120), (px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 16))
-                        pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE), 2)
+                        # Draw floor underneath first (walls are on top of floor)
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+
+                        # Draw wall on top - use sprite if available
+                        wall_sprite = TILE_SPRITES.get('wall_top')
+                        if wall_sprite:
+                            # Scale wall sprite to fit tile
+                            scaled_wall = pygame.transform.scale(wall_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_wall, (px, py))
+                        else:
+                            # Fallback to procedural wall
+                            pygame.draw.rect(surf, (80, 70, 100), (px, py, TILE_SIZE, TILE_SIZE))
+                            pygame.draw.rect(surf, (100, 90, 120), (px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 16))
+                            pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE), 2)
 
                     elif tile == TILE_BEACON:
-                        # Beacon pedestal
-                        pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE))
+                        # Draw floor first
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        else:
+                            pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE))
 
-                        # Glowing beacon
+                        # Draw beacon pedestal/fountain sprite if available
+                        fountain_sprite = TILE_SPRITES.get('fountain')
+                        if fountain_sprite:
+                            scaled_fountain = pygame.transform.scale(fountain_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_fountain, (px, py))
+
+                        # Glowing beacon effect
                         glow = 0.5 + 0.3 * math.sin(time_ms * 0.003)
                         glow_size = int(40 + 15 * glow)
 
@@ -1331,8 +1476,12 @@ init python in beacon_quest:
                         pygame.draw.circle(surf, beacon_color, (px + TILE_SIZE // 2, py + TILE_SIZE // 2), 15)
 
                     elif tile in (TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W):
-                        # Draw door with glowing portal effect
-                        pygame.draw.rect(surf, (50, 40, 70), (px, py, TILE_SIZE, TILE_SIZE))
+                        # Draw floor first
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        else:
+                            pygame.draw.rect(surf, (50, 40, 70), (px, py, TILE_SIZE, TILE_SIZE))
 
                         # Glowing portal
                         glow = 0.6 + 0.3 * math.sin(time_ms * 0.004)
