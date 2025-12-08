@@ -70,6 +70,59 @@ init -100 python:
     builtins.draw_rounded_rect = draw_rounded_rect
 
     # ============================================================================
+    # PYGAME_SDL2 COMPATIBLE ARC DRAWING
+    # ============================================================================
+    # pygame_sdl2 doesn't implement pygame.draw.arc
+    # This helper function draws arcs using line segments
+
+    def draw_arc(surface, color, rect, start_angle, stop_angle, width=1):
+        """
+        Draw an arc compatible with pygame_sdl2.
+
+        Args:
+            surface: pygame surface to draw on
+            color: color tuple (R, G, B) or (R, G, B, A)
+            rect: (x, y, width, height) or pygame.Rect - bounding box of the ellipse
+            start_angle: start angle in radians
+            stop_angle: stop angle in radians
+            width: line width (default 1)
+        """
+        import pygame
+
+        # Handle rect input
+        if isinstance(rect, pygame.Rect):
+            x, y, w, h = rect.x, rect.y, rect.width, rect.height
+        else:
+            x, y, w, h = rect
+
+        # Calculate center and radii
+        cx = x + w / 2
+        cy = y + h / 2
+        rx = w / 2
+        ry = h / 2
+
+        # Number of segments based on arc length
+        angle_diff = abs(stop_angle - start_angle)
+        num_segments = max(8, int(angle_diff * max(rx, ry) / 4))
+
+        # Generate points along the arc
+        points = []
+        for i in range(num_segments + 1):
+            angle = start_angle + (stop_angle - start_angle) * i / num_segments
+            px = cx + rx * math.cos(angle)
+            py = cy - ry * math.sin(angle)  # Negative because pygame Y is inverted
+            points.append((int(px), int(py)))
+
+        # Draw lines between consecutive points
+        if len(points) >= 2:
+            for i in range(len(points) - 1):
+                pygame.draw.line(surface, color, points[i], points[i + 1], width)
+
+    # Register arc function globally
+    renpy.store.draw_arc = draw_arc
+    builtins.draw_arc = draw_arc
+
+    # ============================================================================
     # RENPY-COMPATIBLE FONT CLASS
     # ============================================================================
     # pygame_sdl2 doesn't include pygame.font module
@@ -472,10 +525,10 @@ init -100 python:
                 pygame.draw.ellipse(surf, (80, 40, 40), (cx - 15, 100, 30, 20))
             elif "smile" in self.expression.lower() or "happy" in self.expression.lower():
                 # Smile arc
-                pygame.draw.arc(surf, (80, 40, 40), (cx - 20, 90, 40, 30), 3.14, 6.28, 3)
+                draw_arc(surf, (80, 40, 40), (cx - 20, 90, 40, 30), 3.14, 6.28, 3)
             elif "sad" in self.expression.lower() or "worried" in self.expression.lower():
                 # Frown arc
-                pygame.draw.arc(surf, (80, 40, 40), (cx - 20, 105, 40, 20), 0, 3.14, 3)
+                draw_arc(surf, (80, 40, 40), (cx - 20, 105, 40, 20), 0, 3.14, 3)
 
             # Draw name label at top
             font = pygame.font.Font(None, 28)

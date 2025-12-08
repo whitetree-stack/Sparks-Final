@@ -497,7 +497,7 @@ init python in boss_rush:
             pygame.draw.circle(body_surf, (*self.color, alpha), (self.width // 2, self.height // 2), 25)
 
             # Helmet/visor
-            pygame.draw.arc(body_surf, (255, 255, 255, alpha), (10, 15, 40, 30), 0.5, 2.6, 4)
+            draw_arc(body_surf, (255, 255, 255, alpha), (10, 15, 40, 30), 0.5, 2.6, 4)
 
             surf.blit(body_surf, (self.x, self.y + bob))
 
