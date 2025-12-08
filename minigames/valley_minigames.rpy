@@ -829,6 +829,356 @@ init python in vine_blaster:
         """Spawn impact particles."""
         return [ImpactParticle(x, y, color) for _ in range(count)]
 
+    # ============================================================================
+    # VINE TYPES - Different vine behaviors for more varied gameplay
+    # ============================================================================
+
+    class ThornyVine(VineSegment):
+        """Fast-growing thorny vine - harder to kill, causes more encroachment."""
+        def __init__(self, edge="top"):
+            super().__init__(edge)
+            self.hp = 5
+            self.max_hp = 5
+            self.growth_speed = 0.035  # Faster growth
+            self.encroachment_multiplier = 2.0  # More damage when it reaches beacon
+            self.vine_type = "thorny"
+            self.base_color = (180, 80, 180)  # Purple tint
+            self.score_value = 200  # Worth more points
+
+        def draw(self, surf, time_ms):
+            if not self.alive:
+                return
+            tip_x, tip_y = self.get_tip_position()
+            num_segments = max(2, int(self.growth * 20))
+            points = []
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                px = self.x + (tip_x - self.x) * t
+                py = self.y + (tip_y - self.y) * t
+                wiggle = math.sin(time_ms * 0.004 * self.wiggle_speed + t * 10 + self.wiggle_offset) * 20 * t
+                dx, dy = tip_x - self.x, tip_y - self.y
+                length = math.hypot(dx, dy)
+                if length > 0:
+                    px += (-dy / length) * wiggle
+                    py += (dx / length) * wiggle
+                points.append((int(px), int(py)))
+
+            if len(points) >= 2:
+                # Thorny vine - darker purple with spikes
+                pygame.draw.lines(surf, (40, 20, 50), False, points, self.width + 8)
+                health_ratio = self.hp / self.max_hp
+                if self.hit_flash_timer > 0:
+                    main_color = (220, 150, 220)
+                else:
+                    main_color = (int(120 + 60 * health_ratio), 60, int(100 + 80 * health_ratio))
+                pygame.draw.lines(surf, main_color, False, points, self.width)
+                pygame.draw.lines(surf, (80, 40, 100), False, points, self.width // 3)
+
+                # Draw thorns
+                for i, pt in enumerate(points[1:-1:3]):
+                    thorn_size = 12 + math.sin(time_ms * 0.01 + i) * 3
+                    pygame.draw.circle(surf, (200, 100, 150), pt, int(thorn_size))
+                    pygame.draw.circle(surf, (255, 150, 200), pt, int(thorn_size * 0.6))
+
+                # Glowing tip
+                tip_color = (255, 150, 255) if self.hit_flash_timer > 0 else (200, 100, 200)
+                pygame.draw.circle(surf, tip_color, (int(tip_x), int(tip_y)), 18)
+                pygame.draw.circle(surf, (255, 200, 255), (int(tip_x), int(tip_y)), 10)
+
+    class SplitterVine(VineSegment):
+        """When destroyed, splits into smaller mini-vines."""
+        def __init__(self, edge="top", is_child=False, parent_pos=None):
+            super().__init__(edge)
+            self.is_child = is_child
+            self.vine_type = "splitter"
+            if is_child and parent_pos:
+                self.x, self.y = parent_pos
+                self.hp = 1
+                self.max_hp = 1
+                self.width = 25
+                self.growth = 0
+                self.growth_speed = 0.04  # Children grow fast
+                offset = random.randint(-80, 80)
+                self.target_x = BEACON_CENTER[0] + offset
+                self.target_y = BEACON_CENTER[1] + random.randint(-50, 50)
+            else:
+                self.hp = 3
+                self.max_hp = 3
+                self.growth_speed = 0.018
+            self.base_color = (220, 200, 80)  # Yellow-ish
+            self.score_value = 150 if not is_child else 50
+            self.spawned_children = False
+
+        def draw(self, surf, time_ms):
+            if not self.alive:
+                return
+            tip_x, tip_y = self.get_tip_position()
+            num_segments = max(2, int(self.growth * 15))
+            points = []
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                px = self.x + (tip_x - self.x) * t
+                py = self.y + (tip_y - self.y) * t
+                wiggle = math.sin(time_ms * 0.005 * self.wiggle_speed + t * 8 + self.wiggle_offset) * 12 * t
+                dx, dy = tip_x - self.x, tip_y - self.y
+                length = math.hypot(dx, dy)
+                if length > 0:
+                    px += (-dy / length) * wiggle
+                    py += (dx / length) * wiggle
+                points.append((int(px), int(py)))
+
+            if len(points) >= 2:
+                # Yellow-green splitter vine
+                pygame.draw.lines(surf, (80, 80, 20), False, points, self.width + 6)
+                health_ratio = self.hp / self.max_hp
+                if self.hit_flash_timer > 0:
+                    main_color = (255, 255, 150)
+                else:
+                    main_color = (int(180 + 40 * health_ratio), int(180 + 40 * health_ratio), 50)
+                pygame.draw.lines(surf, main_color, False, points, self.width)
+                pygame.draw.lines(surf, (250, 220, 100), False, points, self.width // 3)
+
+                # Glowing tip with warning symbol
+                tip_color = (255, 255, 200) if self.hit_flash_timer > 0 else (255, 220, 100)
+                pygame.draw.circle(surf, tip_color, (int(tip_x), int(tip_y)), 15)
+                if not self.is_child:
+                    # Draw split indicator
+                    pygame.draw.line(surf, (200, 150, 50), (int(tip_x - 8), int(tip_y)), (int(tip_x + 8), int(tip_y)), 3)
+                    pygame.draw.line(surf, (200, 150, 50), (int(tip_x), int(tip_y - 8)), (int(tip_x), int(tip_y + 8)), 3)
+
+    class ArmoredVine(VineSegment):
+        """Slow but very durable - requires many hits."""
+        def __init__(self, edge="top"):
+            super().__init__(edge)
+            self.hp = 8
+            self.max_hp = 8
+            self.growth_speed = 0.012  # Much slower
+            self.width = 55  # Thicker
+            self.vine_type = "armored"
+            self.base_color = (120, 90, 60)  # Brown
+            self.score_value = 300
+
+        def draw(self, surf, time_ms):
+            if not self.alive:
+                return
+            tip_x, tip_y = self.get_tip_position()
+            num_segments = max(2, int(self.growth * 15))
+            points = []
+            for i in range(num_segments + 1):
+                t = i / num_segments
+                px = self.x + (tip_x - self.x) * t
+                py = self.y + (tip_y - self.y) * t
+                wiggle = math.sin(time_ms * 0.002 * self.wiggle_speed + t * 6 + self.wiggle_offset) * 8 * t
+                dx, dy = tip_x - self.x, tip_y - self.y
+                length = math.hypot(dx, dy)
+                if length > 0:
+                    px += (-dy / length) * wiggle
+                    py += (dx / length) * wiggle
+                points.append((int(px), int(py)))
+
+            if len(points) >= 2:
+                # Armored vine - brown/bark-like
+                pygame.draw.lines(surf, (50, 35, 20), False, points, self.width + 10)
+                health_ratio = self.hp / self.max_hp
+                if self.hit_flash_timer > 0:
+                    main_color = (200, 170, 140)
+                else:
+                    main_color = (int(100 + 40 * health_ratio), int(70 + 30 * health_ratio), 40)
+                pygame.draw.lines(surf, main_color, False, points, self.width)
+
+                # Armor plate segments
+                for i in range(1, len(points) - 1, 2):
+                    pt = points[i]
+                    plate_size = 18 + math.sin(i * 0.5) * 4
+                    pygame.draw.circle(surf, (80, 60, 40), pt, int(plate_size))
+                    pygame.draw.circle(surf, (100, 80, 50), pt, int(plate_size * 0.7))
+
+                # Reinforced tip
+                tip_color = (180, 150, 120) if self.hit_flash_timer > 0 else (140, 100, 70)
+                pygame.draw.circle(surf, (60, 45, 30), (int(tip_x), int(tip_y)), 22)
+                pygame.draw.circle(surf, tip_color, (int(tip_x), int(tip_y)), 16)
+
+                # Health bar above armored vine tip
+                bar_width = 50
+                bar_height = 6
+                bar_x = tip_x - bar_width // 2
+                bar_y = tip_y - 35
+                pygame.draw.rect(surf, (40, 40, 40), (int(bar_x), int(bar_y), bar_width, bar_height))
+                fill_width = int(bar_width * health_ratio)
+                health_color = (100, 180, 100) if health_ratio > 0.5 else (220, 180, 50) if health_ratio > 0.25 else (220, 80, 80)
+                if fill_width > 0:
+                    pygame.draw.rect(surf, health_color, (int(bar_x), int(bar_y), fill_width, bar_height))
+                pygame.draw.rect(surf, (100, 100, 100), (int(bar_x), int(bar_y), bar_width, bar_height), 1)
+
+    # ============================================================================
+    # POWER-UP SYSTEM
+    # ============================================================================
+
+    POWERUP_TYPES = ["rapid_fire", "spread_shot", "piercing", "heal"]
+    POWERUP_DURATION = 8000  # 8 seconds
+    POWERUP_COLORS = {
+        "rapid_fire": (255, 150, 50),   # Orange
+        "spread_shot": (50, 200, 255),  # Cyan
+        "piercing": (255, 80, 80),      # Red
+        "heal": (80, 255, 120)          # Green
+    }
+    POWERUP_SYMBOLS = {
+        "rapid_fire": ">>",
+        "spread_shot": "***",
+        "piercing": "-->",
+        "heal": "+"
+    }
+
+    class PowerUp:
+        """Collectible power-up that drops from destroyed vines."""
+        def __init__(self, x, y, powerup_type=None):
+            self.x, self.y = x, y
+            self.powerup_type = powerup_type or random.choice(POWERUP_TYPES)
+            self.color = POWERUP_COLORS.get(self.powerup_type, (255, 255, 255))
+            self.alive = True
+            self.lifetime = 10000  # 10 seconds to collect
+            self.bob_timer = random.random() * math.pi * 2
+            self.size = 25
+            self.collected = False
+
+        def update(self, dt):
+            self.lifetime -= dt
+            self.bob_timer += dt * 0.005
+            if self.lifetime <= 0:
+                self.alive = False
+
+        def draw(self, surf):
+            if not self.alive or self.collected:
+                return
+            bob = math.sin(self.bob_timer) * 8
+            draw_y = self.y + bob
+
+            # Pulsing glow
+            pulse = abs(math.sin(self.bob_timer * 2)) * 0.5 + 0.5
+            glow_size = int(self.size + 20 * pulse)
+            glow_surf = pygame.Surface((glow_size * 2 + 4, glow_size * 2 + 4), pygame.SRCALPHA)
+            glow_alpha = int(80 * pulse)
+            pygame.draw.circle(glow_surf, (*self.color[:3], glow_alpha),
+                             (glow_size + 2, glow_size + 2), glow_size)
+            surf.blit(glow_surf, (int(self.x - glow_size - 2), int(draw_y - glow_size - 2)))
+
+            # Main circle
+            pygame.draw.circle(surf, (40, 40, 50), (int(self.x), int(draw_y)), self.size + 3)
+            pygame.draw.circle(surf, self.color, (int(self.x), int(draw_y)), self.size)
+            pygame.draw.circle(surf, (255, 255, 255), (int(self.x), int(draw_y)), self.size - 8)
+            pygame.draw.circle(surf, self.color, (int(self.x), int(draw_y)), self.size - 12)
+
+            # Symbol in center
+            symbol = POWERUP_SYMBOLS.get(self.powerup_type, "?")
+            # Draw symbol using simple shapes since we don't have fonts
+            if self.powerup_type == "heal":
+                # Plus sign
+                pygame.draw.rect(surf, (255, 255, 255), (int(self.x - 8), int(draw_y - 2), 16, 4))
+                pygame.draw.rect(surf, (255, 255, 255), (int(self.x - 2), int(draw_y - 8), 4, 16))
+            elif self.powerup_type == "rapid_fire":
+                # Arrows >>
+                for offset in [-6, 2]:
+                    pygame.draw.polygon(surf, (255, 255, 255), [
+                        (int(self.x + offset - 4), int(draw_y - 6)),
+                        (int(self.x + offset + 6), int(draw_y)),
+                        (int(self.x + offset - 4), int(draw_y + 6))
+                    ])
+            elif self.powerup_type == "spread_shot":
+                # Three dots
+                for dx in [-8, 0, 8]:
+                    pygame.draw.circle(surf, (255, 255, 255), (int(self.x + dx), int(draw_y)), 4)
+            elif self.powerup_type == "piercing":
+                # Arrow -->
+                pygame.draw.line(surf, (255, 255, 255), (int(self.x - 10), int(draw_y)),
+                               (int(self.x + 6), int(draw_y)), 3)
+                pygame.draw.polygon(surf, (255, 255, 255), [
+                    (int(self.x + 6), int(draw_y - 6)),
+                    (int(self.x + 12), int(draw_y)),
+                    (int(self.x + 6), int(draw_y + 6))
+                ])
+
+        def rect(self):
+            return pygame.Rect(self.x - self.size, self.y - self.size, self.size * 2, self.size * 2)
+
+    # ============================================================================
+    # COMBO SYSTEM
+    # ============================================================================
+
+    class ComboTracker:
+        """Tracks consecutive kills and provides score multipliers."""
+        def __init__(self):
+            self.combo_count = 0
+            self.combo_timer = 0
+            self.combo_window = 2000  # 2 seconds to maintain combo
+            self.max_combo = 0
+            self.display_timer = 0
+            self.display_duration = 1500
+            self.last_multiplier = 1.0
+
+        def add_kill(self):
+            """Add a kill to the combo. Returns the score multiplier."""
+            self.combo_count += 1
+            self.combo_timer = self.combo_window
+            self.display_timer = self.display_duration
+            if self.combo_count > self.max_combo:
+                self.max_combo = self.combo_count
+
+            # Calculate multiplier (max 4x at 10+ combo)
+            if self.combo_count >= 10:
+                self.last_multiplier = 4.0
+            elif self.combo_count >= 7:
+                self.last_multiplier = 3.0
+            elif self.combo_count >= 4:
+                self.last_multiplier = 2.0
+            elif self.combo_count >= 2:
+                self.last_multiplier = 1.5
+            else:
+                self.last_multiplier = 1.0
+            return self.last_multiplier
+
+        def update(self, dt):
+            if self.combo_timer > 0:
+                self.combo_timer -= dt
+                if self.combo_timer <= 0:
+                    self.combo_count = 0
+                    self.last_multiplier = 1.0
+            if self.display_timer > 0:
+                self.display_timer -= dt
+
+        def draw(self, surf, x, y):
+            if self.combo_count >= 2 and self.display_timer > 0:
+                # Fade out effect
+                alpha = min(255, int(255 * (self.display_timer / self.display_duration)))
+                scale = 1.0 + (1.0 - self.display_timer / self.display_duration) * 0.3
+
+                # Combo display
+                combo_surf = pygame.Surface((200, 80), pygame.SRCALPHA)
+
+                # Background
+                bg_alpha = int(alpha * 0.6)
+                pygame.draw.rect(combo_surf, (0, 0, 0, bg_alpha), (0, 20, 200, 50), border_radius=10)
+
+                # Combo text using simple bars/rectangles
+                # Display multiplier: x1.5, x2, x3, x4
+                mult_text = f"x{self.last_multiplier:.1f}"
+
+                # Draw "COMBO" and count using rectangles
+                color = (255, 220, 100, alpha) if self.combo_count < 7 else (255, 100, 100, alpha)
+
+                # Combo count display (using filled rectangles as bars)
+                bar_width = min(180, self.combo_count * 15)
+                pygame.draw.rect(combo_surf, (*color[:3], int(alpha * 0.8)),
+                               (10, 30, bar_width, 12), border_radius=3)
+
+                # Multiplier indicator circles
+                for i in range(min(4, int(self.last_multiplier))):
+                    circle_x = 30 + i * 45
+                    pygame.draw.circle(combo_surf, (*color[:3], alpha), (circle_x, 55), 12)
+                    pygame.draw.circle(combo_surf, (255, 255, 255, alpha), (circle_x, 55), 8)
+
+                # Blit centered
+                surf.blit(combo_surf, (int(x - 100), int(y)))
+
 
 ####################################################################################################################
 # Valley Climbing Minigame
@@ -1578,7 +1928,587 @@ init python in valley_climb:
 
     # Ambush Vine state constants
     VINE_HIDDEN, VINE_WARNING, VINE_ATTACKING, VINE_RETRACTING, VINE_COOLDOWN = 0, 1, 2, 3, 4
-    
+
+    # ============================================================================
+    # NEW ENEMY TYPES FOR VALLEY CLIMB
+    # ============================================================================
+
+    class JumperSpider:
+        """A spider that hops/leaps at the player instead of walking."""
+        def __init__(self, x, y, detection_radius=250):
+            self.x, self.y = x, y
+            self.detection_radius = detection_radius
+            self.speed = 3  # Slower base speed
+            self.jump_speed = 18
+            self.state = SPIDER_IDLE
+            self.state_timer = 0
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.facing = 3
+            self.damage = 2
+            self.hp = 1  # Fragile but dangerous
+            self.dead = False
+            self.death_timer = 0
+            self.death_frame = 0
+            self.hit_cooldown = 0
+            self.hit_this_attack = False
+            self.hit_by_henry = False
+            self.hit_flash_timer = 0
+            self.hit_flash_duration = 150
+            self.fall_velocity = 0
+            self.fall_acceleration = 0.5
+            # Jump mechanics
+            self.jumping = False
+            self.jump_timer = 0
+            self.jump_cooldown = 2000
+            self.jump_cooldown_timer = 0
+            self.jump_duration = 400
+            self.jump_target_x = x
+            self.jump_target_y = y
+            self.jump_start_x = x
+            self.jump_start_y = y
+            self.jump_height = 150
+            self._camera_y = 0
+
+        def update(self, player=None, dt=16, camera_y=0):
+            if self.hit_flash_timer > 0:
+                self.hit_flash_timer = max(0, self.hit_flash_timer - dt)
+            if self.dead:
+                self.death_timer += dt
+                self.anim_timer += dt
+                if self.anim_timer > 150:
+                    self.death_frame = min(self.death_frame + 1, len(spider_death_animation) - 1)
+                    self.anim_timer = 0
+                self.fall_velocity += self.fall_acceleration
+                self.y += self.fall_velocity
+                return
+
+            self.state_timer += dt
+            self.hit_cooldown = max(0, self.hit_cooldown - dt)
+            self.jump_cooldown_timer = max(0, self.jump_cooldown_timer - dt)
+            self._camera_y = camera_y
+
+            if self.jumping:
+                self.jump_timer += dt
+                progress = min(1.0, self.jump_timer / self.jump_duration)
+                # Parabolic jump arc
+                self.x = self.jump_start_x + (self.jump_target_x - self.jump_start_x) * progress
+                base_y = self.jump_start_y + (self.jump_target_y - self.jump_start_y) * progress
+                # Add arc (goes up then down)
+                arc = -4 * self.jump_height * progress * (progress - 1)
+                self.y = base_y - arc
+
+                if progress >= 1.0:
+                    self.jumping = False
+                    self.jump_cooldown_timer = self.jump_cooldown
+                    self.x = self.jump_target_x
+                    self.y = self.jump_target_y
+            elif player and not player.falling:
+                spider_screen_y = self.y + camera_y
+                player_hitbox_x = player.x + 112
+                player_hitbox_screen_y = (player.y - camera_y) + 145
+                dist = math.hypot(self.x - player_hitbox_x, spider_screen_y - player_hitbox_screen_y)
+
+                if dist < self.detection_radius and self.jump_cooldown_timer <= 0:
+                    # Start a jump towards the player
+                    self.jumping = True
+                    self.jump_timer = 0
+                    self.jump_start_x = self.x
+                    self.jump_start_y = self.y
+                    # Jump towards player's position
+                    self.jump_target_x = player.x + 112
+                    self.jump_target_y = player.y - camera_y + 100
+                    # Update facing
+                    if self.jump_target_x < self.x:
+                        self.facing = 0  # left
+                    else:
+                        self.facing = 1  # right
+
+            # Animation
+            if self.jumping:
+                self.anim_timer += dt * 2  # Faster animation when jumping
+            else:
+                self.anim_timer += dt
+            if self.anim_timer > 100:
+                self.anim_frame = (self.anim_frame + 1) % 5
+                self.anim_timer = 0
+
+        def take_damage(self, amount=1):
+            self.hp -= amount
+            self.hit_flash_timer = self.hit_flash_duration
+            if self.hp <= 0:
+                self.dead = True
+                self.state = SPIDER_DEAD
+                self.death_frame = 0
+                self.anim_timer = 0
+                self.fall_velocity = 2
+                return True
+            return False
+
+        def can_hit_player(self):
+            return self.hit_cooldown <= 0 and not self.dead
+
+        def did_hit_player(self):
+            self.hit_cooldown = 1000
+
+        def draw(self, surf, camera_y):
+            screen_y = self.y + camera_y
+            if self.dead:
+                if self.death_timer > 1500:
+                    return
+                sprite = spider_death_animation[min(self.death_frame, len(spider_death_animation) - 1)]
+                sprite = sprite.copy()
+                alpha = max(0, 255 - int((self.death_timer / 1500) * 255))
+                sprite.set_alpha(alpha)
+                surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+                return
+
+            # Draw shadow when jumping
+            if self.jumping:
+                progress = min(1.0, self.jump_timer / self.jump_duration)
+                shadow_alpha = int(100 * (1 - abs(progress - 0.5) * 2))
+                shadow_surf = pygame.Surface((60, 20), pygame.SRCALPHA)
+                pygame.draw.ellipse(shadow_surf, (0, 0, 0, shadow_alpha), (0, 0, 60, 20))
+                ground_y = self.jump_start_y + (self.jump_target_y - self.jump_start_y) * progress
+                surf.blit(shadow_surf, (int(self.x - 30), int(ground_y + camera_y + 20)))
+
+            sprites = [spider_walk_left, spider_walk_right, spider_walk_up, spider_walk_down][min(self.facing, 3)]
+            frame = self.anim_frame % len(sprites)
+            sprite = sprites[frame]
+
+            # Tint yellow-green to distinguish jumper spiders
+            sprite = sprite.copy()
+            tint_surf = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+            tint_surf.fill((50, 80, 0, 60))
+            sprite.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+            if self.hit_flash_timer > 0:
+                white_surface = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+                white_surface.fill((255, 255, 255, 200))
+                sprite.blit(white_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+
+            surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+
+        def rect(self):
+            return pygame.Rect(self.x - 30, self.y - 30, 60, 60)
+
+        def is_dead_and_gone(self):
+            return self.dead and self.death_timer > 1500
+
+
+    class SpitterSpider:
+        """A spider that keeps distance and spits projectiles at the player."""
+        def __init__(self, x, y, detection_radius=300):
+            self.x, self.y = x, y
+            self.detection_radius = detection_radius
+            self.preferred_distance = 200  # Tries to stay this far from player
+            self.speed = 3
+            self.state = SPIDER_IDLE
+            self.state_timer = 0
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.facing = 3
+            self.damage = 1
+            self.hp = 2
+            self.dead = False
+            self.death_timer = 0
+            self.death_frame = 0
+            self.hit_cooldown = 0
+            self.hit_this_attack = False
+            self.hit_by_henry = False
+            self.hit_flash_timer = 0
+            self.hit_flash_duration = 150
+            self.fall_velocity = 0
+            self.fall_acceleration = 0.5
+            # Spit attack mechanics
+            self.spit_cooldown = 0
+            self.spit_cooldown_max = 2500
+            self.spitting = False
+            self.spit_timer = 0
+            self.spit_duration = 500
+            self.projectiles = []  # Stores active spit projectiles
+            self._camera_y = 0
+
+        def update(self, player=None, dt=16, camera_y=0):
+            if self.hit_flash_timer > 0:
+                self.hit_flash_timer = max(0, self.hit_flash_timer - dt)
+            if self.dead:
+                self.death_timer += dt
+                self.anim_timer += dt
+                if self.anim_timer > 150:
+                    self.death_frame = min(self.death_frame + 1, len(spider_death_animation) - 1)
+                    self.anim_timer = 0
+                self.fall_velocity += self.fall_acceleration
+                self.y += self.fall_velocity
+                return
+
+            self.state_timer += dt
+            self.hit_cooldown = max(0, self.hit_cooldown - dt)
+            self.spit_cooldown = max(0, self.spit_cooldown - dt)
+            self._camera_y = camera_y
+
+            # Update projectiles
+            for proj in self.projectiles[:]:
+                proj['x'] += proj['vx']
+                proj['y'] += proj['vy']
+                proj['lifetime'] -= dt
+                if proj['lifetime'] <= 0:
+                    self.projectiles.remove(proj)
+
+            if self.spitting:
+                self.spit_timer += dt
+                if self.spit_timer >= self.spit_duration:
+                    self.spitting = False
+            elif player and not player.falling:
+                spider_screen_y = self.y + camera_y
+                player_hitbox_x = player.x + 112
+                player_hitbox_screen_y = (player.y - camera_y) + 145
+                dist = math.hypot(self.x - player_hitbox_x, spider_screen_y - player_hitbox_screen_y)
+
+                if dist < self.detection_radius:
+                    # Maintain distance - move away if too close
+                    if dist < self.preferred_distance - 50:
+                        dx = self.x - player_hitbox_x
+                        dy = spider_screen_y - player_hitbox_screen_y
+                        if dist > 0:
+                            self.x += (dx / dist) * self.speed
+                            self.y += (dy / dist) * self.speed
+                            self._update_facing(-dx, -dy)
+                    # Spit if in range and cooldown ready
+                    elif self.spit_cooldown <= 0:
+                        self.spitting = True
+                        self.spit_timer = 0
+                        self.spit_cooldown = self.spit_cooldown_max
+                        # Create projectile
+                        dx = player_hitbox_x - self.x
+                        dy = player_hitbox_screen_y - spider_screen_y
+                        dist = math.hypot(dx, dy)
+                        if dist > 0:
+                            speed = 8
+                            self.projectiles.append({
+                                'x': self.x,
+                                'y': self.y,
+                                'vx': (dx / dist) * speed,
+                                'vy': (dy / dist) * speed,
+                                'lifetime': 2000
+                            })
+                            self._update_facing(dx, dy)
+
+            # Animation
+            self.anim_timer += dt
+            if self.anim_timer > 120:
+                self.anim_frame = (self.anim_frame + 1) % 5
+                self.anim_timer = 0
+
+        def _update_facing(self, dx, dy):
+            abs_dx, abs_dy = abs(dx), abs(dy)
+            if abs_dx > abs_dy:
+                self.facing = 0 if dx < 0 else 1
+            else:
+                self.facing = 2 if dy < 0 else 3
+
+        def take_damage(self, amount=1):
+            self.hp -= amount
+            self.hit_flash_timer = self.hit_flash_duration
+            if self.hp <= 0:
+                self.dead = True
+                self.state = SPIDER_DEAD
+                self.death_frame = 0
+                self.anim_timer = 0
+                self.fall_velocity = 2
+                self.projectiles.clear()  # Remove all projectiles when killed
+                return True
+            return False
+
+        def can_hit_player(self):
+            return False  # Spitter doesn't melee
+
+        def did_hit_player(self):
+            pass
+
+        def check_projectile_hits(self, player, camera_y):
+            """Check if any projectiles hit the player. Returns damage dealt."""
+            if player.invincible or player.falling:
+                return 0
+            player_screen_y = player.y - camera_y
+            player_rect = pygame.Rect(player.x + 70, player_screen_y + 50, 85, 190)
+            damage = 0
+            for proj in self.projectiles[:]:
+                proj_screen_y = proj['y'] + camera_y
+                proj_rect = pygame.Rect(proj['x'] - 10, proj_screen_y - 10, 20, 20)
+                if proj_rect.colliderect(player_rect):
+                    damage += self.damage
+                    self.projectiles.remove(proj)
+            return damage
+
+        def draw(self, surf, camera_y):
+            screen_y = self.y + camera_y
+            if self.dead:
+                if self.death_timer > 1500:
+                    return
+                sprite = spider_death_animation[min(self.death_frame, len(spider_death_animation) - 1)]
+                sprite = sprite.copy()
+                alpha = max(0, 255 - int((self.death_timer / 1500) * 255))
+                sprite.set_alpha(alpha)
+                surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+                return
+
+            # Draw projectiles
+            for proj in self.projectiles:
+                proj_screen_y = proj['y'] + camera_y
+                # Glowing green spit ball
+                glow_surf = pygame.Surface((30, 30), pygame.SRCALPHA)
+                pygame.draw.circle(glow_surf, (100, 255, 100, 100), (15, 15), 12)
+                pygame.draw.circle(glow_surf, (150, 255, 150), (15, 15), 8)
+                pygame.draw.circle(glow_surf, (200, 255, 200), (15, 15), 4)
+                surf.blit(glow_surf, (int(proj['x'] - 15), int(proj_screen_y - 15)))
+
+            sprites = [spider_walk_left, spider_walk_right, spider_walk_up, spider_walk_down][min(self.facing, 3)]
+            frame = self.anim_frame % len(sprites)
+            sprite = sprites[frame]
+
+            # Tint blue to distinguish spitter spiders
+            sprite = sprite.copy()
+            tint_surf = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+            tint_surf.fill((0, 50, 80, 60))
+            sprite.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+            if self.hit_flash_timer > 0:
+                white_surface = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+                white_surface.fill((255, 255, 255, 200))
+                sprite.blit(white_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+
+            surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+
+            # Indicate spitting state
+            if self.spitting:
+                indicator_surf = pygame.Surface((40, 10), pygame.SRCALPHA)
+                pygame.draw.rect(indicator_surf, (100, 255, 100, 200), (0, 0, 40, 10))
+                surf.blit(indicator_surf, (int(self.x - 20), int(screen_y - 50)))
+
+        def rect(self):
+            return pygame.Rect(self.x - 30, self.y - 30, 60, 60)
+
+        def is_dead_and_gone(self):
+            return self.dead and self.death_timer > 1500
+
+
+    class ArmoredSpider:
+        """A larger, tougher spider that takes more hits and deals more damage."""
+        def __init__(self, x, y, detection_radius=180):
+            self.x, self.y = x, y
+            self.detection_radius = detection_radius
+            self.speed = 4  # Slower
+            self.wander_speed = 0.5
+            self.state = SPIDER_IDLE
+            self.state_timer = 0
+            self.wander_target_x, self.wander_target_y = x, y
+            self.wander_pause_time = random.randint(2000, 4000)
+            self.wander_move_time = random.randint(1000, 3000)
+            self.is_paused = True
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.facing = 3
+            self.idle_frame = 0
+            self.facing_cooldown = 300
+            self.damage = 4  # Hits harder
+            self.hp = 5  # Takes more hits
+            self.max_hp = 5
+            self.dead = False
+            self.death_timer = 0
+            self.death_frame = 0
+            self.hit_cooldown = 0
+            self.hit_this_attack = False
+            self.hit_by_henry = False
+            self.hit_flash_timer = 0
+            self.hit_flash_duration = 100  # Shorter flash (armored)
+            self.fall_velocity = 0
+            self.fall_acceleration = 0.3  # Falls slower (heavier)
+            self._camera_y = 0
+            # Size scale
+            self.scale = 1.4
+
+        def update(self, player=None, dt=16, camera_y=0):
+            if self.hit_flash_timer > 0:
+                self.hit_flash_timer = max(0, self.hit_flash_timer - dt)
+            if self.dead:
+                self.death_timer += dt
+                self.anim_timer += dt
+                if self.anim_timer > 200:  # Slower death animation
+                    self.death_frame = min(self.death_frame + 1, len(spider_death_animation) - 1)
+                    self.anim_timer = 0
+                self.fall_velocity += self.fall_acceleration
+                self.y += self.fall_velocity
+                return
+            self.state_timer += dt
+            self.hit_cooldown = max(0, self.hit_cooldown - dt)
+            self._camera_y = camera_y
+
+            if player and not player.falling:
+                spider_screen_y = self.y + camera_y
+                player_hitbox_x = player.x + 112
+                player_hitbox_screen_y = (player.y - camera_y) + 145
+                dist = math.hypot(self.x - player_hitbox_x, spider_screen_y - player_hitbox_screen_y)
+                if dist < self.detection_radius:
+                    self.state = SPIDER_PURSUE
+                elif self.state == SPIDER_PURSUE and dist > self.detection_radius * 1.5:
+                    self.state = SPIDER_WANDER
+                    self.is_paused = True
+                    self.state_timer = 0
+
+            if self.state == SPIDER_IDLE:
+                if self.state_timer > 3000:
+                    self.state = SPIDER_WANDER
+                    self.state_timer = 0
+                    self._pick_wander_target()
+            elif self.state == SPIDER_WANDER:
+                self._do_wander(dt)
+            elif self.state == SPIDER_PURSUE:
+                self._do_pursue(player, dt)
+
+            is_moving = (self.state == SPIDER_PURSUE or (self.state == SPIDER_WANDER and not self.is_paused))
+            if is_moving:
+                self.anim_timer += dt
+                if self.anim_timer > 120:  # Slower animation
+                    self.anim_frame = (self.anim_frame + 1) % 5
+                    self.anim_timer = 0
+
+        def _pick_wander_target(self):
+            self.wander_target_x = max(250, min(1650, self.x + random.randint(-100, 100)))
+            self.wander_target_y = self.y + random.randint(-100, 100)
+            self.is_paused = False
+            self.wander_move_time = random.randint(1000, 3000)
+            self.state_timer = 0
+
+        def _do_wander(self, dt):
+            if self.is_paused:
+                if self.state_timer > self.wander_pause_time:
+                    self._pick_wander_target()
+            else:
+                dx, dy = self.wander_target_x - self.x, self.wander_target_y - self.y
+                dist = math.hypot(dx, dy)
+                if dist > 1:
+                    self.x += (dx / dist) * self.wander_speed
+                    self.y += (dy / dist) * self.wander_speed
+                    self._update_facing(dx, dy)
+                if self.state_timer > self.wander_move_time or dist <= 5:
+                    self.is_paused = True
+                    self.wander_pause_time = random.randint(2000, 4000)
+                    self.state_timer = 0
+
+        def _do_pursue(self, player, dt):
+            if not player:
+                return
+            target_x = player.x + 112
+            dx = target_x - self.x
+            camera_y = getattr(self, '_camera_y', 0)
+            target_y = player.y - 2 * camera_y + 145
+            dy = target_y - self.y
+            dist = math.hypot(dx, dy)
+            if dist > 10:
+                self.x += (dx / dist) * self.speed
+                self.y += (dy / dist) * self.speed
+                self._update_facing(dx, dy)
+
+        def _update_facing(self, dx, dy):
+            abs_dx, abs_dy = abs(dx), abs(dy)
+            if abs_dx < 1.0 and abs_dy < 1.0:
+                return
+            self.facing_cooldown = max(0, self.facing_cooldown - 16)
+            if self.facing_cooldown > 0:
+                return
+            new_facing = None
+            if abs_dx > abs_dy * 4:
+                new_facing = 0 if dx < 0 else 1
+            elif abs_dy > abs_dx * 4:
+                new_facing = 2 if dy < 0 else 3
+            if new_facing is not None and new_facing != self.facing:
+                self.facing = new_facing
+                self.facing_cooldown = 500
+
+        def take_damage(self, amount=1):
+            self.hp -= amount
+            self.hit_flash_timer = self.hit_flash_duration
+            if self.hp <= 0:
+                self.dead = True
+                self.state = SPIDER_DEAD
+                self.death_frame = 0
+                self.anim_timer = 0
+                self.fall_velocity = 1  # Falls slower
+                return True
+            return False
+
+        def can_hit_player(self):
+            return self.hit_cooldown <= 0 and not self.dead
+
+        def did_hit_player(self):
+            self.hit_cooldown = 1500  # Slower attack rate
+
+        def draw(self, surf, camera_y):
+            screen_y = self.y + camera_y
+            if self.dead:
+                if self.death_timer > 2000:  # Longer death animation
+                    return
+                sprite = spider_death_animation[min(self.death_frame, len(spider_death_animation) - 1)]
+                sprite = sprite.copy()
+                # Scale up
+                new_w = int(sprite.get_width() * self.scale)
+                new_h = int(sprite.get_height() * self.scale)
+                sprite = pygame.transform.smoothscale(sprite, (new_w, new_h))
+                alpha = max(0, 255 - int((self.death_timer / 2000) * 255))
+                sprite.set_alpha(alpha)
+                surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+                return
+
+            sprites = [spider_walk_left, spider_walk_right, spider_walk_up, spider_walk_down][min(self.facing, 3)]
+            frame = self.anim_frame % len(sprites)
+            sprite = sprites[frame]
+            sprite = sprite.copy()
+
+            # Scale up
+            new_w = int(sprite.get_width() * self.scale)
+            new_h = int(sprite.get_height() * self.scale)
+            sprite = pygame.transform.smoothscale(sprite, (new_w, new_h))
+
+            # Tint red-brown to indicate armored
+            tint_surf = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+            tint_surf.fill((80, 30, 0, 80))
+            sprite.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+
+            if self.hit_flash_timer > 0:
+                white_surface = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+                white_surface.fill((255, 200, 200, 150))
+                sprite.blit(white_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+
+            surf.blit(sprite, (int(self.x - sprite.get_width() // 2), int(screen_y - sprite.get_height() // 2)))
+
+            # Draw health bar for armored spider
+            bar_width = 50
+            bar_height = 6
+            bar_x = self.x - bar_width // 2
+            bar_y = screen_y - new_h // 2 - 15
+            # Background
+            pygame.draw.rect(surf, (50, 50, 50), (int(bar_x), int(bar_y), bar_width, bar_height))
+            # Health fill
+            health_ratio = self.hp / self.max_hp
+            fill_width = int(bar_width * health_ratio)
+            health_color = (100, 200, 100) if health_ratio > 0.5 else (255, 200, 50) if health_ratio > 0.25 else (255, 80, 80)
+            if fill_width > 0:
+                pygame.draw.rect(surf, health_color, (int(bar_x), int(bar_y), fill_width, bar_height))
+            # Border
+            pygame.draw.rect(surf, (150, 150, 150), (int(bar_x), int(bar_y), bar_width, bar_height), 1)
+
+        def rect(self):
+            size = int(40 * self.scale)
+            return pygame.Rect(self.x - size, self.y - size, size * 2, size * 2)
+
+        def is_dead_and_gone(self):
+            return self.dead and self.death_timer > 2000
+
+    # ============================================================================
+    # END NEW ENEMY TYPES
+    # ============================================================================
+
     class AmbushVine:
         """Hidden plant enemy that lunges at player when they get close."""
         def __init__(self, x, y, direction="left"):
@@ -1756,12 +2686,18 @@ init python:
             self.clock = pygame.time.Clock()
             self.player = valley_climb.Player()
             self.henry = valley_climb.Henry()
-            self.spiders = []
+            self.spiders = []  # Basic spiders
+            self.jumper_spiders = []  # Jumping spiders
+            self.spitter_spiders = []  # Ranged spiders
+            self.armored_spiders = []  # Tank spiders
             self.ambush_vines = []
             self.health_pickups = []
             self.particles = []  # Visual particle effects
             self.pickup_spawn_timer = 0
             self.spider_spawn_timer = 0
+            self.jumper_spawn_timer = 0
+            self.spitter_spawn_timer = 0
+            self.armored_spawn_timer = 0
             self.vine_spawn_timer = 0
             self.score = 0
             self.speed = 30
@@ -1773,6 +2709,7 @@ init python:
             self.bg_y = self.bg_y2 = self.bg2_y = self.bg2_y2 = 0
             self.debug_mode = False
             self.time_ms = 0
+            self.difficulty_timer = 0  # Track time for difficulty scaling
             # New systems
             self.screen_shake = valley_climb.ScreenShake()
             self.combo_tracker = valley_climb.ComboTracker()
@@ -1791,14 +2728,53 @@ init python:
                 self.speed += 0.5
                 self.speed_timer = 0
 
+            # Difficulty scaling - new enemy types appear as game progresses
+            self.difficulty_timer += dt
+            difficulty_level = min(3, self.difficulty_timer // 30000)  # Increase every 30 seconds
+
+            # Basic spider spawning
             self.spider_spawn_timer += dt
-            if self.spider_spawn_timer > 3000:
+            spider_spawn_rate = max(1500, 3000 - difficulty_level * 500)
+            if self.spider_spawn_timer > spider_spawn_rate:
                 spawn_y = -self.camera_y - random.randint(100, 400)
                 self.spiders.append(valley_climb.Spider(
                     random.randint(300, 1600),
                     spawn_y,
                     detection_radius=random.randint(180, 250)))
                 self.spider_spawn_timer = 0
+
+            # Jumper spider spawning (starts after 15 seconds)
+            if self.difficulty_timer > 15000:
+                self.jumper_spawn_timer += dt
+                jumper_spawn_rate = max(4000, 8000 - difficulty_level * 1000)
+                if self.jumper_spawn_timer > jumper_spawn_rate and len(self.jumper_spiders) < 3:
+                    spawn_y = -self.camera_y - random.randint(200, 500)
+                    self.jumper_spiders.append(valley_climb.JumperSpider(
+                        random.randint(350, 1550),
+                        spawn_y))
+                    self.jumper_spawn_timer = 0
+
+            # Spitter spider spawning (starts after 30 seconds)
+            if self.difficulty_timer > 30000:
+                self.spitter_spawn_timer += dt
+                spitter_spawn_rate = max(6000, 12000 - difficulty_level * 1500)
+                if self.spitter_spawn_timer > spitter_spawn_rate and len(self.spitter_spiders) < 2:
+                    spawn_y = -self.camera_y - random.randint(300, 600)
+                    self.spitter_spiders.append(valley_climb.SpitterSpider(
+                        random.randint(400, 1500),
+                        spawn_y))
+                    self.spitter_spawn_timer = 0
+
+            # Armored spider spawning (starts after 60 seconds)
+            if self.difficulty_timer > 60000:
+                self.armored_spawn_timer += dt
+                armored_spawn_rate = max(10000, 20000 - difficulty_level * 2000)
+                if self.armored_spawn_timer > armored_spawn_rate and len(self.armored_spiders) < 2:
+                    spawn_y = -self.camera_y - random.randint(200, 500)
+                    self.armored_spiders.append(valley_climb.ArmoredSpider(
+                        random.randint(400, 1500),
+                        spawn_y))
+                    self.armored_spawn_timer = 0
 
             self.vine_spawn_timer += dt
             if self.vine_spawn_timer > 8000 and len(self.ambush_vines) < 5:
@@ -1832,7 +2808,9 @@ init python:
             if player_screen_y > height - 100:
                 self.player.y = self.camera_y + height - 100
 
-            self.henry.update(self.player, self.spiders, dt, self.camera_y)
+            # Combine all enemy types for Henry's targeting
+            all_enemies = self.spiders + self.jumper_spiders + self.spitter_spiders + self.armored_spiders
+            self.henry.update(self.player, all_enemies, dt, self.camera_y)
 
             for spider in self.spiders[:]:
                 spider.update(player=self.player, dt=dt, camera_y=self.camera_y)
@@ -1912,6 +2890,241 @@ init python:
                         if self.player.take_damage(spider.damage):
                             spider.did_hit_player()
                             self.screen_shake.trigger(12, 200)  # Bigger shake when player hit
+
+            # ==================== JUMPER SPIDER UPDATE ====================
+            for spider in self.jumper_spiders[:]:
+                spider.update(player=self.player, dt=dt, camera_y=self.camera_y)
+
+                if spider.is_dead_and_gone():
+                    self.jumper_spiders.remove(spider)
+                    continue
+                screen_y = spider.y + self.camera_y
+                if screen_y > height + 300 or screen_y < -300:
+                    self.jumper_spiders.remove(spider)
+                    continue
+
+                # Player attack collision
+                if not spider.dead and self.player.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    player_screen_y = self.player.y - self.camera_y
+                    cx = self.player.x + 112
+                    cy = player_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.player.attack_radius
+                    if self.player.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_this_attack:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.player.attack_damage)
+                        spider.hit_this_attack = True
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (200, 255, 100)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(75 * multiplier)  # More points for jumpers
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(10, 150)
+
+                # Henry attack collision
+                if not spider.dead and self.henry.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    henry_screen_y = self.henry.y - self.camera_y
+                    cx = self.henry.x + 112
+                    cy = henry_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.henry.attack_radius
+                    if self.henry.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_by_henry:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.henry.attack_damage)
+                        spider.hit_by_henry = True
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (100, 200, 255)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(75 * multiplier)
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(8, 120)
+
+                if not self.player.attacking:
+                    spider.hit_this_attack = False
+                if not self.henry.attacking:
+                    spider.hit_by_henry = False
+
+                # Jumper collision damage
+                if not spider.dead and spider.can_hit_player():
+                    spider_screen_y = spider.y + self.camera_y
+                    player_screen_y = self.player.y - self.camera_y
+                    spider_rect = pygame.Rect(spider.x - 30, spider_screen_y - 30, 60, 60)
+                    player_rect = pygame.Rect(self.player.x + 70, player_screen_y + 50, 85, 190)
+                    if spider_rect.colliderect(player_rect):
+                        if self.player.take_damage(spider.damage):
+                            spider.did_hit_player()
+                            self.screen_shake.trigger(15, 250)  # Big shake for jumper hit
+
+            # ==================== SPITTER SPIDER UPDATE ====================
+            for spider in self.spitter_spiders[:]:
+                spider.update(player=self.player, dt=dt, camera_y=self.camera_y)
+
+                if spider.is_dead_and_gone():
+                    self.spitter_spiders.remove(spider)
+                    continue
+                screen_y = spider.y + self.camera_y
+                if screen_y > height + 300 or screen_y < -300:
+                    self.spitter_spiders.remove(spider)
+                    continue
+
+                # Check projectile hits on player
+                proj_damage = spider.check_projectile_hits(self.player, self.camera_y)
+                if proj_damage > 0:
+                    if self.player.take_damage(proj_damage):
+                        self.screen_shake.trigger(10, 180)
+                        # Spawn impact particles at player
+                        player_screen_y = self.player.y - self.camera_y
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            self.player.x + 112, player_screen_y + 145, (100, 255, 100)))
+
+                # Player attack collision
+                if not spider.dead and self.player.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    player_screen_y = self.player.y - self.camera_y
+                    cx = self.player.x + 112
+                    cy = player_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.player.attack_radius
+                    if self.player.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_this_attack:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.player.attack_damage)
+                        spider.hit_this_attack = True
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (100, 150, 255)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(100 * multiplier)  # Good points for spitters
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(8, 140)
+
+                # Henry attack collision
+                if not spider.dead and self.henry.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    henry_screen_y = self.henry.y - self.camera_y
+                    cx = self.henry.x + 112
+                    cy = henry_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.henry.attack_radius
+                    if self.henry.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_by_henry:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.henry.attack_damage)
+                        spider.hit_by_henry = True
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (100, 200, 255)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(100 * multiplier)
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(6, 120)
+
+                if not self.player.attacking:
+                    spider.hit_this_attack = False
+                if not self.henry.attacking:
+                    spider.hit_by_henry = False
+
+            # ==================== ARMORED SPIDER UPDATE ====================
+            for spider in self.armored_spiders[:]:
+                spider.update(player=self.player, dt=dt, camera_y=self.camera_y)
+
+                if spider.is_dead_and_gone():
+                    self.armored_spiders.remove(spider)
+                    continue
+                screen_y = spider.y + self.camera_y
+                if screen_y > height + 300 or screen_y < -300:
+                    self.armored_spiders.remove(spider)
+                    continue
+
+                # Player attack collision
+                if not spider.dead and self.player.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    player_screen_y = self.player.y - self.camera_y
+                    cx = self.player.x + 112
+                    cy = player_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.player.attack_radius
+                    if self.player.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_this_attack:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.player.attack_damage)
+                        spider.hit_this_attack = True
+                        # Orange/red particles for armored hits
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (255, 150, 80)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(200 * multiplier)  # Big reward for armored
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(18, 300)  # Big shake for armored death
+
+                # Henry attack collision
+                if not spider.dead and self.henry.attacking:
+                    spider_screen_y = spider.y + self.camera_y
+                    henry_screen_y = self.henry.y - self.camera_y
+                    cx = self.henry.x + 112
+                    cy = henry_screen_y + 130
+                    dist = math.hypot(spider.x - cx, spider_screen_y - cy)
+                    in_range = dist <= self.henry.attack_radius
+                    if self.henry.attack_facing_left:
+                        in_range = in_range and spider.x <= cx + 30
+                    else:
+                        in_range = in_range and spider.x >= cx - 30
+                    if in_range and not spider.hit_by_henry:
+                        was_alive = not spider.dead
+                        spider.take_damage(self.henry.attack_damage)
+                        spider.hit_by_henry = True
+                        self.particles.extend(valley_climb.spawn_hit_particles(
+                            spider.x, spider_screen_y, (100, 200, 255)))
+                        if spider.dead and was_alive:
+                            multiplier = self.combo_tracker.add_kill()
+                            self.score += int(200 * multiplier)
+                            self.particles.extend(valley_climb.spawn_death_particles(
+                                spider.x, spider_screen_y))
+                            self.screen_shake.trigger(15, 280)
+
+                if not self.player.attacking:
+                    spider.hit_this_attack = False
+                if not self.henry.attacking:
+                    spider.hit_by_henry = False
+
+                # Armored collision damage (high damage)
+                if not spider.dead and spider.can_hit_player():
+                    spider_screen_y = spider.y + self.camera_y
+                    player_screen_y = self.player.y - self.camera_y
+                    size = int(40 * spider.scale)
+                    spider_rect = pygame.Rect(spider.x - size, spider_screen_y - size, size * 2, size * 2)
+                    player_rect = pygame.Rect(self.player.x + 70, player_screen_y + 50, 85, 190)
+                    if spider_rect.colliderect(player_rect):
+                        if self.player.take_damage(spider.damage):
+                            spider.did_hit_player()
+                            self.screen_shake.trigger(20, 350)  # Massive shake for armored hit
 
             for vine in self.ambush_vines[:]:
                 vine.update(self.player, dt, self.camera_y)
@@ -2007,6 +3220,12 @@ init python:
             self.henry.draw(self.surface, self.camera_y)
             self.player.draw(self.surface, self.camera_y)
             for spider in self.spiders:
+                spider.draw(self.surface, self.camera_y)
+            for spider in self.jumper_spiders:
+                spider.draw(self.surface, self.camera_y)
+            for spider in self.spitter_spiders:
+                spider.draw(self.surface, self.camera_y)
+            for spider in self.armored_spiders:
                 spider.draw(self.surface, self.camera_y)
             for pickup in self.health_pickups:
                 pickup.draw(self.surface, self.camera_y)
@@ -2154,9 +3373,11 @@ init python:
             self.vines = []
             self.spiders = []
             self.particles = []  # Impact particles
+            self.powerups = []  # Collectible power-ups
             self.wave = 1
             self.wave_timer = 0
             self.spawn_timer = 0
+            self.special_vine_timer = 0  # Timer for special vine spawning
             self.encroachment = 0
             self.second_winds_used = 0
             self.game_over = False
@@ -2164,6 +3385,16 @@ init python:
             self.done = False
             self.score = 0
             self.time_ms = 0
+            # Power-up effects (active effects and their remaining duration)
+            self.active_powerups = {
+                "rapid_fire": 0,
+                "spread_shot": 0,
+                "piercing": 0
+            }
+            # Combo system
+            self.combo_tracker = vine_blaster.ComboTracker()
+            # Base fire rate (modified by power-ups)
+            self.base_fire_rate = 300
         
         def render(self, width, height, st, at):
             import pygame
@@ -2186,54 +3417,152 @@ init python:
                 self.victory = True
                 self.done = True
 
+            # Update active power-up timers
+            for ptype in self.active_powerups:
+                if self.active_powerups[ptype] > 0:
+                    self.active_powerups[ptype] = max(0, self.active_powerups[ptype] - dt)
+
+            # Update fire rate based on power-ups
+            if self.active_powerups["rapid_fire"] > 0:
+                self.tristan.fire_rate = self.base_fire_rate // 2
+                self.henry.fire_rate = self.base_fire_rate // 2
+            else:
+                self.tristan.fire_rate = self.base_fire_rate
+                self.henry.fire_rate = self.base_fire_rate
+
+            # Update combo tracker
+            self.combo_tracker.update(dt)
+
             self.spawn_timer += dt
+            self.special_vine_timer += dt
             spawn_rate = vine_blaster.WAVE_SPAWN_RATE[min(self.wave - 1, 2)]
+
+            # Normal vine spawning
             if self.spawn_timer >= spawn_rate:
-                self.vines.append(vine_blaster.VineSegment(random.choice(["top", "bottom", "left", "right"])))
+                edge = random.choice(["top", "bottom", "left", "right"])
+                self.vines.append(vine_blaster.VineSegment(edge))
                 self.spawn_timer = 0
                 good_vines = [v for v in self.vines if v.alive and v.growth > 0.3]
                 if good_vines and random.random() < 0.3:
                     self.spiders.append(vine_blaster.VineSpider(random.choice(good_vines)))
 
+            # Special vine spawning (based on wave progression)
+            special_spawn_rate = 8000 - self.wave * 1500  # Faster as waves progress
+            if self.special_vine_timer >= special_spawn_rate:
+                edge = random.choice(["top", "bottom", "left", "right"])
+                vine_roll = random.random()
+                if self.wave >= 2 and vine_roll < 0.4:
+                    # 40% chance for thorny vine in wave 2+
+                    self.vines.append(vine_blaster.ThornyVine(edge))
+                elif self.wave >= 2 and vine_roll < 0.7:
+                    # 30% chance for splitter vine in wave 2+
+                    self.vines.append(vine_blaster.SplitterVine(edge))
+                elif self.wave >= 3 and vine_roll < 0.85:
+                    # 15% chance for armored vine in wave 3
+                    self.vines.append(vine_blaster.ArmoredVine(edge))
+                self.special_vine_timer = 0
+
             for vine in self.vines[:]:
                 vine.update(dt)
                 if not vine.alive:
+                    tip_x, tip_y = vine.get_tip_position()
                     self.vines.remove(vine)
-                    self.score += 100
+
+                    # Get base score from vine type (special vines have score_value attribute)
+                    base_score = getattr(vine, 'score_value', 100)
+
+                    # Add to combo and get multiplier
+                    multiplier = self.combo_tracker.add_kill()
+                    self.score += int(base_score * multiplier)
+
+                    # Handle splitter vine - spawn children
+                    vine_type = getattr(vine, 'vine_type', 'normal')
+                    if vine_type == "splitter" and not getattr(vine, 'is_child', False):
+                        # Spawn 2 child vines from the tip position
+                        for _ in range(2):
+                            child = vine_blaster.SplitterVine(vine.edge, is_child=True, parent_pos=(tip_x, tip_y))
+                            self.vines.append(child)
+                        # Extra particles for split effect
+                        self.particles.extend(vine_blaster.spawn_impact(tip_x, tip_y, (255, 220, 100), count=12))
+
+                    # Chance to spawn power-up (higher chance for special vines)
+                    powerup_chance = 0.15 if vine_type == 'normal' else 0.35
+                    if random.random() < powerup_chance:
+                        self.powerups.append(vine_blaster.PowerUp(tip_x, tip_y))
 
             for spider in self.spiders[:]:
                 spider.update(dt)
                 if not spider.alive or not spider.vine.alive:
                     if not spider.alive:
-                        self.score += 50
+                        multiplier = self.combo_tracker.add_kill()
+                        self.score += int(50 * multiplier)
                     self.spiders.remove(spider)
                 elif spider.reached_beacon():
                     self.encroachment += 5
                     self.spiders.remove(spider)
+
+            # Update power-ups
+            for powerup in self.powerups[:]:
+                powerup.update(dt)
+                if not powerup.alive:
+                    self.powerups.remove(powerup)
+                    continue
+                # Check collection by projectiles (either player can collect)
+                for proj in self.projectiles:
+                    if proj.alive and proj.rect().colliderect(powerup.rect()):
+                        powerup.collected = True
+                        powerup.alive = False
+                        self.powerups.remove(powerup)
+                        # Apply power-up effect
+                        if powerup.powerup_type == "heal":
+                            self.encroachment = max(0, self.encroachment - 20)
+                            self.particles.extend(vine_blaster.spawn_impact(
+                                powerup.x, powerup.y, (80, 255, 120), count=15))
+                        else:
+                            self.active_powerups[powerup.powerup_type] = vine_blaster.POWERUP_DURATION
+                            self.particles.extend(vine_blaster.spawn_impact(
+                                powerup.x, powerup.y, powerup.color, count=12))
+                        break
 
             for proj in self.projectiles[:]:
                 proj.update(dt)
                 if not proj.alive:
                     self.projectiles.remove(proj)
                     continue
+
+                # Check for piercing (don't remove projectile on hit)
+                is_piercing = self.active_powerups.get("piercing", 0) > 0
+
                 for vine in self.vines:
                     if vine.alive and proj.rect().colliderect(vine.rect()):
                         vine.take_damage(1)
-                        # Spawn green particles for vine hit
+                        # Spawn particles based on vine type
                         tip_x, tip_y = vine.get_tip_position()
-                        self.particles.extend(vine_blaster.spawn_impact(
-                            tip_x, tip_y, (80, 180, 60)))
-                        proj.alive = False
-                        break
+                        vine_type = getattr(vine, 'vine_type', 'normal')
+                        if vine_type == 'thorny':
+                            self.particles.extend(vine_blaster.spawn_impact(tip_x, tip_y, (180, 80, 180)))
+                        elif vine_type == 'splitter':
+                            self.particles.extend(vine_blaster.spawn_impact(tip_x, tip_y, (220, 200, 80)))
+                        elif vine_type == 'armored':
+                            self.particles.extend(vine_blaster.spawn_impact(tip_x, tip_y, (140, 100, 60)))
+                        else:
+                            self.particles.extend(vine_blaster.spawn_impact(tip_x, tip_y, (80, 180, 60)))
+                        if not is_piercing:
+                            proj.alive = False
+                            break
+
+                if not proj.alive:
+                    continue
+
                 for spider in self.spiders:
                     if spider.alive and proj.rect().colliderect(spider.rect()):
                         spider.take_damage(1)
                         # Spawn purple particles for spider hit
                         sx, sy = spider.get_position()
-                        self.particles.extend(vine_blaster.spawn_impact(
-                            sx, sy, (150, 80, 180)))
-                        proj.alive = False
-                        break
+                        self.particles.extend(vine_blaster.spawn_impact(sx, sy, (150, 80, 180)))
+                        if not is_piercing:
+                            proj.alive = False
+                            break
 
             # Update particles
             for particle in self.particles[:]:
@@ -2243,7 +3572,9 @@ init python:
 
             for vine in self.vines:
                 if vine.alive and vine.growth >= 0.95:
-                    self.encroachment += vine_blaster.ENCROACHMENT_RATE * (dt / 1000)
+                    # Special vines may have encroachment multiplier
+                    encroach_mult = getattr(vine, 'encroachment_multiplier', 1.0)
+                    self.encroachment += vine_blaster.ENCROACHMENT_RATE * encroach_mult * (dt / 1000)
 
             if self.encroachment >= vine_blaster.SECOND_WIND_THRESHOLD:
                 if self.second_winds_used < vine_blaster.MAX_SECOND_WINDS:
@@ -2274,6 +3605,8 @@ init python:
                 vine.draw(self.surface, self.time_ms)
             for spider in self.spiders:
                 spider.draw(self.surface)
+            for powerup in self.powerups:
+                powerup.draw(self.surface)
             for proj in self.projectiles:
                 proj.draw(self.surface)
             # Draw particles on top
@@ -2281,6 +3614,9 @@ init python:
                 particle.draw(self.surface)
             self.tristan.draw(self.surface)
             self.henry.draw(self.surface)
+
+            # Draw combo tracker
+            self.combo_tracker.draw(self.surface, width // 2, 80)
 
             meter_x = (width - 300) // 2
             meter_y = 30
@@ -2296,7 +3632,7 @@ init python:
             if fill > 0:
                 draw_rounded_rect(self.surface, color, (meter_x, meter_y, fill, 30), radius=4)
             draw_rounded_rect(self.surface, (200, 200, 220), (meter_x, meter_y, 300, 30), radius=4, width=2)
-            
+
             for i in range(vine_blaster.MAX_SECOND_WINDS):
                 sw_x = meter_x + 310 + i * 25
                 if i < self.second_winds_used:
@@ -2304,6 +3640,54 @@ init python:
                 else:
                     pygame.draw.circle(self.surface, (100, 255, 200), (sw_x, meter_y + 15), 10)
                     pygame.draw.circle(self.surface, (150, 255, 220), (sw_x, meter_y + 15), 6)
+
+            # Draw active power-up indicators
+            powerup_indicator_x = 50
+            powerup_indicator_y = 100
+            for ptype, remaining in self.active_powerups.items():
+                if remaining > 0:
+                    pcolor = vine_blaster.POWERUP_COLORS.get(ptype, (255, 255, 255))
+                    # Background bar
+                    bar_width = 120
+                    bar_height = 16
+                    pygame.draw.rect(self.surface, (30, 30, 40),
+                                   (powerup_indicator_x - 2, powerup_indicator_y - 2, bar_width + 4, bar_height + 4))
+                    pygame.draw.rect(self.surface, (50, 50, 60),
+                                   (powerup_indicator_x, powerup_indicator_y, bar_width, bar_height))
+                    # Fill based on remaining time
+                    fill_ratio = remaining / vine_blaster.POWERUP_DURATION
+                    fill_w = int(bar_width * fill_ratio)
+                    if fill_w > 0:
+                        pygame.draw.rect(self.surface, pcolor,
+                                       (powerup_indicator_x, powerup_indicator_y, fill_w, bar_height))
+                    # Border
+                    pygame.draw.rect(self.surface, pcolor,
+                                   (powerup_indicator_x, powerup_indicator_y, bar_width, bar_height), 2)
+                    # Icon indicator (circle)
+                    pygame.draw.circle(self.surface, pcolor,
+                                     (powerup_indicator_x - 15, powerup_indicator_y + bar_height // 2), 8)
+                    pygame.draw.circle(self.surface, (255, 255, 255),
+                                     (powerup_indicator_x - 15, powerup_indicator_y + bar_height // 2), 5)
+                    powerup_indicator_y += 28
+
+            # Draw wave indicator
+            wave_text_x = width - 150
+            wave_text_y = 35
+            pygame.draw.rect(self.surface, (40, 40, 50),
+                           (wave_text_x - 10, wave_text_y - 5, 100, 30))
+            pygame.draw.rect(self.surface, (100, 100, 120),
+                           (wave_text_x - 10, wave_text_y - 5, 100, 30), 2)
+            # Wave indicator circles
+            for i in range(vine_blaster.WAVE_COUNT):
+                circle_x = wave_text_x + 15 + i * 30
+                if i + 1 < self.wave:
+                    pygame.draw.circle(self.surface, (100, 255, 100), (circle_x, wave_text_y + 10), 10)
+                elif i + 1 == self.wave:
+                    pulse = abs(math.sin(self.time_ms * 0.005)) * 3
+                    pygame.draw.circle(self.surface, (255, 220, 100), (circle_x, wave_text_y + 10), int(10 + pulse))
+                else:
+                    pygame.draw.circle(self.surface, (80, 80, 80), (circle_x, wave_text_y + 10), 10)
+                pygame.draw.circle(self.surface, (150, 150, 150), (circle_x, wave_text_y + 10), 10, 2)
 
             r = renpy.Render(1920, 1080)
             r.blit(self.surface, (0, 0))
@@ -2313,6 +3697,31 @@ init python:
         def __getstate__(self):
             return None
         
+        def _fire_projectiles(self, player, target_x, target_y):
+            """Fire projectiles, handling spread shot power-up."""
+            if not player.can_fire():
+                return
+
+            import math
+            player.fire_cooldown = player.fire_rate
+            has_spread = self.active_powerups.get("spread_shot", 0) > 0
+
+            if has_spread:
+                # Fire 3 projectiles in a spread pattern
+                base_angle = math.atan2(target_y - player.home_y, target_x - player.home_x)
+                spread_angles = [-0.25, 0, 0.25]  # ~15 degrees spread
+                for offset in spread_angles:
+                    angle = base_angle + offset
+                    dist = 500  # Distance to project target
+                    t_x = player.home_x + math.cos(angle) * dist
+                    t_y = player.home_y + math.sin(angle) * dist
+                    proj = vine_blaster.Projectile(player.home_x, player.home_y, t_x, t_y, player.player_id)
+                    self.projectiles.append(proj)
+            else:
+                # Normal single shot
+                proj = vine_blaster.Projectile(player.home_x, player.home_y, target_x, target_y, player.player_id)
+                self.projectiles.append(proj)
+
         def event(self, ev, x, y, st):
             import pygame
             if ev.type == pygame.KEYDOWN:
@@ -2321,17 +3730,11 @@ init python:
                     renpy.end_interaction(self.score)
                     return
                 if ev.key == pygame.K_SPACE:
-                    proj = self.tristan.fire(self.tristan.x, self.tristan.y)
-                    if proj:
-                        self.projectiles.append(proj)
+                    self._fire_projectiles(self.tristan, self.tristan.x, self.tristan.y)
                 if ev.key in (pygame.K_e, pygame.K_RETURN):
-                    proj = self.henry.fire(self.henry.x, self.henry.y)
-                    if proj:
-                        self.projectiles.append(proj)
+                    self._fire_projectiles(self.henry, self.henry.x, self.henry.y)
             if ev.type == pygame.MOUSEBUTTONDOWN:
-                proj = self.tristan.fire(x, y)
-                if proj:
-                    self.projectiles.append(proj)
+                self._fire_projectiles(self.tristan, x, y)
             raise renpy.IgnoreEvent()
 
 
