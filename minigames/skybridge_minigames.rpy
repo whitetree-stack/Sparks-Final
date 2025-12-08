@@ -39,7 +39,11 @@ screen zelda_screen:
     add ZeldaMinigame()
 
 label skybridge_rpg_game_start:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     show screen zelda_screen
     $ result = renpy.pause(3600.0)  # Run until ESC or condition
     hide screen zelda_screen
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
     "You completed the minigame! Score: [result]"

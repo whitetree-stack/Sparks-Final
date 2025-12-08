@@ -663,6 +663,8 @@ screen game_over():
     textbutton 'RETRY' action Hide('game_over'), Jump('tetris_reload') align .5,.9
 
 label tetris_start:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     play music korobushka
     $ renpy.music.set_volume(0.3, channel='music')
 
@@ -674,10 +676,14 @@ label tetris_start:
         $ tetris.delete_I()
 
     call screen draw_tetris
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
 
 label tetris_reload:
+    $ disable_minigame_conflicts()
     $ tetris.restart()
     call screen draw_tetris
+    $ restore_minigame_conflicts()
 
 
 init python:

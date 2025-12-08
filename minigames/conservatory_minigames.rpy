@@ -2029,6 +2029,7 @@ label play_zombie_knight:
     # Hide the window and quick menu while in Zombie Knight.
     window hide
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     # Play the music for Zombie Knight.
     play music zk_background_music
@@ -2042,6 +2043,7 @@ label play_zombie_knight:
     call screen zombie_knight
 
     # Restore the window and quick menu while outside of Zombie Knight.
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     window auto
 

@@ -1523,9 +1523,11 @@ screen beacon_quest_screen():
 # Entry label
 label beacon_quest_start():
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen beacon_quest_screen()
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

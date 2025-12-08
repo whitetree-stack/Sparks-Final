@@ -698,9 +698,11 @@ screen crystal_rhythm_screen(difficulty="easy"):
 # Entry label for the minigame
 label crystal_rhythm_start(difficulty="easy"):
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen crystal_rhythm_screen(difficulty)
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

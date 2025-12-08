@@ -245,6 +245,8 @@ init python:
 
 # ── CALL FROM MAIN GAME ───────────────────────────────
 label start_rune_decode:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     $ current_phrase_idx = 0
     $ current_pos = 0
     $ player_input = []
@@ -260,6 +262,8 @@ label start_rune_decode:
     h "I'm in!"
 
     call screen rune_decode_gate
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
 
     
 label next_phrase:
@@ -618,14 +622,16 @@ label restart_word:
 
 # ── START LABEL ───────────────────────────────────────
 label start_rune_wordle:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     $ current_book = library_shelves
     $ current_row   = 0
     $ current_guess = []
     $ past_rows     = []
     $ corrupted_slots = set()
     $ game_state    = "playing"
-    scene bg_library 
-    
+    scene bg_library
+
     if current_book == 0:
         show k talking_facing_viewer:
             xalign 0.55 yalign 1.0 zoom 0.6
@@ -641,6 +647,8 @@ label start_rune_wordle:
         show k talking_facing_viewer
         k "Good luck!"
     call screen rune_wordle_builder with dissolve
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
     
 
     if _return:                     # victory → next book
