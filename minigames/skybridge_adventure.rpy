@@ -316,15 +316,15 @@ init python in beacon_quest:
             if self.moving:
                 body_offset = math.sin(time_ms * 0.015) * 3
 
-            pygame.draw.rect(surf, self.outline, (self.x + 4, self.y + body_offset + 4, self.width - 8, self.height - 8), border_radius=8)
-            pygame.draw.rect(surf, self.color, (self.x + 6, self.y + body_offset + 6, self.width - 12, self.height - 12), border_radius=6)
+            pygame.draw.rect(surf, self.outline, (self.x + 4, self.y + body_offset + 4, self.width - 8, self.height - 8))
+            pygame.draw.rect(surf, self.color, (self.x + 6, self.y + body_offset + 6, self.width - 12, self.height - 12))
 
             # Draw active indicator (glowing ring around active character)
             if is_active:
                 indicator_surf = pygame.Surface((self.width + 16, self.height + 16), pygame.SRCALPHA)
                 pulse = 0.5 + 0.3 * math.sin(time_ms * 0.008)
                 pygame.draw.rect(indicator_surf, (255, 255, 100, int(80 * pulse)),
-                               (0, 0, self.width + 16, self.height + 16), 3, border_radius=12)
+                               (0, 0, self.width + 16, self.height + 16), 3)
                 surf.blit(indicator_surf, (self.x - 8, self.y + body_offset - 8))
 
             # Draw face based on direction
@@ -1388,7 +1388,7 @@ init python in beacon_quest:
 
             # Active indicator for Tristan
             if self.active_character == "tristan":
-                pygame.draw.rect(surf, (255, 255, 100), (25, 10, 150, 55), 2, border_radius=5)
+                pygame.draw.rect(surf, (255, 255, 100), (25, 10, 150, 55), 2)
 
             # Henry health (below Tristan) - Blue
             henry_label = font_small.render("HENRY", True, (100, 150, 220))
@@ -1408,7 +1408,7 @@ init python in beacon_quest:
 
             # Active indicator for Henry
             if self.active_character == "henry":
-                pygame.draw.rect(surf, (255, 255, 100), (25, 70, 150, 55), 2, border_radius=5)
+                pygame.draw.rect(surf, (255, 255, 100), (25, 70, 150, 55), 2)
 
             # Ability indicators
             tristan_ability = font_tiny.render("Projectile", True, (180, 180, 150))
