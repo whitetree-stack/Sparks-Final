@@ -638,6 +638,8 @@ init python in beacon_quest:
     TILE_DOOR_S = 11  # Door leading south
     TILE_DOOR_E = 12  # Door leading east
     TILE_DOOR_W = 13  # Door leading west
+    # Decorative obstacles
+    TILE_PILLAR = 20  # Decorative pillar (blocks movement)
 
     # Game states
     STATE_PLAYING = "playing"
@@ -730,7 +732,7 @@ init python in beacon_quest:
                 return
 
             tile = game_map[tile_y][tile_x]
-            if tile in (TILE_WALL, TILE_VOID):
+            if tile in (TILE_WALL, TILE_VOID, TILE_PILLAR):
                 self.alive = False
 
         def get_rect(self):
@@ -902,7 +904,7 @@ init python in beacon_quest:
                     return False
 
                 tile = game_map[tile_y][tile_x]
-                if tile in (TILE_WALL, TILE_VOID):
+                if tile in (TILE_WALL, TILE_VOID, TILE_PILLAR):
                     return False
 
             return True
@@ -1122,7 +1124,7 @@ init python in beacon_quest:
                 if x < 0 or x >= map_width or y < 0 or y >= map_height:
                     return False
                 tile = game_map[y][x]
-                return tile not in (TILE_WALL, TILE_VOID)
+                return tile not in (TILE_WALL, TILE_VOID, TILE_PILLAR)
 
             start = (int(start_tile[0]), int(start_tile[1]))
             end = (int(end_tile[0]), int(end_tile[1]))
@@ -1339,7 +1341,7 @@ init python in beacon_quest:
             return False
 
         tile = game_map[y][x]
-        return tile not in (TILE_WALL, TILE_VOID)
+        return tile not in (TILE_WALL, TILE_VOID, TILE_PILLAR)
 
 
     def find_nearest_valid_spawn(x, y, game_map, max_radius=5):
@@ -1441,7 +1443,7 @@ init python in beacon_quest:
                     return False
 
                 tile = game_map[tile_y][tile_x]
-                if tile in (TILE_WALL, TILE_VOID):
+                if tile in (TILE_WALL, TILE_VOID, TILE_PILLAR):
                     return False
 
             return True
@@ -3014,20 +3016,17 @@ init python in beacon_quest:
         def draw_map(self, surf, time_ms):
             """Draw the game map using tileset sprites with camera offset.
 
-            TILE CONFIGURATION:
-            ==================
-            To change which sprites are used for different tiles, modify the
-            sprite lookups below. Each tile type has a clearly marked section.
+            WALL SPRITE LOGIC (based on camera POV looking down):
+            - South-facing walls (floor above): tan_wall_top_1/2/3 (detailed front)
+            - North-facing walls (floor below): wall_bottom (top edge cap)
+            - East-facing walls (floor to right): wall_left (west wall side)
+            - West-facing walls (floor to left): wall_right (east wall side)
 
-            Available wall chunks (from images/tileset/chunks/):
-            - wall_top_1, wall_top_2, wall_top_3: Top wall variations
-            - wall_left, wall_right: Side walls
-            - wall_bottom: Bottom edge walls
-            - doorway_top, doorway_stairs: Doorway pieces
-            - pillar_1, pillar_2, pillar_3, pillar_4: Decorative pillars
-            - pillars_window: Window with pillars
-            - sewer_grate: Grate decoration
-            - stairs_left, stairs_right: Stair pieces
+            DOOR SPRITES:
+            - North doors: doorway_top or doorway_stairs (random)
+            - East doors: stairs_right
+            - West doors: stairs_left
+            - South doors: procedural glow
             """
             room = self.current_room
 
@@ -3041,13 +3040,16 @@ init python in beacon_quest:
             cam_x_floor = int(self.camera_x)
             cam_y_floor = int(self.camera_y)
 
+            # Helper to check if a tile is walkable (floor, door, beacon)
+            def is_floor_tile(tx, ty):
+                t = room.get_tile(tx, ty)
+                return t in (TILE_FLOOR, TILE_BEACON, TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W)
+
             for y in range(start_y, end_y):
                 for x in range(start_x, end_x):
                     tile = room.get_tile(x, y)
-                    # World position
                     world_x = x * TILE_SIZE
                     world_y = y * TILE_SIZE
-                    # Screen position (apply floored camera offset for consistent gaps)
                     px = world_x - cam_x_floor
                     py = world_y - cam_y_floor
 
@@ -3061,19 +3063,38 @@ init python in beacon_quest:
                         else:
                             draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
+                        # Random sewer grate decoration (sparse)
+                        if ((x * 17 + y * 31) % 47) == 0:
+                            grate_sprite = WALL_CHUNKS.get('sewer_grate')
+                            if grate_sprite:
+                                scaled_grate = pygame.transform.scale(grate_sprite, (TILE_SIZE, TILE_SIZE))
+                                surf.blit(scaled_grate, (px, py))
+
                     # ======================
-                    # WALL TILE
-                    # Change wall_sprite lookup to use different chunks
+                    # WALL TILE - Direction-based sprites
                     # ======================
                     elif tile == TILE_WALL:
-                        # Draw floor underneath
-                        floor_sprite = get_floor_tile(x, y)
-                        if floor_sprite:
-                            surf.blit(floor_sprite, (px, py))
+                        # Determine wall facing based on adjacent floor tiles
+                        floor_north = is_floor_tile(x, y - 1)
+                        floor_south = is_floor_tile(x, y + 1)
+                        floor_east = is_floor_tile(x + 1, y)
+                        floor_west = is_floor_tile(x - 1, y)
 
-                        # WALL SPRITE SELECTION - modify this to change wall appearance
-                        wall_variant = ((x + y) % 3) + 1  # Cycles through 1, 2, 3
-                        wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
+                        wall_sprite = None
+
+                        if floor_north:
+                            # Floor is north, wall faces NORTH - use top edge cap
+                            wall_sprite = WALL_CHUNKS.get('wall_bottom')
+                        elif floor_south:
+                            # Floor is south, wall faces SOUTH - use detailed front
+                            wall_variant = ((x + y) % 3) + 1
+                            wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
+                        elif floor_east:
+                            # Floor is east, wall faces EAST - west wall side
+                            wall_sprite = WALL_CHUNKS.get('wall_left')
+                        elif floor_west:
+                            # Floor is west, wall faces WEST - east wall side
+                            wall_sprite = WALL_CHUNKS.get('wall_right')
 
                         if wall_sprite:
                             scaled_wall = pygame.transform.scale(wall_sprite, (TILE_SIZE, TILE_SIZE))
@@ -3085,42 +3106,75 @@ init python in beacon_quest:
                     # BEACON/GOAL TILE
                     # ======================
                     elif tile == TILE_BEACON:
-                        # Draw floor underneath
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
                             draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
-                        # BEACON SPRITE - change 'fountain' to use different sprite
-                        fountain_sprite = TILE_SPRITES.get('fountain')
-                        if fountain_sprite:
-                            scaled_fountain = pygame.transform.scale(fountain_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_fountain, (px, py))
-
-                        # Beacon glow effect
                         is_active = self.shards_collected >= self.target_shards
                         draw_procedural_beacon(surf, px, py, TILE_SIZE, time_ms, is_active)
 
                     # ======================
-                    # DOOR/PORTAL TILES
-                    # Change doorway_sprite lookup to use doorway_top or doorway_stairs
+                    # DOOR TILES - Direction-specific sprites
                     # ======================
-                    elif tile in (TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W):
+                    elif tile == TILE_DOOR_N:
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        # North doors use doorway_top or doorway_stairs randomly
+                        door_choice = 'doorway_top' if ((x + y) % 2 == 0) else 'doorway_stairs'
+                        door_sprite = WALL_CHUNKS.get(door_choice)
+                        if door_sprite:
+                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_door, (px, py))
+                        draw_procedural_door(surf, px, py, TILE_SIZE, 'N', time_ms)
+
+                    elif tile == TILE_DOOR_S:
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        # South doors - just procedural glow on floor
+                        draw_procedural_door(surf, px, py, TILE_SIZE, 'S', time_ms)
+
+                    elif tile == TILE_DOOR_E:
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        # East doors use stairs_right
+                        door_sprite = WALL_CHUNKS.get('stairs_right')
+                        if door_sprite:
+                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_door, (px, py))
+                        draw_procedural_door(surf, px, py, TILE_SIZE, 'E', time_ms)
+
+                    elif tile == TILE_DOOR_W:
+                        floor_sprite = get_floor_tile(x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        # West doors use stairs_left
+                        door_sprite = WALL_CHUNKS.get('stairs_left')
+                        if door_sprite:
+                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_door, (px, py))
+                        draw_procedural_door(surf, px, py, TILE_SIZE, 'W', time_ms)
+
+                    # ======================
+                    # PILLAR - Decorative obstacle with collision
+                    # ======================
+                    elif tile == TILE_PILLAR:
                         # Draw floor underneath
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-
-                        # DOOR SPRITE - change to use doorway chunks
-                        doorway_sprite = WALL_CHUNKS.get('doorway_top')
-                        if doorway_sprite:
-                            scaled_door = pygame.transform.scale(doorway_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_door, (px, py))
-
-                        # Door direction indicator
-                        direction = {TILE_DOOR_N: 'N', TILE_DOOR_S: 'S', TILE_DOOR_E: 'E', TILE_DOOR_W: 'W'}[tile]
-                        draw_procedural_door(surf, px, py, TILE_SIZE, direction, time_ms)
+                        else:
+                            draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
+                        # Draw pillar (cycle through variants)
+                        pillar_variant = ((x * 3 + y * 7) % 4) + 1
+                        pillar_sprite = WALL_CHUNKS.get(f'pillar_{pillar_variant}')
+                        if pillar_sprite:
+                            scaled_pillar = pygame.transform.scale(pillar_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_pillar, (px, py))
 
                     # ======================
                     # VOID/SKY (nothing drawn)
