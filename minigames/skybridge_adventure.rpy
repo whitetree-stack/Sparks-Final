@@ -402,11 +402,26 @@ init python in beacon_quest:
             return None
         return frames[frame_index % len(frames)]
 
-    # Map dimensions
-    MAP_WIDTH = 20
-    MAP_HEIGHT = 13
+    # Default map dimensions (rooms can override)
+    DEFAULT_MAP_WIDTH = 20
+    DEFAULT_MAP_HEIGHT = 13
 
-    # Calculate offsets to center the map
+    # Legacy constants for backwards compatibility
+    MAP_WIDTH = DEFAULT_MAP_WIDTH
+    MAP_HEIGHT = DEFAULT_MAP_HEIGHT
+
+    # Viewport dimensions (what the camera shows)
+    VIEWPORT_WIDTH = WIDTH
+    VIEWPORT_HEIGHT = HEIGHT
+    VIEWPORT_TILES_X = VIEWPORT_WIDTH // TILE_SIZE + 2  # Extra tiles for smooth scrolling
+    VIEWPORT_TILES_Y = VIEWPORT_HEIGHT // TILE_SIZE + 2
+
+    # Camera settings
+    CAMERA_FOLLOW_SPEED = 0.08  # Lerp factor (0-1, higher = snappier)
+    CAMERA_DEADZONE_X = 100  # Pixels player can move before camera follows (horizontal)
+    CAMERA_DEADZONE_Y = 60   # Pixels player can move before camera follows (vertical)
+
+    # Legacy offsets (will be replaced by camera system)
     MAP_OFFSET_X = (WIDTH - MAP_WIDTH * TILE_SIZE) // 2
     MAP_OFFSET_Y = (HEIGHT - MAP_HEIGHT * TILE_SIZE) // 2
 
@@ -502,11 +517,14 @@ init python in beacon_quest:
             self.anim_timer += dt
             self.pulse = math.sin(self.anim_timer * 0.02) * 0.3 + 0.7
 
-            # Check wall collision
-            tile_x = int((self.x - MAP_OFFSET_X) // TILE_SIZE)
-            tile_y = int((self.y - MAP_OFFSET_Y) // TILE_SIZE)
+            # Check wall collision (world coordinates)
+            tile_x = int(self.x // TILE_SIZE)
+            tile_y = int(self.y // TILE_SIZE)
 
-            if tile_x < 0 or tile_x >= MAP_WIDTH or tile_y < 0 or tile_y >= MAP_HEIGHT:
+            map_height = len(game_map)
+            map_width = len(game_map[0]) if game_map else 0
+
+            if tile_x < 0 or tile_x >= map_width or tile_y < 0 or tile_y >= map_height:
                 self.alive = False
                 return
 
@@ -518,33 +536,44 @@ init python in beacon_quest:
             return pygame.Rect(self.x - self.radius, self.y - self.radius,
                              self.radius * 2, self.radius * 2)
 
-        def draw(self, surf):
+        def draw(self, surf, cam_x=0, cam_y=0):
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -50 or screen_x > WIDTH + 50 or screen_y < -50 or screen_y > HEIGHT + 50:
+                return
+
             # Draw trail with decreasing opacity
             for i, (tx, ty) in enumerate(self.trail):
+                trail_screen_x = tx - cam_x
+                trail_screen_y = ty - cam_y
                 alpha = int(120 * (i + 1) / len(self.trail) * self.pulse)
                 trail_radius = int(self.radius * (i + 1) / len(self.trail) * 0.6)
                 if trail_radius > 0:
                     trail_surf = pygame.Surface((trail_radius * 2 + 4, trail_radius * 2 + 4), pygame.SRCALPHA)
                     trail_color = (*self.glow_color[:3], alpha)
                     pygame.draw.circle(trail_surf, trail_color, (trail_radius + 2, trail_radius + 2), trail_radius)
-                    surf.blit(trail_surf, (int(tx) - trail_radius - 2, int(ty) - trail_radius - 2))
+                    surf.blit(trail_surf, (int(trail_screen_x) - trail_radius - 2, int(trail_screen_y) - trail_radius - 2))
 
             # Draw glow
             glow_size = int(self.radius * 2.5 * self.pulse)
             glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
             pygame.draw.circle(glow_surf, (*self.glow_color, 60), (glow_size, glow_size), glow_size)
-            surf.blit(glow_surf, (int(self.x) - glow_size, int(self.y) - glow_size))
+            surf.blit(glow_surf, (int(screen_x) - glow_size, int(screen_y) - glow_size))
 
             # Draw core
-            pygame.draw.circle(surf, (255, 255, 255), (int(self.x), int(self.y)), int(self.radius * 0.7))
-            pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.radius)
+            pygame.draw.circle(surf, (255, 255, 255), (int(screen_x), int(screen_y)), int(self.radius * 0.7))
+            pygame.draw.circle(surf, self.color, (int(screen_x), int(screen_y)), self.radius)
 
 
     class Character:
         """Base class for playable characters."""
         def __init__(self, x, y, char_type="tristan"):
-            self.x = x * TILE_SIZE + MAP_OFFSET_X
-            self.y = y * TILE_SIZE + MAP_OFFSET_Y
+            # World coordinates (no MAP_OFFSET)
+            self.x = x * TILE_SIZE
+            self.y = y * TILE_SIZE
             self.tile_x = x
             self.tile_y = y
             self.width = 48
@@ -577,17 +606,17 @@ init python in beacon_quest:
 
         def set_position(self, x, y):
             """Set position in tile coordinates."""
-            self.x = x * TILE_SIZE + MAP_OFFSET_X
-            self.y = y * TILE_SIZE + MAP_OFFSET_Y
+            self.x = x * TILE_SIZE
+            self.y = y * TILE_SIZE
             self.tile_x = x
             self.tile_y = y
 
         def set_pixel_position(self, px, py):
-            """Set position in pixel coordinates."""
+            """Set position in pixel coordinates (world coords)."""
             self.x = px
             self.y = py
-            self.tile_x = int((self.x - MAP_OFFSET_X + self.width // 2) // TILE_SIZE)
-            self.tile_y = int((self.y - MAP_OFFSET_Y + self.height // 2) // TILE_SIZE)
+            self.tile_x = int((self.x + self.width // 2) // TILE_SIZE)
+            self.tile_y = int((self.y + self.height // 2) // TILE_SIZE)
 
         def update(self, dt, keys, game_map, is_active=True):
             """Update character state. is_active determines if player-controlled."""
@@ -647,12 +676,16 @@ init python in beacon_quest:
                 if self.can_move_to(self.x, new_y, game_map):
                     self.y = new_y
 
-            # Update tile position
-            self.tile_x = int((self.x - MAP_OFFSET_X + self.width // 2) // TILE_SIZE)
-            self.tile_y = int((self.y - MAP_OFFSET_Y + self.height // 2) // TILE_SIZE)
+            # Update tile position (world coordinates)
+            self.tile_x = int((self.x + self.width // 2) // TILE_SIZE)
+            self.tile_y = int((self.y + self.height // 2) // TILE_SIZE)
 
         def can_move_to(self, new_x, new_y, game_map):
-            """Check if character can move to position."""
+            """Check if character can move to position (world coordinates)."""
+            # Get room dimensions from map
+            map_height = len(game_map)
+            map_width = len(game_map[0]) if game_map else 0
+
             corners = [
                 (new_x + 8, new_y + 8),
                 (new_x + self.width - 8, new_y + 8),
@@ -661,10 +694,10 @@ init python in beacon_quest:
             ]
 
             for cx, cy in corners:
-                tile_x = int((cx - MAP_OFFSET_X) // TILE_SIZE)
-                tile_y = int((cy - MAP_OFFSET_Y) // TILE_SIZE)
+                tile_x = int(cx // TILE_SIZE)
+                tile_y = int(cy // TILE_SIZE)
 
-                if tile_x < 0 or tile_x >= MAP_WIDTH or tile_y < 0 or tile_y >= MAP_HEIGHT:
+                if tile_x < 0 or tile_x >= map_width or tile_y < 0 or tile_y >= map_height:
                     return False
 
                 tile = game_map[tile_y][tile_x]
@@ -687,8 +720,16 @@ init python in beacon_quest:
         def get_center(self):
             return (self.x + self.width // 2, self.y + self.height // 2)
 
-        def draw(self, surf, time_ms, is_active=True):
+        def draw(self, surf, time_ms, is_active=True, cam_x=0, cam_y=0):
             """Draw the character."""
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
+                return
+
             # Flash when invulnerable
             if self.invulnerable > 0 and (time_ms // 100) % 2 == 0:
                 return
@@ -696,15 +737,15 @@ init python in beacon_quest:
             # Draw shadow
             shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
             pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (self.x, self.y + self.height - 10))
+            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 10))
 
             # Draw body with bobbing
             body_offset = 0
             if self.moving:
                 body_offset = math.sin(time_ms * 0.015) * 3
 
-            pygame.draw.rect(surf, self.outline, (self.x + 4, self.y + body_offset + 4, self.width - 8, self.height - 8))
-            pygame.draw.rect(surf, self.color, (self.x + 6, self.y + body_offset + 6, self.width - 12, self.height - 12))
+            pygame.draw.rect(surf, self.outline, (screen_x + 4, screen_y + body_offset + 4, self.width - 8, self.height - 8))
+            pygame.draw.rect(surf, self.color, (screen_x + 6, screen_y + body_offset + 6, self.width - 12, self.height - 12))
 
             # Draw active indicator (glowing ring around active character)
             if is_active:
@@ -712,25 +753,25 @@ init python in beacon_quest:
                 pulse = 0.5 + 0.3 * math.sin(time_ms * 0.008)
                 pygame.draw.rect(indicator_surf, (255, 255, 100, int(80 * pulse)),
                                (0, 0, self.width + 16, self.height + 16), 3)
-                surf.blit(indicator_surf, (self.x - 8, self.y + body_offset - 8))
+                surf.blit(indicator_surf, (screen_x - 8, screen_y + body_offset - 8))
 
             # Draw face based on direction
-            face_x = self.x + self.width // 2
-            face_y = self.y + self.height // 2 + body_offset - 5
+            face_x = screen_x + self.width // 2
+            face_y = screen_y + self.height // 2 + body_offset - 5
 
             eye_offset = {'up': (0, -8), 'down': (0, 8), 'left': (-8, 0), 'right': (8, 0)}
             ex, ey = eye_offset[self.facing]
 
-            pygame.draw.circle(surf, (255, 255, 255), (face_x - 8, face_y), 6)
-            pygame.draw.circle(surf, (255, 255, 255), (face_x + 8, face_y), 6)
-            pygame.draw.circle(surf, (40, 40, 40), (face_x - 8 + ex // 2, face_y + ey // 2), 3)
-            pygame.draw.circle(surf, (40, 40, 40), (face_x + 8 + ex // 2, face_y + ey // 2), 3)
+            pygame.draw.circle(surf, (255, 255, 255), (int(face_x - 8), int(face_y)), 6)
+            pygame.draw.circle(surf, (255, 255, 255), (int(face_x + 8), int(face_y)), 6)
+            pygame.draw.circle(surf, (40, 40, 40), (int(face_x - 8 + ex // 2), int(face_y + ey // 2)), 3)
+            pygame.draw.circle(surf, (40, 40, 40), (int(face_x + 8 + ex // 2), int(face_y + ey // 2)), 3)
 
             # Draw attack effect if attacking
             if self.attacking:
-                self.draw_attack(surf, time_ms)
+                self.draw_attack(surf, time_ms, cam_x, cam_y)
 
-        def draw_attack(self, surf, time_ms):
+        def draw_attack(self, surf, time_ms, cam_x=0, cam_y=0):
             """Override in subclass for different attack visuals."""
             pass
 
@@ -764,13 +805,16 @@ init python in beacon_quest:
             self.projectile_queue = []
             return projectiles
 
-        def draw_attack(self, surf, time_ms):
+        def draw_attack(self, surf, time_ms, cam_x=0, cam_y=0):
             """Draw projectile firing effect."""
             if not self.attacking:
                 return
 
             progress = self.attack_timer / self.attack_duration
             cx, cy = self.get_center()
+            # Apply camera offset
+            cx -= cam_x
+            cy -= cam_y
 
             # Flash effect when firing
             if progress < 0.3:
@@ -814,14 +858,15 @@ init python in beacon_quest:
             else:
                 return pygame.Rect(cx + 10, cy - attack_width // 2, attack_range, attack_width)
 
-        def draw_attack(self, surf, time_ms):
+        def draw_attack(self, surf, time_ms, cam_x=0, cam_y=0):
             """Draw sword swing effect."""
             if not self.attacking:
                 return
 
             progress = self.attack_timer / self.attack_duration
-            cx = self.x + self.width // 2
-            cy = self.y + self.height // 2
+            # Apply camera offset
+            cx = self.x + self.width // 2 - cam_x
+            cy = self.y + self.height // 2 - cam_y
 
             swing_length = 50
             swing_width = 5
@@ -837,8 +882,8 @@ init python in beacon_quest:
             end_y = cy + math.sin(rad) * swing_length
 
             # Sword blade (blue tint for Henry)
-            pygame.draw.line(surf, (180, 200, 230), (cx, cy), (end_x, end_y), swing_width + 3)
-            pygame.draw.line(surf, (220, 240, 255), (cx, cy), (end_x, end_y), swing_width)
+            pygame.draw.line(surf, (180, 200, 230), (int(cx), int(cy)), (int(end_x), int(end_y)), swing_width + 3)
+            pygame.draw.line(surf, (220, 240, 255), (int(cx), int(cy)), (int(end_x), int(end_y)), swing_width)
 
             # Sparkle at tip
             sparkle_size = 5 + int(4 * math.sin(progress * math.pi))
@@ -890,9 +935,9 @@ init python in beacon_quest:
                         follower.y = new_y
                         follower.moving = True
 
-                    # Update tile position
-                    follower.tile_x = int((follower.x - MAP_OFFSET_X + follower.width // 2) // TILE_SIZE)
-                    follower.tile_y = int((follower.y - MAP_OFFSET_Y + follower.height // 2) // TILE_SIZE)
+                    # Update tile position (world coordinates)
+                    follower.tile_x = int((follower.x + follower.width // 2) // TILE_SIZE)
+                    follower.tile_y = int((follower.y + follower.height // 2) // TILE_SIZE)
 
             # Auto-attack nearby enemies
             if self.attack_check_timer >= 500:  # Check every 500ms
@@ -927,8 +972,9 @@ init python in beacon_quest:
     class Enemy:
         """A shadow enemy."""
         def __init__(self, x, y, enemy_type="shadow"):
-            self.x = x * TILE_SIZE + MAP_OFFSET_X
-            self.y = y * TILE_SIZE + MAP_OFFSET_Y
+            # World coordinates (no MAP_OFFSET)
+            self.x = x * TILE_SIZE
+            self.y = y * TILE_SIZE
             self.width = 50
             self.height = 50
             self.speed = 2
@@ -983,7 +1029,11 @@ init python in beacon_quest:
                 self.direction = random.choice(['up', 'down', 'left', 'right'])
 
         def can_move_to(self, new_x, new_y, game_map):
-            """Check if enemy can move to position."""
+            """Check if enemy can move to position (world coordinates)."""
+            # Get map dimensions
+            map_height = len(game_map)
+            map_width = len(game_map[0]) if game_map else 0
+
             corners = [
                 (new_x + 8, new_y + 8),
                 (new_x + self.width - 8, new_y + 8),
@@ -992,10 +1042,10 @@ init python in beacon_quest:
             ]
 
             for cx, cy in corners:
-                tile_x = int((cx - MAP_OFFSET_X) // TILE_SIZE)
-                tile_y = int((cy - MAP_OFFSET_Y) // TILE_SIZE)
+                tile_x = int(cx // TILE_SIZE)
+                tile_y = int(cy // TILE_SIZE)
 
-                if tile_x < 0 or tile_x >= MAP_WIDTH or tile_y < 0 or tile_y >= MAP_HEIGHT:
+                if tile_x < 0 or tile_x >= map_width or tile_y < 0 or tile_y >= map_height:
                     return False
 
                 tile = game_map[tile_y][tile_x]
@@ -1015,8 +1065,16 @@ init python in beacon_quest:
                 return True
             return False
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if not self.alive:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
                 return
 
             # Flash when hit
@@ -1031,7 +1089,7 @@ init python in beacon_quest:
             # Shadow
             shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
             pygame.draw.ellipse(shadow_surf, (0, 0, 0, 60), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (self.x, self.y + self.height - 5))
+            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 5))
 
             # Body (shadowy blob)
             body_surf = pygame.Surface((self.width + 10, self.height + 10), pygame.SRCALPHA)
@@ -1044,14 +1102,14 @@ init python in beacon_quest:
             pygame.draw.ellipse(body_surf, color,
                               (5, 5, self.width, self.height - 5))
 
-            surf.blit(body_surf, (self.x - 5, self.y + bob - 5))
+            surf.blit(body_surf, (screen_x - 5, screen_y + bob - 5))
 
             # Evil eyes
-            eye_y = self.y + self.height // 3 + bob
-            pygame.draw.circle(surf, (255, 100, 100), (int(self.x + 15), int(eye_y)), 6)
-            pygame.draw.circle(surf, (255, 100, 100), (int(self.x + self.width - 15), int(eye_y)), 6)
-            pygame.draw.circle(surf, (255, 200, 200), (int(self.x + 15), int(eye_y)), 3)
-            pygame.draw.circle(surf, (255, 200, 200), (int(self.x + self.width - 15), int(eye_y)), 3)
+            eye_y = screen_y + self.height // 3 + bob
+            pygame.draw.circle(surf, (255, 100, 100), (int(screen_x + 15), int(eye_y)), 6)
+            pygame.draw.circle(surf, (255, 100, 100), (int(screen_x + self.width - 15), int(eye_y)), 6)
+            pygame.draw.circle(surf, (255, 200, 200), (int(screen_x + 15), int(eye_y)), 3)
+            pygame.draw.circle(surf, (255, 200, 200), (int(screen_x + self.width - 15), int(eye_y)), 3)
 
 
     class SlimeEnemy(Enemy):
@@ -1155,8 +1213,16 @@ init python in beacon_quest:
                 return True
             return False
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if not self.alive and not self.is_dying:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
                 return
 
             # Get the appropriate animation frame
@@ -1181,13 +1247,13 @@ init python in beacon_quest:
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 40), shadow_surf.get_rect())
-                surf.blit(shadow_surf, (self.x, self.y + self.height - 15))
+                surf.blit(shadow_surf, (screen_x, screen_y + self.height - 15))
 
                 # Draw sprite
-                surf.blit(frame, (self.x, self.y))
+                surf.blit(frame, (screen_x, screen_y))
             else:
                 # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms)
+                super().draw(surf, time_ms, cam_x, cam_y)
 
 
     class VampireEnemy(Enemy):
@@ -1330,8 +1396,16 @@ init python in beacon_quest:
                 return True
             return False
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if not self.alive and not self.is_dying:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
                 return
 
             # Get the appropriate animation frame with direction
@@ -1357,13 +1431,13 @@ init python in beacon_quest:
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 10, 16), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
-                surf.blit(shadow_surf, (self.x + 5, self.y + self.height - 12))
+                surf.blit(shadow_surf, (screen_x + 5, screen_y + self.height - 12))
 
                 # Draw sprite
-                surf.blit(draw_frame, (self.x, self.y))
+                surf.blit(draw_frame, (screen_x, screen_y))
             else:
                 # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms)
+                super().draw(surf, time_ms, cam_x, cam_y)
 
 
     class OrcEnemy(Enemy):
@@ -1503,8 +1577,16 @@ init python in beacon_quest:
                 return True
             return False
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if not self.alive and not self.is_dying:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
                 return
 
             # Get the appropriate animation frame with direction
@@ -1530,13 +1612,13 @@ init python in beacon_quest:
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 8, 18), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 55), shadow_surf.get_rect())
-                surf.blit(shadow_surf, (self.x + 4, self.y + self.height - 14))
+                surf.blit(shadow_surf, (screen_x + 4, screen_y + self.height - 14))
 
                 # Draw sprite
-                surf.blit(draw_frame, (self.x, self.y))
+                surf.blit(draw_frame, (screen_x, screen_y))
             else:
                 # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms)
+                super().draw(surf, time_ms, cam_x, cam_y)
 
 
     class SpiderEnemy(Enemy):
@@ -1658,8 +1740,16 @@ init python in beacon_quest:
                 return True
             return False
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if not self.alive and not self.is_dying:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -100 or screen_x > WIDTH + 100 or screen_y < -100 or screen_y > HEIGHT + 100:
                 return
 
             # Get the appropriate animation frame
@@ -1688,20 +1778,21 @@ init python in beacon_quest:
                 # Draw shadow (smaller for spider)
                 shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 35), shadow_surf.get_rect())
-                surf.blit(shadow_surf, (self.x + 10, self.y + self.height - 10))
+                surf.blit(shadow_surf, (screen_x + 10, screen_y + self.height - 10))
 
                 # Draw sprite
-                surf.blit(draw_frame, (self.x, self.y))
+                surf.blit(draw_frame, (screen_x, screen_y))
             else:
                 # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms)
+                super().draw(surf, time_ms, cam_x, cam_y)
 
 
     class Shard:
         """A collectible beacon shard."""
         def __init__(self, x, y):
-            self.x = x * TILE_SIZE + MAP_OFFSET_X + TILE_SIZE // 2
-            self.y = y * TILE_SIZE + MAP_OFFSET_Y + TILE_SIZE // 2
+            # Store in world coordinates (tile-based)
+            self.x = x * TILE_SIZE + TILE_SIZE // 2
+            self.y = y * TILE_SIZE + TILE_SIZE // 2
             self.collected = False
             self.anim_phase = random.random() * math.pi * 2
 
@@ -1711,8 +1802,16 @@ init python in beacon_quest:
         def get_rect(self):
             return pygame.Rect(self.x - 20, self.y - 20, 40, 40)
 
-        def draw(self, surf, time_ms):
+        def draw(self, surf, time_ms, cam_x=0, cam_y=0):
             if self.collected:
+                return
+
+            # Calculate screen position
+            screen_x = self.x - cam_x
+            screen_y = self.y - cam_y
+
+            # Skip if off-screen
+            if screen_x < -50 or screen_x > WIDTH + 50 or screen_y < -50 or screen_y > HEIGHT + 50:
                 return
 
             bob = math.sin(self.anim_phase) * 5
@@ -1723,20 +1822,20 @@ init python in beacon_quest:
             glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
             glow_alpha = int(100 * glow)
             pygame.draw.circle(glow_surf, (255, 220, 100, glow_alpha), (glow_size, glow_size), glow_size)
-            surf.blit(glow_surf, (self.x - glow_size, self.y + bob - glow_size))
+            surf.blit(glow_surf, (screen_x - glow_size, screen_y + bob - glow_size))
 
             # Crystal shape
             points = []
             for i in range(6):
                 angle = i * math.pi / 3 - math.pi / 2
                 r = 18 if i % 2 == 0 else 10
-                points.append((self.x + math.cos(angle) * r, self.y + bob + math.sin(angle) * r))
+                points.append((screen_x + math.cos(angle) * r, screen_y + bob + math.sin(angle) * r))
 
             pygame.draw.polygon(surf, (255, 240, 150), points)
             pygame.draw.polygon(surf, (255, 200, 50), points, 2)
 
             # Inner sparkle
-            pygame.draw.circle(surf, (255, 255, 255), (int(self.x - 3), int(self.y + bob - 5)), 4)
+            pygame.draw.circle(surf, (255, 255, 255), (int(screen_x - 3), int(screen_y + bob - 5)), 4)
 
     class DeathEffect:
         """Effect when enemy dies."""
@@ -1765,23 +1864,34 @@ init python in beacon_quest:
                 p['vy'] += 0.1
             return self.lifetime > 0
 
-        def draw(self, surf):
+        def draw(self, surf, cam_x=0, cam_y=0):
             alpha = int(255 * (self.lifetime / 500))
             for p in self.particles:
                 size = p['size'] * (self.lifetime / 500)
                 if size > 0:
+                    screen_x = p['x'] - cam_x
+                    screen_y = p['y'] - cam_y
+                    # Skip if off-screen
+                    if screen_x < -50 or screen_x > WIDTH + 50 or screen_y < -50 or screen_y > HEIGHT + 50:
+                        continue
                     ps = pygame.Surface((int(size * 2 + 4), int(size * 2 + 4)), pygame.SRCALPHA)
                     pygame.draw.circle(ps, (*p['color'], alpha), (int(size + 2), int(size + 2)), int(size))
-                    surf.blit(ps, (int(p['x'] - size), int(p['y'] - size)))
+                    surf.blit(ps, (int(screen_x - size), int(screen_y - size)))
 
     class Room:
         """A single room in the dungeon."""
-        def __init__(self, room_id, game_map, enemies, shards, doors):
+        def __init__(self, room_id, game_map, enemies, shards, doors, width=None, height=None):
             self.room_id = room_id
             self.game_map = game_map
             self.enemies = enemies
             self.shards = shards
             self.doors = doors  # Dict: {door_tile: (target_room_id, spawn_direction)}
+            # Room dimensions (infer from map if not specified)
+            self.width = width if width is not None else len(game_map[0]) if game_map else DEFAULT_MAP_WIDTH
+            self.height = height if height is not None else len(game_map) if game_map else DEFAULT_MAP_HEIGHT
+            # Room pixel dimensions
+            self.pixel_width = self.width * TILE_SIZE
+            self.pixel_height = self.height * TILE_SIZE
 
         def reset_enemies(self):
             """Reset enemies when re-entering room."""
@@ -1789,6 +1899,12 @@ init python in beacon_quest:
                 if not enemy.alive:
                     enemy.alive = True
                     enemy.health = 2
+
+        def get_tile(self, x, y):
+            """Safely get tile at position, returns TILE_VOID if out of bounds."""
+            if 0 <= y < self.height and 0 <= x < self.width:
+                return self.game_map[y][x]
+            return TILE_VOID
 
 
     class BeaconQuestGame:
@@ -1842,6 +1958,90 @@ init python in beacon_quest:
 
             # Character switch cooldown
             self.switch_cooldown = 0
+
+            # Camera system
+            self.camera_x = 0.0  # Camera position (top-left corner of viewport)
+            self.camera_y = 0.0
+            self.camera_target_x = 0.0
+            self.camera_target_y = 0.0
+            # Initialize camera to center on starting position
+            self.snap_camera_to_player()
+
+        def snap_camera_to_player(self):
+            """Instantly center camera on active player."""
+            player = self.get_active_player()
+            # Center camera on player
+            target_x = player.x + player.width / 2 - VIEWPORT_WIDTH / 2
+            target_y = player.y + player.height / 2 - VIEWPORT_HEIGHT / 2
+            # Clamp to room bounds
+            self.camera_x = self.clamp_camera_x(target_x)
+            self.camera_y = self.clamp_camera_y(target_y)
+            self.camera_target_x = self.camera_x
+            self.camera_target_y = self.camera_y
+
+        def clamp_camera_x(self, x):
+            """Clamp camera X to room bounds."""
+            room = self.current_room
+            max_x = room.pixel_width - VIEWPORT_WIDTH
+            if max_x <= 0:
+                # Room fits in viewport, center it
+                return (room.pixel_width - VIEWPORT_WIDTH) / 2
+            return max(0, min(x, max_x))
+
+        def clamp_camera_y(self, y):
+            """Clamp camera Y to room bounds."""
+            room = self.current_room
+            max_y = room.pixel_height - VIEWPORT_HEIGHT
+            if max_y <= 0:
+                # Room fits in viewport, center it
+                return (room.pixel_height - VIEWPORT_HEIGHT) / 2
+            return max(0, min(y, max_y))
+
+        def update_camera(self, dt):
+            """Smoothly follow the active player with deadzone."""
+            player = self.get_active_player()
+
+            # Calculate player center in world coordinates
+            player_center_x = player.x + player.width / 2
+            player_center_y = player.y + player.height / 2
+
+            # Calculate where player is relative to camera center
+            camera_center_x = self.camera_x + VIEWPORT_WIDTH / 2
+            camera_center_y = self.camera_y + VIEWPORT_HEIGHT / 2
+
+            # Calculate offset from center
+            offset_x = player_center_x - camera_center_x
+            offset_y = player_center_y - camera_center_y
+
+            # Only update target if player moves outside deadzone
+            if abs(offset_x) > CAMERA_DEADZONE_X:
+                if offset_x > 0:
+                    self.camera_target_x = player_center_x - VIEWPORT_WIDTH / 2 - CAMERA_DEADZONE_X
+                else:
+                    self.camera_target_x = player_center_x - VIEWPORT_WIDTH / 2 + CAMERA_DEADZONE_X
+
+            if abs(offset_y) > CAMERA_DEADZONE_Y:
+                if offset_y > 0:
+                    self.camera_target_y = player_center_y - VIEWPORT_HEIGHT / 2 - CAMERA_DEADZONE_Y
+                else:
+                    self.camera_target_y = player_center_y - VIEWPORT_HEIGHT / 2 + CAMERA_DEADZONE_Y
+
+            # Clamp targets to room bounds
+            self.camera_target_x = self.clamp_camera_x(self.camera_target_x)
+            self.camera_target_y = self.clamp_camera_y(self.camera_target_y)
+
+            # Smooth lerp towards target
+            lerp_factor = 1.0 - math.pow(1.0 - CAMERA_FOLLOW_SPEED, dt / 16.67)
+            self.camera_x += (self.camera_target_x - self.camera_x) * lerp_factor
+            self.camera_y += (self.camera_target_y - self.camera_y) * lerp_factor
+
+        def world_to_screen(self, world_x, world_y):
+            """Convert world coordinates to screen coordinates."""
+            return (world_x - self.camera_x, world_y - self.camera_y)
+
+        def screen_to_world(self, screen_x, screen_y):
+            """Convert screen coordinates to world coordinates."""
+            return (screen_x + self.camera_x, screen_y + self.camera_y)
 
         def get_active_player(self):
             """Get the currently controlled character."""
@@ -2103,6 +2303,9 @@ init python in beacon_quest:
             # Clear projectiles
             self.projectiles = []
 
+            # Snap camera to new position
+            self.snap_camera_to_player()
+
             self.pending_room = None
             self.pending_spawn_dir = None
 
@@ -2235,6 +2438,9 @@ init python in beacon_quest:
             # Update effects
             self.effects = [e for e in self.effects if e.update(dt)]
 
+            # Update camera to follow active player
+            self.update_camera(dt)
+
             # Update shake
             if self.shake_timer > 0:
                 self.shake_timer -= dt
@@ -2276,35 +2482,39 @@ init python in beacon_quest:
             # Draw starry background
             self.draw_background(game_surf, time_ms)
 
-            # Draw map
+            # Get camera offset for rendering
+            cam_x = int(self.camera_x)
+            cam_y = int(self.camera_y)
+
+            # Draw map (already handles camera internally)
             self.draw_map(game_surf, time_ms)
 
-            # Draw shards
+            # Draw shards (with camera offset)
             for shard in self.current_room.shards:
-                shard.draw(game_surf, time_ms)
+                shard.draw(game_surf, time_ms, cam_x, cam_y)
 
-            # Draw projectiles
+            # Draw projectiles (with camera offset)
             for proj in self.projectiles:
-                proj.draw(game_surf)
+                proj.draw(game_surf, cam_x, cam_y)
 
-            # Draw enemies
+            # Draw enemies (with camera offset)
             for enemy in self.current_room.enemies:
-                enemy.draw(game_surf, time_ms)
+                enemy.draw(game_surf, time_ms, cam_x, cam_y)
 
             # Draw both characters (companion first so active is on top)
             companion = self.get_companion()
             active = self.get_active_player()
-            companion.draw(game_surf, time_ms, is_active=False)
-            active.draw(game_surf, time_ms, is_active=True)
+            companion.draw(game_surf, time_ms, is_active=False, cam_x=cam_x, cam_y=cam_y)
+            active.draw(game_surf, time_ms, is_active=True, cam_x=cam_x, cam_y=cam_y)
 
-            # Draw effects
+            # Draw effects (with camera offset)
             for effect in self.effects:
-                effect.draw(game_surf)
+                effect.draw(game_surf, cam_x, cam_y)
 
             # Blit with shake
             surf.blit(game_surf, (shake_x, shake_y))
 
-            # Draw UI (no shake)
+            # Draw UI (no shake, always screen-space)
             self.draw_ui(surf)
 
             # Draw room transition overlay
@@ -2334,12 +2544,24 @@ init python in beacon_quest:
             random.seed()  # Reset seed
 
         def draw_map(self, surf, time_ms):
-            """Draw the game map using tileset sprites."""
-            for y in range(MAP_HEIGHT):
-                for x in range(MAP_WIDTH):
-                    tile = self.game_map[y][x]
-                    px = x * TILE_SIZE + MAP_OFFSET_X
-                    py = y * TILE_SIZE + MAP_OFFSET_Y
+            """Draw the game map using tileset sprites with camera offset."""
+            room = self.current_room
+
+            # Calculate visible tile range based on camera position
+            start_x = max(0, int(self.camera_x // TILE_SIZE) - 1)
+            start_y = max(0, int(self.camera_y // TILE_SIZE) - 1)
+            end_x = min(room.width, int((self.camera_x + VIEWPORT_WIDTH) // TILE_SIZE) + 2)
+            end_y = min(room.height, int((self.camera_y + VIEWPORT_HEIGHT) // TILE_SIZE) + 2)
+
+            for y in range(start_y, end_y):
+                for x in range(start_x, end_x):
+                    tile = room.get_tile(x, y)
+                    # World position
+                    world_x = x * TILE_SIZE
+                    world_y = y * TILE_SIZE
+                    # Screen position (apply camera offset)
+                    px = int(world_x - self.camera_x)
+                    py = int(world_y - self.camera_y)
 
                     if tile == TILE_FLOOR:
                         # Try to use tileset sprite
