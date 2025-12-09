@@ -3016,17 +3016,14 @@ init python in beacon_quest:
         def draw_map(self, surf, time_ms):
             """Draw the game map using tileset sprites with camera offset.
 
-            WALL SPRITE LOGIC (based on camera POV looking down):
-            - South-facing walls (floor above): tan_wall_top_1/2/3 (detailed front)
-            - North-facing walls (floor below): wall_bottom (top edge cap)
-            - East-facing walls (floor to right): wall_left (west wall side)
-            - West-facing walls (floor to left): wall_right (east wall side)
+            CHUNK SCALING: All chunks are scaled 2x from original size.
+            POSITIONING: Based on actual sprite dimensions, not forced to tile grid.
 
-            DOOR SPRITES:
-            - North doors: doorway_top or doorway_stairs (random)
-            - East doors: stairs_right
-            - West doors: stairs_left
-            - South doors: procedural glow
+            WALL SPRITE LOGIC (based on camera POV looking down):
+            - South-facing walls (floor above): tan_wall_top_1/2/3 - bottom-aligned
+            - North-facing walls (floor below): wall_bottom - top-aligned
+            - East-facing walls (floor to right): wall_left - right-aligned
+            - West-facing walls (floor to left): wall_right - left-aligned
             """
             room = self.current_room
 
@@ -3044,6 +3041,13 @@ init python in beacon_quest:
             def is_floor_tile(tx, ty):
                 t = room.get_tile(tx, ty)
                 return t in (TILE_FLOOR, TILE_BEACON, TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W)
+
+            # Helper to scale sprite 2x keeping aspect ratio
+            def scale_2x(sprite):
+                if sprite is None:
+                    return None
+                w, h = sprite.get_size()
+                return pygame.transform.scale(sprite, (w * 2, h * 2))
 
             for y in range(start_y, end_y):
                 for x in range(start_x, end_x):
@@ -3067,8 +3071,12 @@ init python in beacon_quest:
                         if ((x * 17 + y * 31) % 47) == 0:
                             grate_sprite = WALL_CHUNKS.get('sewer_grate')
                             if grate_sprite:
-                                scaled_grate = pygame.transform.scale(grate_sprite, (TILE_SIZE, TILE_SIZE))
-                                surf.blit(scaled_grate, (px, py))
+                                scaled = scale_2x(grate_sprite)
+                                # Center on tile
+                                gw, gh = scaled.get_size()
+                                gx = px + (TILE_SIZE - gw) // 2
+                                gy = py + (TILE_SIZE - gh) // 2
+                                surf.blit(scaled, (gx, gy))
 
                     # ======================
                     # WALL TILE - Direction-based sprites
@@ -3081,24 +3089,50 @@ init python in beacon_quest:
                         floor_west = is_floor_tile(x - 1, y)
 
                         wall_sprite = None
+                        wall_type = None
 
-                        if floor_north:
-                            # Floor is north, wall faces NORTH - use top edge cap
-                            wall_sprite = WALL_CHUNKS.get('wall_bottom')
-                        elif floor_south:
+                        if floor_south:
                             # Floor is south, wall faces SOUTH - use detailed front
                             wall_variant = ((x + y) % 3) + 1
                             wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
+                            wall_type = 'south'
+                        elif floor_north:
+                            # Floor is north, wall faces NORTH - use top edge cap
+                            wall_sprite = WALL_CHUNKS.get('wall_bottom')
+                            wall_type = 'north'
                         elif floor_east:
                             # Floor is east, wall faces EAST - west wall side
                             wall_sprite = WALL_CHUNKS.get('wall_left')
+                            wall_type = 'east'
                         elif floor_west:
                             # Floor is west, wall faces WEST - east wall side
                             wall_sprite = WALL_CHUNKS.get('wall_right')
+                            wall_type = 'west'
 
                         if wall_sprite:
-                            scaled_wall = pygame.transform.scale(wall_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_wall, (px, py))
+                            scaled = scale_2x(wall_sprite)
+                            sw, sh = scaled.get_size()
+
+                            if wall_type == 'south':
+                                # Bottom of sprite aligns with bottom of tile, centered horizontally
+                                wx = px + (TILE_SIZE - sw) // 2
+                                wy = py + TILE_SIZE - sh
+                            elif wall_type == 'north':
+                                # Top of sprite aligns with top of tile, centered horizontally
+                                wx = px + (TILE_SIZE - sw) // 2
+                                wy = py
+                            elif wall_type == 'east':
+                                # Right edge aligns with right of tile, centered vertically
+                                wx = px + TILE_SIZE - sw
+                                wy = py + (TILE_SIZE - sh) // 2
+                            elif wall_type == 'west':
+                                # Left edge aligns with left of tile, centered vertically
+                                wx = px
+                                wy = py + (TILE_SIZE - sh) // 2
+                            else:
+                                wx, wy = px, py
+
+                            surf.blit(scaled, (wx, wy))
                         else:
                             draw_procedural_wall(surf, px, py, TILE_SIZE)
 
@@ -3126,8 +3160,12 @@ init python in beacon_quest:
                         door_choice = 'doorway_top' if ((x + y) % 2 == 0) else 'doorway_stairs'
                         door_sprite = WALL_CHUNKS.get(door_choice)
                         if door_sprite:
-                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_door, (px, py))
+                            scaled = scale_2x(door_sprite)
+                            dw, dh = scaled.get_size()
+                            # Center horizontally, align bottom to tile bottom
+                            dx = px + (TILE_SIZE - dw) // 2
+                            dy = py + TILE_SIZE - dh
+                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'N', time_ms)
 
                     elif tile == TILE_DOOR_S:
@@ -3144,8 +3182,12 @@ init python in beacon_quest:
                         # East doors use stairs_right
                         door_sprite = WALL_CHUNKS.get('stairs_right')
                         if door_sprite:
-                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_door, (px, py))
+                            scaled = scale_2x(door_sprite)
+                            dw, dh = scaled.get_size()
+                            # Right-aligned, centered vertically
+                            dx = px + TILE_SIZE - dw
+                            dy = py + (TILE_SIZE - dh) // 2
+                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'E', time_ms)
 
                     elif tile == TILE_DOOR_W:
@@ -3155,8 +3197,12 @@ init python in beacon_quest:
                         # West doors use stairs_left
                         door_sprite = WALL_CHUNKS.get('stairs_left')
                         if door_sprite:
-                            scaled_door = pygame.transform.scale(door_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_door, (px, py))
+                            scaled = scale_2x(door_sprite)
+                            dw, dh = scaled.get_size()
+                            # Left-aligned, centered vertically
+                            dx = px
+                            dy = py + (TILE_SIZE - dh) // 2
+                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'W', time_ms)
 
                     # ======================
@@ -3173,8 +3219,12 @@ init python in beacon_quest:
                         pillar_variant = ((x * 3 + y * 7) % 4) + 1
                         pillar_sprite = WALL_CHUNKS.get(f'pillar_{pillar_variant}')
                         if pillar_sprite:
-                            scaled_pillar = pygame.transform.scale(pillar_sprite, (TILE_SIZE, TILE_SIZE))
-                            surf.blit(scaled_pillar, (px, py))
+                            scaled = scale_2x(pillar_sprite)
+                            pw, ph = scaled.get_size()
+                            # Center horizontally, align bottom to tile bottom
+                            pillar_x = px + (TILE_SIZE - pw) // 2
+                            pillar_y = py + TILE_SIZE - ph
+                            surf.blit(scaled, (pillar_x, pillar_y))
 
                     # ======================
                     # VOID/SKY (nothing drawn)
