@@ -1937,7 +1937,7 @@ init python in beacon_quest:
 
             # Shared game state
             self.shards_collected = 0
-            self.target_shards = 5  # More shards across multiple rooms
+            self.target_shards = 6  # Shards across all rooms (including large east room)
 
             # Projectiles
             self.projectiles = []
@@ -2182,49 +2182,105 @@ init python in beacon_quest:
             return Room("north", game_map, enemies, shards, doors)
 
         def create_east_room(self):
-            """Create the east room - enemy gauntlet."""
-            game_map = [[TILE_VOID for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
+            """Create the east room - LARGE enemy gauntlet to test camera."""
+            # Much larger room: 45 wide x 28 tall (bigger than viewport!)
+            room_width = 45
+            room_height = 28
+            game_map = [[TILE_VOID for _ in range(room_width)] for _ in range(room_height)]
 
-            # Main platform
-            for y in range(1, 12):
-                for x in range(2, 18):
+            # Create the main walkable area
+            for y in range(1, room_height - 1):
+                for x in range(2, room_width - 2):
                     game_map[y][x] = TILE_FLOOR
 
-            # Walls
-            for x in range(2, 18):
+            # Perimeter walls
+            for x in range(2, room_width - 1):
                 game_map[0][x] = TILE_WALL
-                game_map[12][x] = TILE_WALL
-            for y in range(1, 12):
+                game_map[room_height - 1][x] = TILE_WALL
+            for y in range(1, room_height - 1):
                 game_map[y][1] = TILE_WALL
-                game_map[y][18] = TILE_WALL
+                game_map[y][room_width - 2] = TILE_WALL
 
-            # West door (back to start)
+            # West door (entrance from start room)
             game_map[6][1] = TILE_DOOR_W
 
-            # Obstacle maze
-            for y in range(3, 10):
-                if y != 6:
-                    game_map[y][6] = TILE_WALL
-                    game_map[y][13] = TILE_WALL
+            # Create interesting wall patterns throughout the large room
+            # Section 1: Maze entrance (left side)
+            for y in range(3, 12):
+                if y != 6:  # Leave door path open
+                    game_map[y][8] = TILE_WALL
 
+            # Section 2: Middle pillars
+            for pillar_x in [15, 22, 29]:
+                for y in range(4, 8):
+                    game_map[y][pillar_x] = TILE_WALL
+                for y in range(16, 22):
+                    game_map[y][pillar_x] = TILE_WALL
+
+            # Section 3: Horizontal barriers
+            for x in range(10, 18):
+                game_map[13][x] = TILE_WALL
+            for x in range(26, 36):
+                game_map[13][x] = TILE_WALL
+            for x in range(18, 28):
+                game_map[20][x] = TILE_WALL
+
+            # Section 4: L-shaped obstacles
+            for x in range(35, 40):
+                game_map[5][x] = TILE_WALL
+            for y in range(5, 10):
+                game_map[y][40] = TILE_WALL
+
+            # Create some "rooms" with openings
+            for y in range(16, 25):
+                game_map[y][10] = TILE_WALL
+            game_map[20][10] = TILE_FLOOR  # Opening
+
+            # Place enemies throughout the large room
             enemies = [
-                OrcEnemy(4, 5),      # Orc at gauntlet start
-                SlimeEnemy(4, 8),    # Slime gauntlet
-                VampireEnemy(9, 6),  # Vampire mid-gauntlet
-                OrcEnemy(15, 6),     # Orc guarding shard
-                SpiderEnemy(10, 4),  # Spider in maze section
-                SpiderEnemy(10, 9),  # Spider in maze section
+                # Near entrance
+                OrcEnemy(4, 5),
+                SlimeEnemy(4, 9),
+
+                # First section
+                VampireEnemy(12, 6),
+                SpiderEnemy(10, 3),
+                SpiderEnemy(10, 10),
+
+                # Middle section
+                OrcEnemy(18, 8),
+                SlimeEnemy(20, 10),
+                VampireEnemy(25, 6),
+                SpiderEnemy(22, 15),
+
+                # Far section
+                OrcEnemy(32, 5),
+                VampireEnemy(35, 10),
+                SlimeEnemy(38, 8),
+                SpiderEnemy(40, 3),
+
+                # Bottom section
+                SlimeEnemy(15, 18),
+                OrcEnemy(22, 22),
+                VampireEnemy(30, 20),
+                SpiderEnemy(35, 24),
+
+                # Patrol in open area
+                VampireEnemy(20, 15),
+                SpiderEnemy(28, 18),
             ]
 
+            # Multiple shards spread across the large room
             shards = [
-                Shard(16, 6),
+                Shard(38, 6),    # Far right
+                Shard(22, 24),   # Bottom middle
             ]
 
             doors = {
                 (1, 6): ("start", "left"),
             }
 
-            return Room("east", game_map, enemies, shards, doors)
+            return Room("east", game_map, enemies, shards, doors, room_width, room_height)
 
         def create_west_room(self):
             """Create the west room - treasure room."""
