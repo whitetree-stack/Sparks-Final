@@ -194,6 +194,83 @@ init python in beacon_quest:
             return None
         return frames[frame_index % len(frames)]
 
+    # ----------------------------------------------------------------
+    # VAMPIRE ENEMY SPRITES
+    # ----------------------------------------------------------------
+    VAMPIRE_SPRITE_PATH = "images/enemies/vampires/"
+    VAMPIRE_FRAME_SIZE = 64
+    VAMPIRE_SPRITES_LOADED = False
+    VAMPIRE_FRAMES = {}  # Organized as: VAMPIRE_FRAMES[anim_name][direction] = [frames]
+
+    # Spritesheet definitions: filename -> (cols, rows)
+    VAMPIRE_SPRITESHEETS = {
+        'idle': ('vampire_idle.png', 4, 4),
+        'walk': ('vampire_walk.png', 6, 4),
+        'run': ('vampire_run.png', 8, 4),
+        'attack': ('vampire_attack.png', 10, 4),
+        'hurt': ('vampire_hurt.png', 4, 4),
+        'death': ('vampire_death.png', 10, 4),
+    }
+
+    # Direction row mapping (row index -> direction name)
+    VAMPIRE_DIRECTIONS = {
+        0: 'down',
+        1: 'up',
+        2: 'left',
+        3: 'right'
+    }
+
+    def load_vampire_sprites():
+        """Load vampire enemy sprites from multiple spritesheets."""
+        global VAMPIRE_SPRITES_LOADED, VAMPIRE_FRAMES
+
+        if VAMPIRE_SPRITES_LOADED:
+            return True
+
+        try:
+            for anim_name, (filename, cols, rows) in VAMPIRE_SPRITESHEETS.items():
+                filepath = VAMPIRE_SPRITE_PATH + filename
+                spritesheet = load_image(filepath)
+
+                if spritesheet is None:
+                    print(f"Failed to load vampire spritesheet: {filepath}")
+                    continue
+
+                VAMPIRE_FRAMES[anim_name] = {}
+
+                # Extract frames for each direction
+                for row in range(min(rows, 4)):  # 4 directions
+                    direction = VAMPIRE_DIRECTIONS.get(row, 'down')
+                    VAMPIRE_FRAMES[anim_name][direction] = []
+
+                    for col in range(cols):
+                        x = col * VAMPIRE_FRAME_SIZE
+                        y = row * VAMPIRE_FRAME_SIZE
+
+                        # Create frame surface
+                        frame = pygame.Surface((VAMPIRE_FRAME_SIZE, VAMPIRE_FRAME_SIZE), pygame.SRCALPHA)
+                        frame.blit(spritesheet, (0, 0), (x, y, VAMPIRE_FRAME_SIZE, VAMPIRE_FRAME_SIZE))
+
+                        VAMPIRE_FRAMES[anim_name][direction].append(frame)
+
+            VAMPIRE_SPRITES_LOADED = True
+            print(f"Loaded vampire sprites: {list(VAMPIRE_FRAMES.keys())}")
+            return True
+        except Exception as e:
+            print(f"Error loading vampire sprites: {e}")
+            return False
+
+    def get_vampire_frame(anim_name, direction, frame_index):
+        """Get a specific vampire animation frame for a direction."""
+        if anim_name not in VAMPIRE_FRAMES:
+            return None
+        if direction not in VAMPIRE_FRAMES[anim_name]:
+            direction = 'down'  # Fallback
+        frames = VAMPIRE_FRAMES[anim_name].get(direction, [])
+        if not frames:
+            return None
+        return frames[frame_index % len(frames)]
+
     # Map dimensions
     MAP_WIDTH = 20
     MAP_HEIGHT = 13
@@ -982,6 +1059,182 @@ init python in beacon_quest:
                 super().draw(surf, time_ms)
 
 
+    class VampireEnemy(Enemy):
+        """A vampire enemy with directional sprite-based animations."""
+        def __init__(self, x, y):
+            super().__init__(x, y, enemy_type="vampire")
+            self.width = TILE_SIZE
+            self.height = TILE_SIZE
+            self.speed = 2.5  # Vampires are faster
+            self.health = 3   # More health than basic enemies
+
+            # Animation state
+            self.current_anim = 'idle'
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.anim_speed = 120  # ms per frame
+
+            # Directional facing (matches sprite rows)
+            self.facing = 'down'  # 'down', 'up', 'left', 'right'
+
+            # Vampire-specific properties
+            self.is_attacking = False
+            self.attack_timer = 0
+            self.attack_cooldown = 0
+            self.death_timer = 0
+            self.is_dying = False
+            self.is_running = False
+
+            # AI behavior
+            self.aggro_range = TILE_SIZE * 5
+            self.attack_range = TILE_SIZE * 1.5
+
+        def update(self, dt, game_map, player):
+            if self.is_dying:
+                self.death_timer += dt
+                self.anim_timer += dt
+                self.current_anim = 'death'
+                if self.anim_timer >= self.anim_speed:
+                    self.anim_timer = 0
+                    self.anim_frame += 1
+                if self.death_timer >= 800:
+                    self.alive = False
+                return
+
+            if not self.alive:
+                return
+
+            # Update animation timer
+            self.anim_timer += dt
+            if self.anim_timer >= self.anim_speed:
+                self.anim_timer = 0
+                self.anim_frame += 1
+
+            # Cooldowns
+            if self.attack_cooldown > 0:
+                self.attack_cooldown -= dt
+
+            # Handle attack animation
+            if self.is_attacking:
+                self.attack_timer += dt
+                self.current_anim = 'attack'
+                if self.attack_timer >= 600:
+                    self.is_attacking = False
+                    self.attack_timer = 0
+                    self.attack_cooldown = 1000
+                return
+
+            # Hit flash
+            if self.hit_flash > 0:
+                self.hit_flash -= dt
+                self.current_anim = 'hurt'
+                return
+
+            # Calculate distance to player
+            dx = player.x - self.x
+            dy = player.y - self.y
+            dist = math.sqrt(dx*dx + dy*dy)
+
+            # Update facing direction based on movement intent
+            if abs(dx) > abs(dy):
+                self.facing = 'right' if dx > 0 else 'left'
+            else:
+                self.facing = 'down' if dy > 0 else 'up'
+
+            # AI behavior based on distance
+            if dist < self.attack_range and self.attack_cooldown <= 0:
+                # Attack!
+                self.is_attacking = True
+                self.anim_frame = 0
+                self.current_anim = 'attack'
+            elif dist < self.aggro_range:
+                # Chase player - run if far, walk if close
+                self.is_running = dist > TILE_SIZE * 3
+                speed = self.speed * (1.5 if self.is_running else 1.0)
+                self.current_anim = 'run' if self.is_running else 'walk'
+
+                # Move towards player
+                if dist > 0:
+                    move_x = (dx / dist) * speed
+                    move_y = (dy / dist) * speed
+
+                    new_x = self.x + move_x
+                    new_y = self.y + move_y
+
+                    if self.can_move_to(new_x, self.y, game_map):
+                        self.x = new_x
+                    if self.can_move_to(self.x, new_y, game_map):
+                        self.y = new_y
+            else:
+                # Idle or patrol
+                self.current_anim = 'idle'
+                self.is_running = False
+
+                # Random movement occasionally
+                self.move_timer += dt
+                if self.move_timer >= self.move_duration:
+                    self.move_timer = 0
+                    self.move_duration = random.randint(1000, 2500)
+                    self.direction = random.choice(['up', 'down', 'left', 'right'])
+                    self.facing = self.direction
+
+                # Slow patrol movement
+                dir_vec = DIRECTIONS[self.direction]
+                new_x = self.x + dir_vec[0] * self.speed * 0.3
+                new_y = self.y + dir_vec[1] * self.speed * 0.3
+
+                if self.can_move_to(new_x, new_y, game_map):
+                    self.x = new_x
+                    self.y = new_y
+                    self.current_anim = 'walk'
+
+        def take_damage(self, amount=1):
+            self.health -= amount
+            self.hit_flash = 250
+            self.anim_frame = 0
+            if self.health <= 0:
+                self.is_dying = True
+                self.current_anim = 'death'
+                self.anim_frame = 0
+                return True
+            return False
+
+        def draw(self, surf, time_ms):
+            if not self.alive and not self.is_dying:
+                return
+
+            # Get the appropriate animation frame with direction
+            frame = get_vampire_frame(self.current_anim, self.facing, self.anim_frame)
+
+            if frame:
+                draw_frame = frame
+
+                # Apply hit flash tint if damaged
+                if self.hit_flash > 0:
+                    tinted = frame.copy()
+                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+                    tint_surf.fill((255, 50, 50, 120))
+                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                    draw_frame = tinted
+
+                # Apply death fade
+                if self.is_dying:
+                    alpha = max(0, 255 - int(self.death_timer * 0.3))
+                    draw_frame = draw_frame.copy()
+                    draw_frame.set_alpha(alpha)
+
+                # Draw shadow
+                shadow_surf = pygame.Surface((self.width - 10, 16), pygame.SRCALPHA)
+                pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
+                surf.blit(shadow_surf, (self.x + 5, self.y + self.height - 12))
+
+                # Draw sprite
+                surf.blit(draw_frame, (self.x, self.y))
+            else:
+                # Fallback to parent drawing if sprites not loaded
+                super().draw(surf, time_ms)
+
+
     class Shard:
         """A collectible beacon shard."""
         def __init__(self, x, y):
@@ -1086,6 +1339,7 @@ init python in beacon_quest:
 
             # Load enemy sprites
             load_slime_sprites()
+            load_vampire_sprites()
 
             # Create all rooms
             self.rooms = self.create_all_rooms()
@@ -1241,11 +1495,11 @@ init python in beacon_quest:
             game_map[4][12] = TILE_WALL
 
             enemies = [
-                SlimeEnemy(4, 6),   # Slime guardian
-                SlimeEnemy(15, 6),  # Slime guardian
-                Enemy(10, 9),       # Shadow
-                SlimeEnemy(6, 3),   # Slime near beacon
-                Enemy(13, 3),
+                SlimeEnemy(4, 6),    # Slime guardian
+                SlimeEnemy(15, 6),   # Slime guardian
+                VampireEnemy(10, 5), # Vampire guarding beacon!
+                SlimeEnemy(6, 8),    # Slime patrol
+                SlimeEnemy(13, 8),   # Slime patrol
             ]
 
             shards = [
@@ -1287,12 +1541,11 @@ init python in beacon_quest:
                     game_map[y][13] = TILE_WALL
 
             enemies = [
-                SlimeEnemy(4, 3),   # Slime gauntlet
-                SlimeEnemy(4, 9),   # Slime gauntlet
-                Enemy(9, 5),        # Shadow
-                Enemy(9, 8),        # Shadow
-                SlimeEnemy(15, 4),  # Slime at end
-                SlimeEnemy(15, 8),  # Slime at end
+                SlimeEnemy(4, 3),    # Slime gauntlet
+                SlimeEnemy(4, 9),    # Slime gauntlet
+                VampireEnemy(9, 6),  # Vampire mid-gauntlet
+                SlimeEnemy(15, 4),   # Slime at end
+                SlimeEnemy(15, 8),   # Slime at end
             ]
 
             shards = [
@@ -1334,10 +1587,10 @@ init python in beacon_quest:
             game_map[6][10] = TILE_WALL
 
             enemies = [
-                SlimeEnemy(7, 3),   # Slime in corners
-                Enemy(12, 3),       # Shadow
-                Enemy(7, 9),        # Shadow
-                SlimeEnemy(12, 9),  # Slime in corners
+                SlimeEnemy(7, 3),    # Slime in corners
+                VampireEnemy(10, 6), # Vampire guarding treasure
+                SlimeEnemy(7, 9),    # Slime patrol
+                SlimeEnemy(12, 9),   # Slime in corners
             ]
 
             shards = [
