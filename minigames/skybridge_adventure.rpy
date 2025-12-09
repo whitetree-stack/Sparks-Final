@@ -13,7 +13,7 @@ init python in beacon_quest:
 
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
-    TILE_SIZE = 64
+    TILE_SIZE = 80  # Increased from 64 for better visibility
 
     # ----------------------------------------------------------------
     # TILESET LOADING
@@ -1322,16 +1322,19 @@ init python in beacon_quest:
             self.attack_timer = 0
             self.death_timer = 0
             self.is_dying = False
+            self.pause_timer = 0
 
         def update(self, dt, game_map, player):
             if self.is_dying:
                 self.death_timer += dt
                 self.anim_timer += dt
-                if self.anim_timer >= self.anim_speed:
+                # Get death animation frame count
+                death_frames = len(SLIME_FRAMES.get('death', [None, None, None]))
+                # Only advance frame if not at last frame
+                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                if self.death_timer >= 500:
-                    self.alive = False
+                # Freeze on final frame - never set alive = False
                 return
 
             if not self.alive:
@@ -1352,10 +1355,16 @@ init python in beacon_quest:
                     self.attack_timer = 0
                 return
 
-            # Hit flash timer
+            # Hit flash timer - use hurt animation
             if self.hit_flash > 0:
                 self.hit_flash -= dt
                 self.current_anim = 'hurt'
+                return
+
+            # Pause behavior while wandering
+            if self.pause_timer > 0:
+                self.pause_timer -= dt
+                self.current_anim = 'idle'
                 return
 
             # Parent movement logic
@@ -1364,6 +1373,10 @@ init python in beacon_quest:
                 self.move_timer = 0
                 self.move_duration = random.randint(800, 2000)
                 self.direction = random.choice(['up', 'down', 'left', 'right'])
+                # Random chance to pause
+                if random.random() < 0.4:
+                    self.pause_timer = random.randint(300, 800)
+                    return
 
             # Move towards player occasionally (less aggressive than shadow)
             if random.random() < 0.01:
@@ -1420,8 +1433,8 @@ init python in beacon_quest:
             frame = get_slime_frame(self.current_anim, self.anim_frame)
 
             if frame:
-                # Apply hit flash tint if damaged
-                if self.hit_flash > 0:
+                # Only apply red tint if hurt animation doesn't exist
+                if self.hit_flash > 0 and self.current_anim != 'hurt':
                     # Create a red-tinted version
                     tinted = frame.copy()
                     tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
@@ -1429,11 +1442,7 @@ init python in beacon_quest:
                     tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                     frame = tinted
 
-                # Apply death fade
-                if self.is_dying:
-                    alpha = max(0, 255 - int(self.death_timer * 0.5))
-                    frame = frame.copy()
-                    frame.set_alpha(alpha)
+                # No death fade - enemy freezes on final frame
 
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
@@ -1530,6 +1539,7 @@ init python in beacon_quest:
             self.death_timer = 0
             self.is_dying = False
             self.is_running = False
+            self.pause_timer = 0
 
             # AI behavior
             self.aggro_range = TILE_SIZE * 5
@@ -1540,11 +1550,12 @@ init python in beacon_quest:
                 self.death_timer += dt
                 self.anim_timer += dt
                 self.current_anim = 'death'
-                if self.anim_timer >= self.anim_speed:
+                # Get death animation frame count
+                death_frames = 10  # Vampire death has 10 frames
+                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                if self.death_timer >= 800:
-                    self.alive = False
+                # Freeze on final frame
                 return
 
             if not self.alive:
@@ -1613,8 +1624,13 @@ init python in beacon_quest:
                         self.y = new_y
             else:
                 # Idle or patrol
-                self.current_anim = 'idle'
                 self.is_running = False
+
+                # Pause behavior
+                if self.pause_timer > 0:
+                    self.pause_timer -= dt
+                    self.current_anim = 'idle'
+                    return
 
                 # Random movement occasionally
                 self.move_timer += dt
@@ -1623,6 +1639,11 @@ init python in beacon_quest:
                     self.move_duration = random.randint(1000, 2500)
                     self.direction = random.choice(['up', 'down', 'left', 'right'])
                     self.facing = self.direction
+                    # Random chance to pause
+                    if random.random() < 0.4:
+                        self.pause_timer = random.randint(400, 1000)
+                        self.current_anim = 'idle'
+                        return
 
                 # Slow patrol movement
                 dir_vec = DIRECTIONS[self.direction]
@@ -1633,6 +1654,8 @@ init python in beacon_quest:
                     self.x = new_x
                     self.y = new_y
                     self.current_anim = 'walk'
+                else:
+                    self.current_anim = 'idle'
 
         def take_damage(self, amount=1):
             self.health -= amount
@@ -1663,19 +1686,15 @@ init python in beacon_quest:
             if frame:
                 draw_frame = frame
 
-                # Apply hit flash tint if damaged
-                if self.hit_flash > 0:
+                # Only apply red tint if not using hurt animation
+                if self.hit_flash > 0 and self.current_anim != 'hurt':
                     tinted = frame.copy()
                     tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
                     tint_surf.fill((255, 50, 50, 120))
                     tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                     draw_frame = tinted
 
-                # Apply death fade
-                if self.is_dying:
-                    alpha = max(0, 255 - int(self.death_timer * 0.3))
-                    draw_frame = draw_frame.copy()
-                    draw_frame.set_alpha(alpha)
+                # No death fade - freeze on final frame
 
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 10, 16), pygame.SRCALPHA)
@@ -1785,6 +1804,7 @@ init python in beacon_quest:
             self.attack_cooldown = 0
             self.death_timer = 0
             self.is_dying = False
+            self.pause_timer = 0
 
             # AI behavior - orcs are more aggressive but slower
             self.aggro_range = TILE_SIZE * 6
@@ -1796,11 +1816,12 @@ init python in beacon_quest:
                 self.death_timer += dt
                 self.anim_timer += dt
                 self.current_anim = 'death'
-                if self.anim_timer >= self.anim_speed:
+                # Get death animation frame count
+                death_frames = 10  # Orc death has 10 frames
+                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                if self.death_timer >= 700:
-                    self.alive = False
+                # Freeze on final frame
                 return
 
             if not self.alive:
@@ -1868,7 +1889,12 @@ init python in beacon_quest:
                         self.y = new_y
             else:
                 # Idle patrol
-                self.current_anim = 'idle'
+
+                # Pause behavior
+                if self.pause_timer > 0:
+                    self.pause_timer -= dt
+                    self.current_anim = 'idle'
+                    return
 
                 self.move_timer += dt
                 if self.move_timer >= self.move_duration:
@@ -1876,6 +1902,11 @@ init python in beacon_quest:
                     self.move_duration = random.randint(1500, 3000)
                     self.direction = random.choice(['up', 'down', 'left', 'right'])
                     self.facing = self.direction
+                    # Random chance to pause
+                    if random.random() < 0.4:
+                        self.pause_timer = random.randint(500, 1200)
+                        self.current_anim = 'idle'
+                        return
 
                 # Slow patrol
                 dir_vec = DIRECTIONS[self.direction]
@@ -1886,6 +1917,8 @@ init python in beacon_quest:
                     self.x = new_x
                     self.y = new_y
                     self.current_anim = 'walk'
+                else:
+                    self.current_anim = 'idle'
 
         def take_damage(self, amount=1):
             self.health -= amount
@@ -1916,19 +1949,15 @@ init python in beacon_quest:
             if frame:
                 draw_frame = frame
 
-                # Apply hit flash tint if damaged
-                if self.hit_flash > 0:
+                # Only apply red tint if not using hurt animation
+                if self.hit_flash > 0 and self.current_anim != 'hurt':
                     tinted = frame.copy()
                     tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
                     tint_surf.fill((255, 50, 50, 150))
                     tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                     draw_frame = tinted
 
-                # Apply death fade
-                if self.is_dying:
-                    alpha = max(0, 255 - int(self.death_timer * 0.35))
-                    draw_frame = draw_frame.copy()
-                    draw_frame.set_alpha(alpha)
+                # No death fade - freeze on final frame
 
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 8, 18), pygame.SRCALPHA)
@@ -2038,6 +2067,7 @@ init python in beacon_quest:
             # Spider-specific properties
             self.death_timer = 0
             self.is_dying = False
+            self.pause_timer = 0
 
             # Erratic movement
             self.direction_change_timer = 0
@@ -2049,14 +2079,13 @@ init python in beacon_quest:
             if self.is_dying:
                 self.death_timer += dt
                 self.anim_timer += dt
-                if self.anim_timer >= self.anim_speed:
+                # Get death animation frame count
+                death_frames = len(SPIDER_FRAMES.get('death', [None, None, None, None]))
+                # Only advance frame if not at last frame
+                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                # Check if death animation is complete (4 frames: 0, 1, 2, 3)
-                # Die after playing through all frames once
-                death_frames = len(SPIDER_FRAMES.get('death', [None, None, None, None]))
-                if self.anim_frame >= death_frames:
-                    self.alive = False
+                # Freeze on final frame - don't set alive = False
                 return
 
             if not self.alive:
@@ -2097,6 +2126,11 @@ init python in beacon_quest:
                         self.facing = 'down' if flee_y > 0 else 'up'
                 return
 
+            # Pause behavior (spiders pause briefly)
+            if self.pause_timer > 0:
+                self.pause_timer -= dt
+                return
+
             # Erratic direction changes
             self.direction_change_timer += dt
             if self.direction_change_timer >= self.direction_change_interval:
@@ -2113,6 +2147,9 @@ init python in beacon_quest:
                 else:
                     # Random direction
                     self.direction = random.choice(['up', 'down', 'left', 'right'])
+                    # Random short pause
+                    if random.random() < 0.25:
+                        self.pause_timer = random.randint(150, 400)
 
                 self.facing = self.direction
 
@@ -2161,7 +2198,7 @@ init python in beacon_quest:
             if frame:
                 draw_frame = frame
 
-                # Apply hit flash tint if damaged
+                # Apply hit flash tint if damaged (spiders don't have hurt anim, so always use tint)
                 if self.hit_flash > 0:
                     tinted = frame.copy()
                     tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
@@ -2169,11 +2206,7 @@ init python in beacon_quest:
                     tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
                     draw_frame = tinted
 
-                # Apply death fade
-                if self.is_dying:
-                    alpha = max(0, 255 - int(self.death_timer * 0.6))
-                    draw_frame = draw_frame.copy()
-                    draw_frame.set_alpha(alpha)
+                # No death fade - freeze on final frame
 
                 # Draw shadow (smaller for spider)
                 shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
@@ -3101,15 +3134,19 @@ init python in beacon_quest:
             end_x = min(room.width, int((self.camera_x + VIEWPORT_WIDTH) // TILE_SIZE) + 2)
             end_y = min(room.height, int((self.camera_y + VIEWPORT_HEIGHT) // TILE_SIZE) + 2)
 
+            # Use floored camera position to prevent tile gaps
+            cam_x_floor = int(self.camera_x)
+            cam_y_floor = int(self.camera_y)
+
             for y in range(start_y, end_y):
                 for x in range(start_x, end_x):
                     tile = room.get_tile(x, y)
                     # World position
                     world_x = x * TILE_SIZE
                     world_y = y * TILE_SIZE
-                    # Screen position (apply camera offset)
-                    px = int(world_x - self.camera_x)
-                    py = int(world_y - self.camera_y)
+                    # Screen position (apply floored camera offset for consistent gaps)
+                    px = world_x - cam_x_floor
+                    py = world_y - cam_y_floor
 
                     if tile == TILE_FLOOR:
                         # Try to use tileset sprite
