@@ -36,3 +36,6 @@ desktop.ini
 
 # Keep these tracked (remove from ignore if needed)
 !gui/*.png
+# Symlinks to external assets (not tracked)
+images/enemies
+images/dungeon_tileset.png
