@@ -891,7 +891,7 @@ init python in beacon_quest:
 
 
     class CompanionAI:
-        """AI controller for the non-active character."""
+        """AI controller for the non-active character with A* pathfinding."""
         def __init__(self):
             self.follow_distance = 80      # Desired distance from leader
             self.min_distance = 50         # Don't get closer than this
@@ -899,10 +899,90 @@ init python in beacon_quest:
             self.attack_check_timer = 0
             self.move_timer = 0
 
+            # Pathfinding
+            self.current_path = []
+            self.path_update_timer = 0
+            self.path_update_interval = 300  # Recalculate path every 300ms
+            self.stuck_timer = 0
+            self.last_position = (0, 0)
+
+        def find_path(self, start_tile, end_tile, game_map):
+            """A* pathfinding from start to end tile."""
+            import heapq
+
+            map_height = len(game_map)
+            map_width = len(game_map[0]) if game_map else 0
+
+            def heuristic(a, b):
+                return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+            def is_walkable(x, y):
+                if x < 0 or x >= map_width or y < 0 or y >= map_height:
+                    return False
+                tile = game_map[y][x]
+                return tile not in (TILE_WALL, TILE_VOID)
+
+            start = (int(start_tile[0]), int(start_tile[1]))
+            end = (int(end_tile[0]), int(end_tile[1]))
+
+            if not is_walkable(end[0], end[1]):
+                # Find nearest walkable tile to target
+                for radius in range(1, 5):
+                    for dx in range(-radius, radius + 1):
+                        for dy in range(-radius, radius + 1):
+                            test = (end[0] + dx, end[1] + dy)
+                            if is_walkable(test[0], test[1]):
+                                end = test
+                                break
+                    else:
+                        continue
+                    break
+
+            # A* algorithm
+            open_set = []
+            heapq.heappush(open_set, (0, start))
+            came_from = {}
+            g_score = {start: 0}
+            f_score = {start: heuristic(start, end)}
+
+            iterations = 0
+            max_iterations = 500  # Prevent infinite loops
+
+            while open_set and iterations < max_iterations:
+                iterations += 1
+                current = heapq.heappop(open_set)[1]
+
+                if current == end:
+                    # Reconstruct path
+                    path = []
+                    while current in came_from:
+                        path.append(current)
+                        current = came_from[current]
+                    path.reverse()
+                    return path
+
+                # Check neighbors (4-directional)
+                for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                    neighbor = (current[0] + dx, current[1] + dy)
+
+                    if not is_walkable(neighbor[0], neighbor[1]):
+                        continue
+
+                    tentative_g = g_score[current] + 1
+
+                    if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g
+                        f_score[neighbor] = tentative_g + heuristic(neighbor, end)
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+            return []  # No path found
+
         def update(self, follower, leader, dt, game_map, enemies):
-            """Update the follower AI."""
+            """Update the follower AI with pathfinding."""
             self.move_timer += dt
             self.attack_check_timer += dt
+            self.path_update_timer += dt
 
             # Calculate distance to leader
             dx = leader.x - follower.x
@@ -913,31 +993,91 @@ init python in beacon_quest:
             follower.moving = False
 
             if dist > self.follow_distance:
-                # Move toward leader
+                # Check if we're stuck
+                current_pos = (follower.x, follower.y)
+                if self.last_position == current_pos:
+                    self.stuck_timer += dt
+                else:
+                    self.stuck_timer = 0
+                    self.last_position = current_pos
+
+                # Try direct movement first
+                can_move_direct = False
                 if dist > 0:
-                    move_x = (dx / dist) * follower.speed * 0.9  # Slightly slower than player
+                    move_x = (dx / dist) * follower.speed * 0.9
                     move_y = (dy / dist) * follower.speed * 0.9
 
-                    # Update facing
+                    new_x = follower.x + move_x
+                    new_y = follower.y + move_y
+
+                    can_move_x = follower.can_move_to(new_x, follower.y, game_map)
+                    can_move_y = follower.can_move_to(follower.x, new_y, game_map)
+
+                    if can_move_x and can_move_y:
+                        can_move_direct = True
+                        follower.x = new_x
+                        follower.y = new_y
+                        follower.moving = True
+                        self.current_path = []  # Clear path when moving directly
+                    elif can_move_x:
+                        follower.x = new_x
+                        follower.moving = True
+                    elif can_move_y:
+                        follower.y = new_y
+                        follower.moving = True
+
+                # If stuck or can't move directly, use pathfinding
+                if (self.stuck_timer > 200 or not follower.moving) and self.path_update_timer >= self.path_update_interval:
+                    self.path_update_timer = 0
+
+                    # Get tile positions
+                    follower_tile = (
+                        int((follower.x + follower.width // 2) // TILE_SIZE),
+                        int((follower.y + follower.height // 2) // TILE_SIZE)
+                    )
+                    leader_tile = (
+                        int((leader.x + leader.width // 2) // TILE_SIZE),
+                        int((leader.y + leader.height // 2) // TILE_SIZE)
+                    )
+
+                    self.current_path = self.find_path(follower_tile, leader_tile, game_map)
+
+                # Follow path if we have one
+                if self.current_path and not can_move_direct:
+                    next_tile = self.current_path[0]
+                    target_x = next_tile[0] * TILE_SIZE + TILE_SIZE // 2 - follower.width // 2
+                    target_y = next_tile[1] * TILE_SIZE + TILE_SIZE // 2 - follower.height // 2
+
+                    path_dx = target_x - follower.x
+                    path_dy = target_y - follower.y
+                    path_dist = math.hypot(path_dx, path_dy)
+
+                    if path_dist < 10:  # Reached waypoint
+                        self.current_path.pop(0)
+                    elif path_dist > 0:
+                        move_x = (path_dx / path_dist) * follower.speed * 0.9
+                        move_y = (path_dy / path_dist) * follower.speed * 0.9
+
+                        new_x = follower.x + move_x
+                        new_y = follower.y + move_y
+
+                        if follower.can_move_to(new_x, follower.y, game_map):
+                            follower.x = new_x
+                            follower.moving = True
+                        if follower.can_move_to(follower.x, new_y, game_map):
+                            follower.y = new_y
+                            follower.moving = True
+
+                # Update facing based on movement direction
+                if follower.moving:
                     if abs(dx) > abs(dy):
                         follower.facing = 'right' if dx > 0 else 'left'
                     else:
                         follower.facing = 'down' if dy > 0 else 'up'
 
-                    # Try to move
-                    new_x = follower.x + move_x
-                    new_y = follower.y + move_y
-
-                    if follower.can_move_to(new_x, follower.y, game_map):
-                        follower.x = new_x
-                        follower.moving = True
-                    if follower.can_move_to(follower.x, new_y, game_map):
-                        follower.y = new_y
-                        follower.moving = True
-
-                    # Update tile position (world coordinates)
-                    follower.tile_x = int((follower.x + follower.width // 2) // TILE_SIZE)
-                    follower.tile_y = int((follower.y + follower.height // 2) // TILE_SIZE)
+                # Update tile position (world coordinates)
+                follower.tile_x = int((follower.x + follower.width // 2) // TILE_SIZE)
+                follower.tile_y = int((follower.y + follower.height // 2) // TILE_SIZE)
 
             # Auto-attack nearby enemies
             if self.attack_check_timer >= 500:  # Check every 500ms
@@ -968,6 +1108,38 @@ init python in beacon_quest:
                     # Attack!
                     character.attack()
                     return
+
+
+    def validate_spawn_position(x, y, game_map):
+        """Check if a tile position is valid for spawning (not in a wall)."""
+        map_height = len(game_map)
+        map_width = len(game_map[0]) if game_map else 0
+
+        if x < 0 or x >= map_width or y < 0 or y >= map_height:
+            return False
+
+        tile = game_map[y][x]
+        return tile not in (TILE_WALL, TILE_VOID)
+
+
+    def find_nearest_valid_spawn(x, y, game_map, max_radius=5):
+        """Find the nearest valid spawn position to the given coordinates."""
+        if validate_spawn_position(x, y, game_map):
+            return (x, y)
+
+        # Search in expanding squares
+        for radius in range(1, max_radius + 1):
+            for dx in range(-radius, radius + 1):
+                for dy in range(-radius, radius + 1):
+                    if abs(dx) == radius or abs(dy) == radius:  # Only check border
+                        test_x, test_y = x + dx, y + dy
+                        if validate_spawn_position(test_x, test_y, game_map):
+                            return (test_x, test_y)
+
+        # No valid position found, return original (will likely cause issues)
+        print(f"Warning: No valid spawn found near ({x}, {y})")
+        return (x, y)
+
 
     class Enemy:
         """A shadow enemy."""
@@ -1655,7 +1827,10 @@ init python in beacon_quest:
                 if self.anim_timer >= self.anim_speed:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                if self.death_timer >= 400:
+                # Check if death animation is complete (4 frames: 0, 1, 2, 3)
+                # Die after playing through all frames once
+                death_frames = len(SPIDER_FRAMES.get('death', [None, None, None, None]))
+                if self.anim_frame >= death_frames:
                     self.alive = False
                 return
 
@@ -1883,7 +2058,6 @@ init python in beacon_quest:
         def __init__(self, room_id, game_map, enemies, shards, doors, width=None, height=None):
             self.room_id = room_id
             self.game_map = game_map
-            self.enemies = enemies
             self.shards = shards
             self.doors = doors  # Dict: {door_tile: (target_room_id, spawn_direction)}
             # Room dimensions (infer from map if not specified)
@@ -1892,6 +2066,24 @@ init python in beacon_quest:
             # Room pixel dimensions
             self.pixel_width = self.width * TILE_SIZE
             self.pixel_height = self.height * TILE_SIZE
+
+            # Validate and fix enemy spawn positions
+            self.enemies = []
+            for enemy in enemies:
+                # Get enemy's tile position
+                tile_x = int(enemy.x // TILE_SIZE)
+                tile_y = int(enemy.y // TILE_SIZE)
+
+                # Check if spawn is valid
+                if not validate_spawn_position(tile_x, tile_y, game_map):
+                    # Find nearest valid position
+                    new_x, new_y = find_nearest_valid_spawn(tile_x, tile_y, game_map)
+                    if (new_x, new_y) != (tile_x, tile_y):
+                        print(f"Relocated {enemy.enemy_type} from ({tile_x}, {tile_y}) to ({new_x}, {new_y}) in room '{room_id}'")
+                        enemy.x = new_x * TILE_SIZE
+                        enemy.y = new_y * TILE_SIZE
+
+                self.enemies.append(enemy)
 
         def reset_enemies(self):
             """Reset enemies when re-entering room."""
