@@ -902,9 +902,10 @@ init python in beacon_quest:
             # Pathfinding
             self.current_path = []
             self.path_update_timer = 0
-            self.path_update_interval = 300  # Recalculate path every 300ms
+            self.path_update_interval = 150  # Recalculate path more frequently
             self.stuck_timer = 0
-            self.last_position = (0, 0)
+            self.last_distance_to_leader = 0  # Track progress by distance, not position
+            self.no_progress_timer = 0        # Time spent not getting closer
 
         def find_path(self, start_tile, end_tile, game_map):
             """A* pathfinding from start to end tile."""
@@ -993,80 +994,98 @@ init python in beacon_quest:
             follower.moving = False
 
             if dist > self.follow_distance:
-                # Check if we're stuck
-                current_pos = (follower.x, follower.y)
-                if self.last_position == current_pos:
-                    self.stuck_timer += dt
+                # Track progress - are we getting closer to the leader?
+                progress_threshold = 2.0  # Minimum pixels closer per update to count as progress
+                if self.last_distance_to_leader > 0:
+                    progress = self.last_distance_to_leader - dist
+                    if progress < progress_threshold:
+                        self.no_progress_timer += dt
+                    else:
+                        self.no_progress_timer = 0
+                        # Making good progress - can clear path and use direct movement
+                        if progress > 5:
+                            self.current_path = []
+                self.last_distance_to_leader = dist
+
+                # Decide: use pathfinding or direct movement
+                use_pathfinding = (
+                    self.no_progress_timer > 100 or  # Not making progress for 100ms
+                    len(self.current_path) > 0       # Already have an active path
+                )
+
+                if use_pathfinding:
+                    # Update path periodically
+                    if self.path_update_timer >= self.path_update_interval or not self.current_path:
+                        self.path_update_timer = 0
+
+                        # Get tile positions
+                        follower_tile = (
+                            int((follower.x + follower.width // 2) // TILE_SIZE),
+                            int((follower.y + follower.height // 2) // TILE_SIZE)
+                        )
+                        leader_tile = (
+                            int((leader.x + leader.width // 2) // TILE_SIZE),
+                            int((leader.y + leader.height // 2) // TILE_SIZE)
+                        )
+
+                        new_path = self.find_path(follower_tile, leader_tile, game_map)
+                        if new_path:
+                            self.current_path = new_path
+
+                    # Follow the path
+                    if self.current_path:
+                        next_tile = self.current_path[0]
+                        target_x = next_tile[0] * TILE_SIZE + TILE_SIZE // 2 - follower.width // 2
+                        target_y = next_tile[1] * TILE_SIZE + TILE_SIZE // 2 - follower.height // 2
+
+                        path_dx = target_x - follower.x
+                        path_dy = target_y - follower.y
+                        path_dist = math.hypot(path_dx, path_dy)
+
+                        if path_dist < 8:  # Reached waypoint
+                            self.current_path.pop(0)
+                            self.no_progress_timer = 0  # Reset on waypoint reach
+                        elif path_dist > 0:
+                            move_x = (path_dx / path_dist) * follower.speed * 0.95
+                            move_y = (path_dy / path_dist) * follower.speed * 0.95
+
+                            # Try to move toward the waypoint
+                            new_x = follower.x + move_x
+                            new_y = follower.y + move_y
+
+                            moved = False
+                            if follower.can_move_to(new_x, new_y, game_map):
+                                follower.x = new_x
+                                follower.y = new_y
+                                moved = True
+                            else:
+                                # Try axis-separated movement
+                                if follower.can_move_to(new_x, follower.y, game_map):
+                                    follower.x = new_x
+                                    moved = True
+                                if follower.can_move_to(follower.x, new_y, game_map):
+                                    follower.y = new_y
+                                    moved = True
+
+                            if moved:
+                                follower.moving = True
+
                 else:
-                    self.stuck_timer = 0
-                    self.last_position = current_pos
-
-                # Try direct movement first
-                can_move_direct = False
-                if dist > 0:
-                    move_x = (dx / dist) * follower.speed * 0.9
-                    move_y = (dy / dist) * follower.speed * 0.9
-
-                    new_x = follower.x + move_x
-                    new_y = follower.y + move_y
-
-                    can_move_x = follower.can_move_to(new_x, follower.y, game_map)
-                    can_move_y = follower.can_move_to(follower.x, new_y, game_map)
-
-                    if can_move_x and can_move_y:
-                        can_move_direct = True
-                        follower.x = new_x
-                        follower.y = new_y
-                        follower.moving = True
-                        self.current_path = []  # Clear path when moving directly
-                    elif can_move_x:
-                        follower.x = new_x
-                        follower.moving = True
-                    elif can_move_y:
-                        follower.y = new_y
-                        follower.moving = True
-
-                # If stuck or can't move directly, use pathfinding
-                if (self.stuck_timer > 200 or not follower.moving) and self.path_update_timer >= self.path_update_interval:
-                    self.path_update_timer = 0
-
-                    # Get tile positions
-                    follower_tile = (
-                        int((follower.x + follower.width // 2) // TILE_SIZE),
-                        int((follower.y + follower.height // 2) // TILE_SIZE)
-                    )
-                    leader_tile = (
-                        int((leader.x + leader.width // 2) // TILE_SIZE),
-                        int((leader.y + leader.height // 2) // TILE_SIZE)
-                    )
-
-                    self.current_path = self.find_path(follower_tile, leader_tile, game_map)
-
-                # Follow path if we have one
-                if self.current_path and not can_move_direct:
-                    next_tile = self.current_path[0]
-                    target_x = next_tile[0] * TILE_SIZE + TILE_SIZE // 2 - follower.width // 2
-                    target_y = next_tile[1] * TILE_SIZE + TILE_SIZE // 2 - follower.height // 2
-
-                    path_dx = target_x - follower.x
-                    path_dy = target_y - follower.y
-                    path_dist = math.hypot(path_dx, path_dy)
-
-                    if path_dist < 10:  # Reached waypoint
-                        self.current_path.pop(0)
-                    elif path_dist > 0:
-                        move_x = (path_dx / path_dist) * follower.speed * 0.9
-                        move_y = (path_dy / path_dist) * follower.speed * 0.9
+                    # Direct movement toward leader (no obstacles expected)
+                    if dist > 0:
+                        move_x = (dx / dist) * follower.speed * 0.95
+                        move_y = (dy / dist) * follower.speed * 0.95
 
                         new_x = follower.x + move_x
                         new_y = follower.y + move_y
 
-                        if follower.can_move_to(new_x, follower.y, game_map):
+                        if follower.can_move_to(new_x, new_y, game_map):
                             follower.x = new_x
-                            follower.moving = True
-                        if follower.can_move_to(follower.x, new_y, game_map):
                             follower.y = new_y
                             follower.moving = True
+                        else:
+                            # Hit obstacle - switch to pathfinding next frame
+                            self.no_progress_timer = 200
 
                 # Update facing based on movement direction
                 if follower.moving:
@@ -1424,8 +1443,66 @@ init python in beacon_quest:
                 # Draw sprite
                 surf.blit(frame, (screen_x, screen_y))
             else:
-                # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms, cam_x, cam_y)
+                # Unique procedural slime rendering
+                self.draw_procedural_slime(surf, screen_x, screen_y, time_ms)
+
+        def draw_procedural_slime(self, surf, screen_x, screen_y, time_ms):
+            """Draw a unique slime creature without sprites."""
+            # Slime colors (green/teal)
+            if self.hit_flash > 0:
+                body_color = (255, 150, 150)
+                highlight_color = (255, 200, 200)
+            else:
+                body_color = (50, 180, 80)
+                highlight_color = (100, 220, 130)
+
+            # Jiggly animation
+            jiggle = math.sin(self.anim_phase * 3) * 3
+            squash = 1 + math.sin(self.anim_phase * 2) * 0.1
+
+            # Death fade
+            alpha = 255
+            if self.is_dying:
+                alpha = max(0, 255 - int(self.death_timer * 0.5))
+
+            # Shadow
+            shadow_surf = pygame.Surface((self.width, 16), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
+            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 12))
+
+            # Body - blobby ellipse with squash/stretch
+            body_w = int(self.width * squash)
+            body_h = int(self.height * 0.7 / squash)
+            body_x = screen_x + (self.width - body_w) // 2
+            body_y = screen_y + self.height - body_h - 5 + int(jiggle)
+
+            # Create slime surface
+            slime_surf = pygame.Surface((body_w + 10, body_h + 10), pygame.SRCALPHA)
+
+            # Outer glow
+            pygame.draw.ellipse(slime_surf, (*body_color[:3], int(80 * alpha / 255)),
+                              (0, 0, body_w + 10, body_h + 10))
+
+            # Main body
+            pygame.draw.ellipse(slime_surf, (*body_color[:3], alpha),
+                              (5, 5, body_w, body_h))
+
+            # Highlight
+            pygame.draw.ellipse(slime_surf, (*highlight_color[:3], int(alpha * 0.8)),
+                              (8, 8, body_w - 15, body_h // 2))
+
+            surf.blit(slime_surf, (body_x - 5, body_y - 5))
+
+            # Eyes (cute dot eyes)
+            if alpha > 100:
+                eye_y = body_y + body_h // 3
+                eye_spacing = 10
+                # Left eye
+                pygame.draw.circle(surf, (20, 20, 20), (int(screen_x + self.width // 2 - eye_spacing), int(eye_y)), 5)
+                pygame.draw.circle(surf, (255, 255, 255), (int(screen_x + self.width // 2 - eye_spacing - 1), int(eye_y - 1)), 2)
+                # Right eye
+                pygame.draw.circle(surf, (20, 20, 20), (int(screen_x + self.width // 2 + eye_spacing), int(eye_y)), 5)
+                pygame.draw.circle(surf, (255, 255, 255), (int(screen_x + self.width // 2 + eye_spacing - 1), int(eye_y - 1)), 2)
 
 
     class VampireEnemy(Enemy):
@@ -1608,8 +1685,80 @@ init python in beacon_quest:
                 # Draw sprite
                 surf.blit(draw_frame, (screen_x, screen_y))
             else:
-                # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms, cam_x, cam_y)
+                # Unique procedural vampire rendering
+                self.draw_procedural_vampire(surf, screen_x, screen_y, time_ms)
+
+        def draw_procedural_vampire(self, surf, screen_x, screen_y, time_ms):
+            """Draw a unique vampire creature without sprites."""
+            # Color scheme (dark purple/black with red accents)
+            if self.hit_flash > 0:
+                body_color = (255, 150, 150)
+                cape_color = (255, 100, 100)
+            else:
+                body_color = (40, 30, 50)
+                cape_color = (120, 20, 30)
+
+            # Floating/hovering animation
+            hover = math.sin(self.anim_phase * 2) * 4
+            cape_flow = math.sin(self.anim_phase * 3) * 5
+
+            # Death fade
+            alpha = 255
+            if self.is_dying:
+                alpha = max(0, 255 - int(self.death_timer * 0.3))
+
+            # Shadow (smaller, vampire floats)
+            shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 40), shadow_surf.get_rect())
+            surf.blit(shadow_surf, (screen_x + 10, screen_y + self.height - 8))
+
+            # Cape (flowing behind)
+            cape_points = [
+                (screen_x + self.width // 2, screen_y + 15 + hover),  # Top center
+                (screen_x + 8 + cape_flow, screen_y + self.height - 5),  # Bottom left
+                (screen_x + self.width // 2, screen_y + self.height - 15),  # Bottom middle
+                (screen_x + self.width - 8 - cape_flow, screen_y + self.height - 5),  # Bottom right
+            ]
+            cape_surf = pygame.Surface((self.width + 20, self.height + 10), pygame.SRCALPHA)
+            adjusted_cape = [(p[0] - screen_x + 10, p[1] - screen_y + 5) for p in cape_points]
+            pygame.draw.polygon(cape_surf, (*cape_color[:3], alpha), adjusted_cape)
+            surf.blit(cape_surf, (screen_x - 10, screen_y - 5))
+
+            # Body (dark humanoid shape)
+            body_rect = (screen_x + 15, screen_y + 10 + hover, self.width - 30, self.height - 25)
+            body_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pygame.draw.ellipse(body_surf, (*body_color[:3], alpha),
+                              (15, 10, self.width - 30, self.height - 25))
+            surf.blit(body_surf, (screen_x, screen_y + int(hover)))
+
+            # Head
+            head_y = screen_y + 5 + hover
+            pygame.draw.circle(surf, (*body_color[:3], alpha) if alpha == 255 else body_color,
+                             (int(screen_x + self.width // 2), int(head_y + 10)), 12)
+
+            # Glowing red eyes
+            if alpha > 100:
+                eye_y = head_y + 8
+                glow_size = 3 + int(math.sin(self.anim_phase * 4) * 1)
+                # Left eye
+                pygame.draw.circle(surf, (255, 50, 50), (int(screen_x + self.width // 2 - 6), int(eye_y)), glow_size + 2)
+                pygame.draw.circle(surf, (255, 150, 150), (int(screen_x + self.width // 2 - 6), int(eye_y)), glow_size)
+                # Right eye
+                pygame.draw.circle(surf, (255, 50, 50), (int(screen_x + self.width // 2 + 6), int(eye_y)), glow_size + 2)
+                pygame.draw.circle(surf, (255, 150, 150), (int(screen_x + self.width // 2 + 6), int(eye_y)), glow_size)
+
+                # Fangs (small white triangles)
+                fang_y = head_y + 16
+                pygame.draw.polygon(surf, (255, 255, 255), [
+                    (screen_x + self.width // 2 - 4, fang_y),
+                    (screen_x + self.width // 2 - 2, fang_y + 5),
+                    (screen_x + self.width // 2 - 6, fang_y)
+                ])
+                pygame.draw.polygon(surf, (255, 255, 255), [
+                    (screen_x + self.width // 2 + 4, fang_y),
+                    (screen_x + self.width // 2 + 2, fang_y + 5),
+                    (screen_x + self.width // 2 + 6, fang_y)
+                ])
 
 
     class OrcEnemy(Enemy):
@@ -1789,8 +1938,85 @@ init python in beacon_quest:
                 # Draw sprite
                 surf.blit(draw_frame, (screen_x, screen_y))
             else:
-                # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms, cam_x, cam_y)
+                # Unique procedural orc rendering
+                self.draw_procedural_orc(surf, screen_x, screen_y, time_ms)
+
+        def draw_procedural_orc(self, surf, screen_x, screen_y, time_ms):
+            """Draw a unique orc creature without sprites."""
+            # Color scheme (green/brown for orc)
+            if self.hit_flash > 0:
+                skin_color = (255, 150, 150)
+                armor_color = (200, 150, 150)
+            else:
+                skin_color = (80, 120, 60)
+                armor_color = (80, 60, 40)
+
+            # Subtle breathing animation
+            breathe = math.sin(self.anim_phase * 1.5) * 2
+
+            # Death fade
+            alpha = 255
+            if self.is_dying:
+                alpha = max(0, 255 - int(self.death_timer * 0.35))
+
+            # Shadow (larger for bulky orc)
+            shadow_surf = pygame.Surface((self.width, 18), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 55), shadow_surf.get_rect())
+            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 12))
+
+            # Body (bulky torso)
+            body_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+            # Armor/chest plate
+            armor_rect = pygame.Rect(12, 18 + breathe, self.width - 24, 30)
+            pygame.draw.rect(body_surf, (*armor_color[:3], alpha), armor_rect, border_radius=5)
+
+            # Arms (thick)
+            # Left arm
+            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (4, 20 + breathe, 14, 28))
+            # Right arm
+            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (self.width - 18, 20 + breathe, 14, 28))
+
+            # Legs
+            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (15, 42, 12, 20))
+            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (self.width - 27, 42, 12, 20))
+
+            surf.blit(body_surf, (screen_x, screen_y))
+
+            # Head (large and brutish)
+            head_y = screen_y + 5 + breathe
+            head_surf = pygame.Surface((36, 28), pygame.SRCALPHA)
+            pygame.draw.ellipse(head_surf, (*skin_color[:3], alpha), (0, 0, 36, 28))
+            surf.blit(head_surf, (screen_x + self.width // 2 - 18, int(head_y)))
+
+            if alpha > 100:
+                # Angry eyes
+                eye_y = head_y + 10
+                pygame.draw.ellipse(surf, (200, 50, 50), (screen_x + self.width // 2 - 10, int(eye_y), 6, 5))
+                pygame.draw.ellipse(surf, (200, 50, 50), (screen_x + self.width // 2 + 4, int(eye_y), 6, 5))
+                pygame.draw.circle(surf, (0, 0, 0), (int(screen_x + self.width // 2 - 7), int(eye_y + 2)), 2)
+                pygame.draw.circle(surf, (0, 0, 0), (int(screen_x + self.width // 2 + 7), int(eye_y + 2)), 2)
+
+                # Tusks
+                tusk_y = head_y + 20
+                pygame.draw.polygon(surf, (230, 220, 200), [
+                    (screen_x + self.width // 2 - 12, tusk_y),
+                    (screen_x + self.width // 2 - 8, tusk_y + 8),
+                    (screen_x + self.width // 2 - 14, tusk_y + 3)
+                ])
+                pygame.draw.polygon(surf, (230, 220, 200), [
+                    (screen_x + self.width // 2 + 12, tusk_y),
+                    (screen_x + self.width // 2 + 8, tusk_y + 8),
+                    (screen_x + self.width // 2 + 14, tusk_y + 3)
+                ])
+
+                # Brow ridge (angry expression)
+                pygame.draw.line(surf, (60, 90, 45),
+                               (screen_x + self.width // 2 - 12, int(eye_y - 3)),
+                               (screen_x + self.width // 2 - 4, int(eye_y - 1)), 2)
+                pygame.draw.line(surf, (60, 90, 45),
+                               (screen_x + self.width // 2 + 12, int(eye_y - 3)),
+                               (screen_x + self.width // 2 + 4, int(eye_y - 1)), 2)
 
 
     class SpiderEnemy(Enemy):
@@ -1958,8 +2184,83 @@ init python in beacon_quest:
                 # Draw sprite
                 surf.blit(draw_frame, (screen_x, screen_y))
             else:
-                # Fallback to parent drawing if sprites not loaded
-                super().draw(surf, time_ms, cam_x, cam_y)
+                # Unique procedural spider rendering
+                self.draw_procedural_spider(surf, screen_x, screen_y, time_ms)
+
+        def draw_procedural_spider(self, surf, screen_x, screen_y, time_ms):
+            """Draw a unique spider creature without sprites."""
+            # Color scheme (dark brown/black)
+            if self.hit_flash > 0:
+                body_color = (255, 150, 150)
+                leg_color = (200, 120, 120)
+            else:
+                body_color = (50, 35, 30)
+                leg_color = (70, 50, 40)
+
+            # Leg animation based on movement
+            leg_phase = self.anim_phase * 8  # Fast leg movement
+
+            # Death fade
+            alpha = 255
+            if self.is_dying:
+                alpha = max(0, 255 - int(self.death_timer * 0.6))
+
+            # Shadow
+            shadow_surf = pygame.Surface((self.width - 16, 10), pygame.SRCALPHA)
+            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 35), shadow_surf.get_rect())
+            surf.blit(shadow_surf, (screen_x + 8, screen_y + self.height - 8))
+
+            center_x = screen_x + self.width // 2
+            center_y = screen_y + self.height // 2
+
+            # Draw 8 legs (4 on each side)
+            leg_length = 18
+            leg_angles_left = [150, 170, 190, 210]
+            leg_angles_right = [30, 10, -10, -30]
+
+            for i, angle in enumerate(leg_angles_left):
+                # Animate legs alternately
+                leg_offset = math.sin(leg_phase + i * 1.5) * 4
+                rad = math.radians(angle)
+                end_x = center_x - 8 + math.cos(rad) * (leg_length + leg_offset)
+                end_y = center_y + math.sin(rad) * (leg_length + leg_offset)
+                pygame.draw.line(surf, leg_color, (center_x - 8, center_y), (int(end_x), int(end_y)), 2)
+
+            for i, angle in enumerate(leg_angles_right):
+                leg_offset = math.sin(leg_phase + i * 1.5 + math.pi) * 4
+                rad = math.radians(angle)
+                end_x = center_x + 8 + math.cos(rad) * (leg_length + leg_offset)
+                end_y = center_y + math.sin(rad) * (leg_length + leg_offset)
+                pygame.draw.line(surf, leg_color, (center_x + 8, center_y), (int(end_x), int(end_y)), 2)
+
+            # Abdomen (back body - larger)
+            pygame.draw.ellipse(surf, body_color,
+                              (center_x - 14, center_y - 2, 28, 22))
+
+            # Cephalothorax (front body - smaller)
+            pygame.draw.ellipse(surf, body_color,
+                              (center_x - 10, center_y - 16, 20, 18))
+
+            # Eyes (multiple small eyes in a cluster)
+            if alpha > 100:
+                eye_y = center_y - 12
+                # Main eyes (larger)
+                pygame.draw.circle(surf, (150, 20, 20), (int(center_x - 5), int(eye_y)), 3)
+                pygame.draw.circle(surf, (150, 20, 20), (int(center_x + 5), int(eye_y)), 3)
+                # Secondary eyes (smaller, above)
+                pygame.draw.circle(surf, (120, 20, 20), (int(center_x - 8), int(eye_y - 5)), 2)
+                pygame.draw.circle(surf, (120, 20, 20), (int(center_x + 8), int(eye_y - 5)), 2)
+                # Tiny eyes
+                pygame.draw.circle(surf, (100, 15, 15), (int(center_x - 3), int(eye_y - 7)), 1)
+                pygame.draw.circle(surf, (100, 15, 15), (int(center_x + 3), int(eye_y - 7)), 1)
+
+                # Eye shine
+                pygame.draw.circle(surf, (255, 200, 200), (int(center_x - 4), int(eye_y - 1)), 1)
+                pygame.draw.circle(surf, (255, 200, 200), (int(center_x + 6), int(eye_y - 1)), 1)
+
+                # Fangs (pedipalps)
+                pygame.draw.line(surf, (80, 60, 50), (center_x - 4, center_y - 6), (center_x - 6, center_y), 2)
+                pygame.draw.line(surf, (80, 60, 50), (center_x + 4, center_y - 6), (center_x + 6, center_y), 2)
 
 
     class Shard:
