@@ -1714,13 +1714,13 @@ init python in beacon_quest:
 
             # Cape (flowing behind)
             cape_points = [
-                (screen_x + self.width // 2, screen_y + 15 + hover),  # Top center
-                (screen_x + 8 + cape_flow, screen_y + self.height - 5),  # Bottom left
+                (screen_x + self.width // 2, int(screen_y + 15 + hover)),  # Top center
+                (int(screen_x + 8 + cape_flow), screen_y + self.height - 5),  # Bottom left
                 (screen_x + self.width // 2, screen_y + self.height - 15),  # Bottom middle
-                (screen_x + self.width - 8 - cape_flow, screen_y + self.height - 5),  # Bottom right
+                (int(screen_x + self.width - 8 - cape_flow), screen_y + self.height - 5),  # Bottom right
             ]
             cape_surf = pygame.Surface((self.width + 20, self.height + 10), pygame.SRCALPHA)
-            adjusted_cape = [(p[0] - screen_x + 10, p[1] - screen_y + 5) for p in cape_points]
+            adjusted_cape = [(int(p[0] - screen_x + 10), int(p[1] - screen_y + 5)) for p in cape_points]
             pygame.draw.polygon(cape_surf, (*cape_color[:3], alpha), adjusted_cape)
             surf.blit(cape_surf, (screen_x - 10, screen_y - 5))
 
@@ -1748,7 +1748,7 @@ init python in beacon_quest:
                 pygame.draw.circle(surf, (255, 150, 150), (int(screen_x + self.width // 2 + 6), int(eye_y)), glow_size)
 
                 # Fangs (small white triangles)
-                fang_y = head_y + 16
+                fang_y = int(head_y + 16)
                 pygame.draw.polygon(surf, (255, 255, 255), [
                     (screen_x + self.width // 2 - 4, fang_y),
                     (screen_x + self.width // 2 - 2, fang_y + 5),
@@ -1967,15 +1967,14 @@ init python in beacon_quest:
             # Body (bulky torso)
             body_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
-            # Armor/chest plate
-            armor_rect = pygame.Rect(12, 18 + breathe, self.width - 24, 30)
-            pygame.draw.rect(body_surf, (*armor_color[:3], alpha), armor_rect, border_radius=5)
+            # Armor/chest plate (use ellipse for rounded look since pygame_sdl2 doesn't support border_radius)
+            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (12, int(18 + breathe), self.width - 24, 30))
 
             # Arms (thick)
             # Left arm
-            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (4, 20 + breathe, 14, 28))
+            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (4, int(20 + breathe), 14, 28))
             # Right arm
-            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (self.width - 18, 20 + breathe, 14, 28))
+            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (self.width - 18, int(20 + breathe), 14, 28))
 
             # Legs
             pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (15, 42, 12, 20))
@@ -1998,7 +1997,7 @@ init python in beacon_quest:
                 pygame.draw.circle(surf, (0, 0, 0), (int(screen_x + self.width // 2 + 7), int(eye_y + 2)), 2)
 
                 # Tusks
-                tusk_y = head_y + 20
+                tusk_y = int(head_y + 20)
                 pygame.draw.polygon(surf, (230, 220, 200), [
                     (screen_x + self.width // 2 - 12, tusk_y),
                     (screen_x + self.width // 2 - 8, tusk_y + 8),
