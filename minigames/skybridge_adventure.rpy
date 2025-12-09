@@ -1321,11 +1321,14 @@ init python in beacon_quest:
                 self.anim_timer += dt
                 # Get death animation frame count
                 death_frames = len(SLIME_FRAMES.get('death', [None, None, None]))
-                # Only advance frame if not at last frame
-                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
+                # Advance frame
+                if self.anim_timer >= self.anim_speed:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                # Freeze on final frame - never set alive = False
+                    # Disappear after final frame
+                    if self.anim_frame >= death_frames:
+                        self.alive = False
+                        self.is_dying = False
                 return
 
             if not self.alive:
@@ -1424,17 +1427,6 @@ init python in beacon_quest:
             frame = get_slime_frame(self.current_anim, self.anim_frame)
 
             if frame:
-                # Only apply red tint if hurt animation doesn't exist
-                if self.hit_flash > 0 and self.current_anim != 'hurt':
-                    # Create a red-tinted version
-                    tinted = frame.copy()
-                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
-                    tint_surf.fill((255, 100, 100, 100))
-                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                    frame = tinted
-
-                # No death fade - enemy freezes on final frame
-
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width, 20), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 40), shadow_surf.get_rect())
@@ -1443,66 +1435,8 @@ init python in beacon_quest:
                 # Draw sprite
                 surf.blit(frame, (screen_x, screen_y))
             else:
-                # Unique procedural slime rendering
-                self.draw_procedural_slime(surf, screen_x, screen_y, time_ms)
-
-        def draw_procedural_slime(self, surf, screen_x, screen_y, time_ms):
-            """Draw a unique slime creature without sprites."""
-            # Slime colors (green/teal)
-            if self.hit_flash > 0:
-                body_color = (255, 150, 150)
-                highlight_color = (255, 200, 200)
-            else:
-                body_color = (50, 180, 80)
-                highlight_color = (100, 220, 130)
-
-            # Jiggly animation
-            jiggle = math.sin(self.anim_phase * 3) * 3
-            squash = 1 + math.sin(self.anim_phase * 2) * 0.1
-
-            # Death fade
-            alpha = 255
-            if self.is_dying:
-                alpha = max(0, 255 - int(self.death_timer * 0.5))
-
-            # Shadow
-            shadow_surf = pygame.Surface((self.width, 16), pygame.SRCALPHA)
-            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 12))
-
-            # Body - blobby ellipse with squash/stretch
-            body_w = int(self.width * squash)
-            body_h = int(self.height * 0.7 / squash)
-            body_x = screen_x + (self.width - body_w) // 2
-            body_y = screen_y + self.height - body_h - 5 + int(jiggle)
-
-            # Create slime surface
-            slime_surf = pygame.Surface((body_w + 10, body_h + 10), pygame.SRCALPHA)
-
-            # Outer glow
-            pygame.draw.ellipse(slime_surf, (*body_color[:3], int(80 * alpha / 255)),
-                              (0, 0, body_w + 10, body_h + 10))
-
-            # Main body
-            pygame.draw.ellipse(slime_surf, (*body_color[:3], alpha),
-                              (5, 5, body_w, body_h))
-
-            # Highlight
-            pygame.draw.ellipse(slime_surf, (*highlight_color[:3], int(alpha * 0.8)),
-                              (8, 8, body_w - 15, body_h // 2))
-
-            surf.blit(slime_surf, (body_x - 5, body_y - 5))
-
-            # Eyes (cute dot eyes)
-            if alpha > 100:
-                eye_y = body_y + body_h // 3
-                eye_spacing = 10
-                # Left eye
-                pygame.draw.circle(surf, (20, 20, 20), (int(screen_x + self.width // 2 - eye_spacing), int(eye_y)), 5)
-                pygame.draw.circle(surf, (255, 255, 255), (int(screen_x + self.width // 2 - eye_spacing - 1), int(eye_y - 1)), 2)
-                # Right eye
-                pygame.draw.circle(surf, (20, 20, 20), (int(screen_x + self.width // 2 + eye_spacing), int(eye_y)), 5)
-                pygame.draw.circle(surf, (255, 255, 255), (int(screen_x + self.width // 2 + eye_spacing - 1), int(eye_y - 1)), 2)
+                # Fallback to procedural rendering
+                draw_procedural_slime(surf, screen_x, screen_y, self.width, self.height, self.anim_phase, self.is_dying, self.death_timer)
 
 
     class VampireEnemy(Enemy):
@@ -1543,10 +1477,13 @@ init python in beacon_quest:
                 self.current_anim = 'death'
                 # Get death animation frame count
                 death_frames = 10  # Vampire death has 10 frames
-                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
+                if self.anim_timer >= self.anim_speed:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                # Freeze on final frame
+                    # Disappear after final frame
+                    if self.anim_frame >= death_frames:
+                        self.alive = False
+                        self.is_dying = False
                 return
 
             if not self.alive:
@@ -1675,100 +1612,16 @@ init python in beacon_quest:
             frame = get_vampire_frame(self.current_anim, self.facing, self.anim_frame)
 
             if frame:
-                draw_frame = frame
-
-                # Only apply red tint if not using hurt animation
-                if self.hit_flash > 0 and self.current_anim != 'hurt':
-                    tinted = frame.copy()
-                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
-                    tint_surf.fill((255, 50, 50, 120))
-                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                    draw_frame = tinted
-
-                # No death fade - freeze on final frame
-
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 10, 16), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 50), shadow_surf.get_rect())
                 surf.blit(shadow_surf, (screen_x + 5, screen_y + self.height - 12))
 
                 # Draw sprite
-                surf.blit(draw_frame, (screen_x, screen_y))
+                surf.blit(frame, (screen_x, screen_y))
             else:
-                # Unique procedural vampire rendering
-                self.draw_procedural_vampire(surf, screen_x, screen_y, time_ms)
-
-        def draw_procedural_vampire(self, surf, screen_x, screen_y, time_ms):
-            """Draw a unique vampire creature without sprites."""
-            # Color scheme (dark purple/black with red accents)
-            if self.hit_flash > 0:
-                body_color = (255, 150, 150)
-                cape_color = (255, 100, 100)
-            else:
-                body_color = (40, 30, 50)
-                cape_color = (120, 20, 30)
-
-            # Floating/hovering animation
-            hover = math.sin(self.anim_phase * 2) * 4
-            cape_flow = math.sin(self.anim_phase * 3) * 5
-
-            # Death fade
-            alpha = 255
-            if self.is_dying:
-                alpha = max(0, 255 - int(self.death_timer * 0.3))
-
-            # Shadow (smaller, vampire floats)
-            shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
-            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 40), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (screen_x + 10, screen_y + self.height - 8))
-
-            # Cape (flowing behind)
-            cape_points = [
-                (screen_x + self.width // 2, int(screen_y + 15 + hover)),  # Top center
-                (int(screen_x + 8 + cape_flow), screen_y + self.height - 5),  # Bottom left
-                (screen_x + self.width // 2, screen_y + self.height - 15),  # Bottom middle
-                (int(screen_x + self.width - 8 - cape_flow), screen_y + self.height - 5),  # Bottom right
-            ]
-            cape_surf = pygame.Surface((self.width + 20, self.height + 10), pygame.SRCALPHA)
-            adjusted_cape = [(int(p[0] - screen_x + 10), int(p[1] - screen_y + 5)) for p in cape_points]
-            pygame.draw.polygon(cape_surf, (*cape_color[:3], alpha), adjusted_cape)
-            surf.blit(cape_surf, (screen_x - 10, screen_y - 5))
-
-            # Body (dark humanoid shape)
-            body_rect = (screen_x + 15, screen_y + 10 + hover, self.width - 30, self.height - 25)
-            body_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            pygame.draw.ellipse(body_surf, (*body_color[:3], alpha),
-                              (15, 10, self.width - 30, self.height - 25))
-            surf.blit(body_surf, (screen_x, screen_y + int(hover)))
-
-            # Head
-            head_y = screen_y + 5 + hover
-            pygame.draw.circle(surf, (*body_color[:3], alpha) if alpha == 255 else body_color,
-                             (int(screen_x + self.width // 2), int(head_y + 10)), 12)
-
-            # Glowing red eyes
-            if alpha > 100:
-                eye_y = head_y + 8
-                glow_size = 3 + int(math.sin(self.anim_phase * 4) * 1)
-                # Left eye
-                pygame.draw.circle(surf, (255, 50, 50), (int(screen_x + self.width // 2 - 6), int(eye_y)), glow_size + 2)
-                pygame.draw.circle(surf, (255, 150, 150), (int(screen_x + self.width // 2 - 6), int(eye_y)), glow_size)
-                # Right eye
-                pygame.draw.circle(surf, (255, 50, 50), (int(screen_x + self.width // 2 + 6), int(eye_y)), glow_size + 2)
-                pygame.draw.circle(surf, (255, 150, 150), (int(screen_x + self.width // 2 + 6), int(eye_y)), glow_size)
-
-                # Fangs (small white triangles)
-                fang_y = int(head_y + 16)
-                pygame.draw.polygon(surf, (255, 255, 255), [
-                    (screen_x + self.width // 2 - 4, fang_y),
-                    (screen_x + self.width // 2 - 2, fang_y + 5),
-                    (screen_x + self.width // 2 - 6, fang_y)
-                ])
-                pygame.draw.polygon(surf, (255, 255, 255), [
-                    (screen_x + self.width // 2 + 4, fang_y),
-                    (screen_x + self.width // 2 + 2, fang_y + 5),
-                    (screen_x + self.width // 2 + 6, fang_y)
-                ])
+                # Fallback to procedural rendering
+                draw_procedural_vampire(surf, screen_x, screen_y, self.width, self.height, self.anim_phase, self.facing, self.is_dying, self.death_timer)
 
 
     class OrcEnemy(Enemy):
@@ -1809,10 +1662,13 @@ init python in beacon_quest:
                 self.current_anim = 'death'
                 # Get death animation frame count
                 death_frames = 10  # Orc death has 10 frames
-                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
+                if self.anim_timer >= self.anim_speed:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                # Freeze on final frame
+                    # Disappear after final frame
+                    if self.anim_frame >= death_frames:
+                        self.alive = False
+                        self.is_dying = False
                 return
 
             if not self.alive:
@@ -1838,7 +1694,7 @@ init python in beacon_quest:
                     self.attack_cooldown = 1500  # Longer cooldown than vampire
                 return
 
-            # Hit flash
+            # Hit flash - use hurt animation (no red tint)
             if self.hit_flash > 0:
                 self.hit_flash -= dt
                 self.current_anim = 'hurt'
@@ -1938,104 +1794,16 @@ init python in beacon_quest:
             frame = get_orc_frame(self.current_anim, self.facing, self.anim_frame)
 
             if frame:
-                draw_frame = frame
-
-                # Only apply red tint if not using hurt animation
-                if self.hit_flash > 0 and self.current_anim != 'hurt':
-                    tinted = frame.copy()
-                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
-                    tint_surf.fill((255, 50, 50, 150))
-                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                    draw_frame = tinted
-
-                # No death fade - freeze on final frame
-
                 # Draw shadow
                 shadow_surf = pygame.Surface((self.width - 8, 18), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 55), shadow_surf.get_rect())
                 surf.blit(shadow_surf, (screen_x + 4, screen_y + self.height - 14))
 
                 # Draw sprite
-                surf.blit(draw_frame, (screen_x, screen_y))
+                surf.blit(frame, (screen_x, screen_y))
             else:
-                # Unique procedural orc rendering
-                self.draw_procedural_orc(surf, screen_x, screen_y, time_ms)
-
-        def draw_procedural_orc(self, surf, screen_x, screen_y, time_ms):
-            """Draw a unique orc creature without sprites."""
-            # Color scheme (green/brown for orc)
-            if self.hit_flash > 0:
-                skin_color = (255, 150, 150)
-                armor_color = (200, 150, 150)
-            else:
-                skin_color = (80, 120, 60)
-                armor_color = (80, 60, 40)
-
-            # Subtle breathing animation
-            breathe = math.sin(self.anim_phase * 1.5) * 2
-
-            # Death fade
-            alpha = 255
-            if self.is_dying:
-                alpha = max(0, 255 - int(self.death_timer * 0.35))
-
-            # Shadow (larger for bulky orc)
-            shadow_surf = pygame.Surface((self.width, 18), pygame.SRCALPHA)
-            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 55), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (screen_x, screen_y + self.height - 12))
-
-            # Body (bulky torso)
-            body_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-
-            # Armor/chest plate (use ellipse for rounded look since pygame_sdl2 doesn't support border_radius)
-            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (12, int(18 + breathe), self.width - 24, 30))
-
-            # Arms (thick)
-            # Left arm
-            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (4, int(20 + breathe), 14, 28))
-            # Right arm
-            pygame.draw.ellipse(body_surf, (*skin_color[:3], alpha), (self.width - 18, int(20 + breathe), 14, 28))
-
-            # Legs
-            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (15, 42, 12, 20))
-            pygame.draw.ellipse(body_surf, (*armor_color[:3], alpha), (self.width - 27, 42, 12, 20))
-
-            surf.blit(body_surf, (screen_x, screen_y))
-
-            # Head (large and brutish)
-            head_y = screen_y + 5 + breathe
-            head_surf = pygame.Surface((36, 28), pygame.SRCALPHA)
-            pygame.draw.ellipse(head_surf, (*skin_color[:3], alpha), (0, 0, 36, 28))
-            surf.blit(head_surf, (screen_x + self.width // 2 - 18, int(head_y)))
-
-            if alpha > 100:
-                # Angry eyes
-                eye_y = head_y + 10
-                pygame.draw.ellipse(surf, (200, 50, 50), (screen_x + self.width // 2 - 10, int(eye_y), 6, 5))
-                pygame.draw.ellipse(surf, (200, 50, 50), (screen_x + self.width // 2 + 4, int(eye_y), 6, 5))
-                pygame.draw.circle(surf, (0, 0, 0), (int(screen_x + self.width // 2 - 7), int(eye_y + 2)), 2)
-                pygame.draw.circle(surf, (0, 0, 0), (int(screen_x + self.width // 2 + 7), int(eye_y + 2)), 2)
-
-                # Tusks
-                tusk_y = int(head_y + 20)
-                pygame.draw.polygon(surf, (230, 220, 200), [
-                    (screen_x + self.width // 2 - 12, tusk_y),
-                    (screen_x + self.width // 2 - 8, tusk_y + 8),
-                    (screen_x + self.width // 2 - 14, tusk_y + 3)
-                ])
-                pygame.draw.polygon(surf, (230, 220, 200), [
-                    (screen_x + self.width // 2 + 12, tusk_y),
-                    (screen_x + self.width // 2 + 8, tusk_y + 8),
-                    (screen_x + self.width // 2 + 14, tusk_y + 3)
-                ])
-
-                # Brow ridge (angry expression)
-                pygame.draw.line(surf, (60, 90, 45),
-                               (screen_x + self.width // 2 - 12, int(eye_y - 3)),
-                               (screen_x + self.width // 2 - 4, int(eye_y - 1)), 2)
-                pygame.draw.line(surf, (60, 90, 45),
-                               (screen_x + self.width // 2 + 12, int(eye_y - 3)),
-                               (screen_x + self.width // 2 + 4, int(eye_y - 1)), 2)
+                # Fallback to procedural rendering
+                draw_procedural_orc(surf, screen_x, screen_y, self.width, self.height, self.anim_phase, self.is_dying, self.death_timer)
 
 
     class SpiderEnemy(Enemy):
@@ -2072,11 +1840,14 @@ init python in beacon_quest:
                 self.anim_timer += dt
                 # Get death animation frame count
                 death_frames = len(SPIDER_FRAMES.get('death', [None, None, None, None]))
-                # Only advance frame if not at last frame
-                if self.anim_timer >= self.anim_speed and self.anim_frame < death_frames - 1:
+                # Advance frame
+                if self.anim_timer >= self.anim_speed:
                     self.anim_timer = 0
                     self.anim_frame += 1
-                # Freeze on final frame - don't set alive = False
+                    # Disappear after final frame
+                    if self.anim_frame >= death_frames:
+                        self.alive = False
+                        self.is_dying = False
                 return
 
             if not self.alive:
@@ -2187,103 +1958,16 @@ init python in beacon_quest:
                 frame = get_spider_frame(self.facing, self.anim_frame)
 
             if frame:
-                draw_frame = frame
-
-                # Apply hit flash tint if damaged (spiders don't have hurt anim, so always use tint)
-                if self.hit_flash > 0:
-                    tinted = frame.copy()
-                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
-                    tint_surf.fill((255, 100, 100, 120))
-                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                    draw_frame = tinted
-
-                # No death fade - freeze on final frame
-
                 # Draw shadow (smaller for spider)
                 shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
                 pygame.draw.ellipse(shadow_surf, (0, 0, 0, 35), shadow_surf.get_rect())
                 surf.blit(shadow_surf, (screen_x + 10, screen_y + self.height - 10))
 
                 # Draw sprite
-                surf.blit(draw_frame, (screen_x, screen_y))
+                surf.blit(frame, (screen_x, screen_y))
             else:
-                # Unique procedural spider rendering
-                self.draw_procedural_spider(surf, screen_x, screen_y, time_ms)
-
-        def draw_procedural_spider(self, surf, screen_x, screen_y, time_ms):
-            """Draw a unique spider creature without sprites."""
-            # Color scheme (dark brown/black)
-            if self.hit_flash > 0:
-                body_color = (255, 150, 150)
-                leg_color = (200, 120, 120)
-            else:
-                body_color = (50, 35, 30)
-                leg_color = (70, 50, 40)
-
-            # Leg animation based on movement
-            leg_phase = self.anim_phase * 8  # Fast leg movement
-
-            # Death fade
-            alpha = 255
-            if self.is_dying:
-                alpha = max(0, 255 - int(self.death_timer * 0.6))
-
-            # Shadow
-            shadow_surf = pygame.Surface((self.width - 16, 10), pygame.SRCALPHA)
-            pygame.draw.ellipse(shadow_surf, (0, 0, 0, 35), shadow_surf.get_rect())
-            surf.blit(shadow_surf, (screen_x + 8, screen_y + self.height - 8))
-
-            center_x = screen_x + self.width // 2
-            center_y = screen_y + self.height // 2
-
-            # Draw 8 legs (4 on each side)
-            leg_length = 18
-            leg_angles_left = [150, 170, 190, 210]
-            leg_angles_right = [30, 10, -10, -30]
-
-            for i, angle in enumerate(leg_angles_left):
-                # Animate legs alternately
-                leg_offset = math.sin(leg_phase + i * 1.5) * 4
-                rad = math.radians(angle)
-                end_x = center_x - 8 + math.cos(rad) * (leg_length + leg_offset)
-                end_y = center_y + math.sin(rad) * (leg_length + leg_offset)
-                pygame.draw.line(surf, leg_color, (center_x - 8, center_y), (int(end_x), int(end_y)), 2)
-
-            for i, angle in enumerate(leg_angles_right):
-                leg_offset = math.sin(leg_phase + i * 1.5 + math.pi) * 4
-                rad = math.radians(angle)
-                end_x = center_x + 8 + math.cos(rad) * (leg_length + leg_offset)
-                end_y = center_y + math.sin(rad) * (leg_length + leg_offset)
-                pygame.draw.line(surf, leg_color, (center_x + 8, center_y), (int(end_x), int(end_y)), 2)
-
-            # Abdomen (back body - larger)
-            pygame.draw.ellipse(surf, body_color,
-                              (center_x - 14, center_y - 2, 28, 22))
-
-            # Cephalothorax (front body - smaller)
-            pygame.draw.ellipse(surf, body_color,
-                              (center_x - 10, center_y - 16, 20, 18))
-
-            # Eyes (multiple small eyes in a cluster)
-            if alpha > 100:
-                eye_y = center_y - 12
-                # Main eyes (larger)
-                pygame.draw.circle(surf, (150, 20, 20), (int(center_x - 5), int(eye_y)), 3)
-                pygame.draw.circle(surf, (150, 20, 20), (int(center_x + 5), int(eye_y)), 3)
-                # Secondary eyes (smaller, above)
-                pygame.draw.circle(surf, (120, 20, 20), (int(center_x - 8), int(eye_y - 5)), 2)
-                pygame.draw.circle(surf, (120, 20, 20), (int(center_x + 8), int(eye_y - 5)), 2)
-                # Tiny eyes
-                pygame.draw.circle(surf, (100, 15, 15), (int(center_x - 3), int(eye_y - 7)), 1)
-                pygame.draw.circle(surf, (100, 15, 15), (int(center_x + 3), int(eye_y - 7)), 1)
-
-                # Eye shine
-                pygame.draw.circle(surf, (255, 200, 200), (int(center_x - 4), int(eye_y - 1)), 1)
-                pygame.draw.circle(surf, (255, 200, 200), (int(center_x + 6), int(eye_y - 1)), 1)
-
-                # Fangs (pedipalps)
-                pygame.draw.line(surf, (80, 60, 50), (center_x - 4, center_y - 6), (center_x - 6, center_y), 2)
-                pygame.draw.line(surf, (80, 60, 50), (center_x + 4, center_y - 6), (center_x + 6, center_y), 2)
+                # Fallback to procedural rendering
+                draw_procedural_spider(surf, screen_x, screen_y, self.width, self.height, self.anim_phase, self.is_dying, self.death_timer)
 
 
     class Shard:
@@ -3118,7 +2802,23 @@ init python in beacon_quest:
             random.seed()  # Reset seed
 
         def draw_map(self, surf, time_ms):
-            """Draw the game map using tileset sprites with camera offset."""
+            """Draw the game map using tileset sprites with camera offset.
+
+            TILE CONFIGURATION:
+            ==================
+            To change which sprites are used for different tiles, modify the
+            sprite lookups below. Each tile type has a clearly marked section.
+
+            Available wall chunks (from images/tileset/chunks/):
+            - wall_top_1, wall_top_2, wall_top_3: Top wall variations
+            - wall_left, wall_right: Side walls
+            - wall_bottom: Bottom edge walls
+            - doorway_top, doorway_stairs: Doorway pieces
+            - pillar_1, pillar_2, pillar_3, pillar_4: Decorative pillars
+            - pillars_window: Window with pillars
+            - sewer_grate: Grate decoration
+            - stairs_left, stairs_right: Stair pieces
+            """
             room = self.current_room
 
             # Calculate visible tile range based on camera position
@@ -3141,105 +2841,81 @@ init python in beacon_quest:
                     px = world_x - cam_x_floor
                     py = world_y - cam_y_floor
 
+                    # ======================
+                    # FLOOR TILE
+                    # ======================
                     if tile == TILE_FLOOR:
-                        # Try to use tileset sprite
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
-                            # Fallback to procedural
-                            color = (60, 50, 80) if (x + y) % 2 == 0 else (55, 45, 75)
-                            pygame.draw.rect(surf, color, (px, py, TILE_SIZE, TILE_SIZE))
-                            pygame.draw.rect(surf, (70, 60, 90), (px, py, TILE_SIZE, TILE_SIZE), 1)
+                            draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
+                    # ======================
+                    # WALL TILE
+                    # Change wall_sprite lookup to use different chunks
+                    # ======================
                     elif tile == TILE_WALL:
-                        # Draw floor underneath first (walls are on top of floor)
+                        # Draw floor underneath
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
 
-                        # Draw wall on top - use wall chunk if available
-                        # Select wall variant based on position for variety
-                        wall_variant = ((x + y) % 3) + 1
+                        # WALL SPRITE SELECTION - modify this to change wall appearance
+                        wall_variant = ((x + y) % 3) + 1  # Cycles through 1, 2, 3
                         wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
+
                         if wall_sprite:
-                            # Scale wall chunk to fit tile
                             scaled_wall = pygame.transform.scale(wall_sprite, (TILE_SIZE, TILE_SIZE))
                             surf.blit(scaled_wall, (px, py))
                         else:
-                            # Fallback to procedural wall
-                            pygame.draw.rect(surf, (80, 70, 100), (px, py, TILE_SIZE, TILE_SIZE))
-                            pygame.draw.rect(surf, (100, 90, 120), (px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 16))
-                            pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE), 2)
+                            draw_procedural_wall(surf, px, py, TILE_SIZE)
 
+                    # ======================
+                    # BEACON/GOAL TILE
+                    # ======================
                     elif tile == TILE_BEACON:
-                        # Draw floor first
+                        # Draw floor underneath
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
-                            pygame.draw.rect(surf, (60, 50, 80), (px, py, TILE_SIZE, TILE_SIZE))
+                            draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
-                        # Draw beacon pedestal/fountain sprite if available
+                        # BEACON SPRITE - change 'fountain' to use different sprite
                         fountain_sprite = TILE_SPRITES.get('fountain')
                         if fountain_sprite:
                             scaled_fountain = pygame.transform.scale(fountain_sprite, (TILE_SIZE, TILE_SIZE))
                             surf.blit(scaled_fountain, (px, py))
 
-                        # Glowing beacon effect
-                        glow = 0.5 + 0.3 * math.sin(time_ms * 0.003)
-                        glow_size = int(40 + 15 * glow)
+                        # Beacon glow effect
+                        is_active = self.shards_collected >= self.target_shards
+                        draw_procedural_beacon(surf, px, py, TILE_SIZE, time_ms, is_active)
 
-                        # Check if all shards collected
-                        if self.shards_collected >= self.target_shards:
-                            glow_color = (255, 220, 100, int(150 * glow))
-                            beacon_color = (255, 240, 150)
-                        else:
-                            glow_color = (100, 80, 150, int(80 * glow))
-                            beacon_color = (150, 130, 180)
-
-                        glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
-                        pygame.draw.circle(glow_surf, glow_color, (glow_size, glow_size), glow_size)
-                        surf.blit(glow_surf, (px + TILE_SIZE // 2 - glow_size, py + TILE_SIZE // 2 - glow_size))
-
-                        pygame.draw.circle(surf, beacon_color, (px + TILE_SIZE // 2, py + TILE_SIZE // 2), 15)
-
+                    # ======================
+                    # DOOR/PORTAL TILES
+                    # Change doorway_sprite lookup to use doorway_top or doorway_stairs
+                    # ======================
                     elif tile in (TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W):
-                        # Draw floor first
+                        # Draw floor underneath
                         floor_sprite = get_floor_tile(x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-                        else:
-                            pygame.draw.rect(surf, (50, 40, 70), (px, py, TILE_SIZE, TILE_SIZE))
 
-                        # Glowing portal
-                        glow = 0.6 + 0.3 * math.sin(time_ms * 0.004)
-                        center_x = px + TILE_SIZE // 2
-                        center_y = py + TILE_SIZE // 2
+                        # DOOR SPRITE - change to use doorway chunks
+                        doorway_sprite = WALL_CHUNKS.get('doorway_top')
+                        if doorway_sprite:
+                            scaled_door = pygame.transform.scale(doorway_sprite, (TILE_SIZE, TILE_SIZE))
+                            surf.blit(scaled_door, (px, py))
 
-                        # Outer glow
-                        glow_surf = pygame.Surface((TILE_SIZE + 20, TILE_SIZE + 20), pygame.SRCALPHA)
-                        pygame.draw.ellipse(glow_surf, (100, 200, 255, int(60 * glow)),
-                                          (0, 0, TILE_SIZE + 20, TILE_SIZE + 20))
-                        surf.blit(glow_surf, (px - 10, py - 10))
+                        # Door direction indicator
+                        direction = {TILE_DOOR_N: 'N', TILE_DOOR_S: 'S', TILE_DOOR_E: 'E', TILE_DOOR_W: 'W'}[tile]
+                        draw_procedural_door(surf, px, py, TILE_SIZE, direction, time_ms)
 
-                        # Inner portal
-                        pygame.draw.ellipse(surf, (80, 150, 200), (px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16))
-                        pygame.draw.ellipse(surf, (150, 220, 255), (px + 14, py + 14, TILE_SIZE - 28, TILE_SIZE - 28))
-
-                        # Direction indicator (arrow)
-                        arrow_color = (200, 240, 255)
-                        if tile == TILE_DOOR_N:
-                            pygame.draw.polygon(surf, arrow_color, [(center_x, py + 18), (center_x - 8, py + 30), (center_x + 8, py + 30)])
-                        elif tile == TILE_DOOR_S:
-                            pygame.draw.polygon(surf, arrow_color, [(center_x, py + TILE_SIZE - 18), (center_x - 8, py + TILE_SIZE - 30), (center_x + 8, py + TILE_SIZE - 30)])
-                        elif tile == TILE_DOOR_E:
-                            pygame.draw.polygon(surf, arrow_color, [(px + TILE_SIZE - 18, center_y), (px + TILE_SIZE - 30, center_y - 8), (px + TILE_SIZE - 30, center_y + 8)])
-                        elif tile == TILE_DOOR_W:
-                            pygame.draw.polygon(surf, arrow_color, [(px + 18, center_y), (px + 30, center_y - 8), (px + 30, center_y + 8)])
-
+                    # ======================
+                    # VOID/SKY (nothing drawn)
+                    # ======================
                     elif tile == TILE_VOID:
-                        # Nothing - void/sky
                         pass
 
         def draw_ui(self, surf):
