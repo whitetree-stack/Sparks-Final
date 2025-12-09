@@ -348,6 +348,60 @@ init python in beacon_quest:
             return None
         return frames[frame_index % len(frames)]
 
+    # ----------------------------------------------------------------
+    # SPIDER ENEMY SPRITES (from valley climb)
+    # ----------------------------------------------------------------
+    SPIDER_SPRITE_PATH = "images/enemies/spiders/images/"
+    SPIDER_SPRITES_LOADED = False
+    SPIDER_FRAMES = {}  # Organized as: SPIDER_FRAMES[direction] = [frames]
+
+    # Spider frame mappings (individual files, not spritesheet)
+    SPIDER_FRAME_RANGES = {
+        'up': range(1, 6),       # 1.png to 5.png
+        'left': range(7, 12),    # 7.png to 11.png
+        'down': range(21, 26),   # 21.png to 25.png
+        'right': range(27, 32),  # 27.png to 31.png
+        'death': range(41, 45),  # 41.png to 44.png
+    }
+
+    def load_spider_sprites():
+        """Load spider enemy sprites from individual files."""
+        global SPIDER_SPRITES_LOADED, SPIDER_FRAMES
+
+        if SPIDER_SPRITES_LOADED:
+            return True
+
+        try:
+            for direction, frame_range in SPIDER_FRAME_RANGES.items():
+                SPIDER_FRAMES[direction] = []
+                for i in frame_range:
+                    filepath = f"{SPIDER_SPRITE_PATH}{i}.png"
+                    frame = load_image(filepath)
+
+                    if frame is None:
+                        print(f"Failed to load spider frame: {filepath}")
+                        continue
+
+                    # Scale to game tile size
+                    scaled = pygame.transform.smoothscale(frame, (TILE_SIZE, TILE_SIZE))
+                    SPIDER_FRAMES[direction].append(scaled)
+
+            SPIDER_SPRITES_LOADED = True
+            print(f"Loaded spider sprites: {list(SPIDER_FRAMES.keys())}")
+            return True
+        except Exception as e:
+            print(f"Error loading spider sprites: {e}")
+            return False
+
+    def get_spider_frame(direction, frame_index):
+        """Get a specific spider animation frame for a direction."""
+        if direction not in SPIDER_FRAMES:
+            direction = 'down'
+        frames = SPIDER_FRAMES.get(direction, [])
+        if not frames:
+            return None
+        return frames[frame_index % len(frames)]
+
     # Map dimensions
     MAP_WIDTH = 20
     MAP_HEIGHT = 13
@@ -1485,6 +1539,164 @@ init python in beacon_quest:
                 super().draw(surf, time_ms)
 
 
+    class SpiderEnemy(Enemy):
+        """A spider enemy - fast and erratic movement."""
+        def __init__(self, x, y):
+            super().__init__(x, y, enemy_type="spider")
+            self.width = TILE_SIZE
+            self.height = TILE_SIZE
+            self.speed = 3.0  # Spiders are fast!
+            self.health = 2   # But fragile
+
+            # Animation state
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.anim_speed = 80  # Fast animation
+
+            # Directional facing
+            self.facing = 'down'
+
+            # Spider-specific properties
+            self.death_timer = 0
+            self.is_dying = False
+
+            # Erratic movement
+            self.direction_change_timer = 0
+            self.direction_change_interval = random.randint(300, 800)
+            self.is_fleeing = False
+            self.flee_timer = 0
+
+        def update(self, dt, game_map, player):
+            if self.is_dying:
+                self.death_timer += dt
+                self.anim_timer += dt
+                if self.anim_timer >= self.anim_speed:
+                    self.anim_timer = 0
+                    self.anim_frame += 1
+                if self.death_timer >= 400:
+                    self.alive = False
+                return
+
+            if not self.alive:
+                return
+
+            # Update animation timer
+            self.anim_timer += dt
+            if self.anim_timer >= self.anim_speed:
+                self.anim_timer = 0
+                self.anim_frame += 1
+
+            # Hit flash
+            if self.hit_flash > 0:
+                self.hit_flash -= dt
+
+            # Calculate distance to player
+            dx = player.x - self.x
+            dy = player.y - self.y
+            dist = math.sqrt(dx*dx + dy*dy)
+
+            # Flee behavior when hit
+            if self.flee_timer > 0:
+                self.flee_timer -= dt
+                # Run away from player
+                if dist > 0:
+                    flee_x = -dx / dist * self.speed * 1.5
+                    flee_y = -dy / dist * self.speed * 1.5
+                    new_x = self.x + flee_x
+                    new_y = self.y + flee_y
+                    if self.can_move_to(new_x, self.y, game_map):
+                        self.x = new_x
+                    if self.can_move_to(self.x, new_y, game_map):
+                        self.y = new_y
+                    # Update facing (away from player)
+                    if abs(flee_x) > abs(flee_y):
+                        self.facing = 'right' if flee_x > 0 else 'left'
+                    else:
+                        self.facing = 'down' if flee_y > 0 else 'up'
+                return
+
+            # Erratic direction changes
+            self.direction_change_timer += dt
+            if self.direction_change_timer >= self.direction_change_interval:
+                self.direction_change_timer = 0
+                self.direction_change_interval = random.randint(300, 800)
+
+                # Sometimes chase, sometimes random
+                if dist < TILE_SIZE * 4 and random.random() < 0.6:
+                    # Chase player
+                    if abs(dx) > abs(dy):
+                        self.direction = 'right' if dx > 0 else 'left'
+                    else:
+                        self.direction = 'down' if dy > 0 else 'up'
+                else:
+                    # Random direction
+                    self.direction = random.choice(['up', 'down', 'left', 'right'])
+
+                self.facing = self.direction
+
+            # Move in current direction
+            dir_vec = DIRECTIONS[self.direction]
+            new_x = self.x + dir_vec[0] * self.speed
+            new_y = self.y + dir_vec[1] * self.speed
+
+            if self.can_move_to(new_x, new_y, game_map):
+                self.x = new_x
+                self.y = new_y
+            else:
+                # Hit wall - change direction immediately
+                self.direction = random.choice(['up', 'down', 'left', 'right'])
+                self.facing = self.direction
+
+        def take_damage(self, amount=1):
+            self.health -= amount
+            self.hit_flash = 150
+            self.flee_timer = 500  # Flee when hit!
+            self.anim_frame = 0
+            if self.health <= 0:
+                self.is_dying = True
+                self.anim_frame = 0
+                return True
+            return False
+
+        def draw(self, surf, time_ms):
+            if not self.alive and not self.is_dying:
+                return
+
+            # Get the appropriate animation frame
+            if self.is_dying:
+                frame = get_spider_frame('death', self.anim_frame)
+            else:
+                frame = get_spider_frame(self.facing, self.anim_frame)
+
+            if frame:
+                draw_frame = frame
+
+                # Apply hit flash tint if damaged
+                if self.hit_flash > 0:
+                    tinted = frame.copy()
+                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+                    tint_surf.fill((255, 100, 100, 120))
+                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                    draw_frame = tinted
+
+                # Apply death fade
+                if self.is_dying:
+                    alpha = max(0, 255 - int(self.death_timer * 0.6))
+                    draw_frame = draw_frame.copy()
+                    draw_frame.set_alpha(alpha)
+
+                # Draw shadow (smaller for spider)
+                shadow_surf = pygame.Surface((self.width - 20, 12), pygame.SRCALPHA)
+                pygame.draw.ellipse(shadow_surf, (0, 0, 0, 35), shadow_surf.get_rect())
+                surf.blit(shadow_surf, (self.x + 10, self.y + self.height - 10))
+
+                # Draw sprite
+                surf.blit(draw_frame, (self.x, self.y))
+            else:
+                # Fallback to parent drawing if sprites not loaded
+                super().draw(surf, time_ms)
+
+
     class Shard:
         """A collectible beacon shard."""
         def __init__(self, x, y):
@@ -1591,6 +1803,7 @@ init python in beacon_quest:
             load_slime_sprites()
             load_vampire_sprites()
             load_orc_sprites()
+            load_spider_sprites()
 
             # Create all rooms
             self.rooms = self.create_all_rooms()
@@ -1697,6 +1910,7 @@ init python in beacon_quest:
                 SlimeEnemy(5, 4),   # Slime in start room
                 SlimeEnemy(14, 4),  # Slime in start room
                 OrcEnemy(10, 7),    # Orc patrolling center
+                SpiderEnemy(8, 5),  # Spider - fast and erratic
             ]
 
             shards = [
@@ -1751,6 +1965,8 @@ init python in beacon_quest:
                 VampireEnemy(10, 5), # Vampire guarding beacon!
                 SlimeEnemy(6, 8),    # Slime patrol
                 SlimeEnemy(13, 8),   # Slime patrol
+                SpiderEnemy(5, 10),  # Spider skittering around
+                SpiderEnemy(14, 10), # Spider skittering around
             ]
 
             shards = [
@@ -1796,6 +2012,8 @@ init python in beacon_quest:
                 SlimeEnemy(4, 8),    # Slime gauntlet
                 VampireEnemy(9, 6),  # Vampire mid-gauntlet
                 OrcEnemy(15, 6),     # Orc guarding shard
+                SpiderEnemy(10, 4),  # Spider in maze section
+                SpiderEnemy(10, 9),  # Spider in maze section
             ]
 
             shards = [
@@ -1841,6 +2059,8 @@ init python in beacon_quest:
                 VampireEnemy(10, 6), # Vampire guarding treasure
                 SlimeEnemy(7, 9),    # Slime patrol
                 OrcEnemy(12, 8),     # Orc guard
+                SpiderEnemy(4, 6),   # Spider near treasure
+                SpiderEnemy(15, 4),  # Spider by pillar
             ]
 
             shards = [
