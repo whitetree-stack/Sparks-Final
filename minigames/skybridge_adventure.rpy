@@ -271,6 +271,83 @@ init python in beacon_quest:
             return None
         return frames[frame_index % len(frames)]
 
+    # ----------------------------------------------------------------
+    # ORC ENEMY SPRITES
+    # ----------------------------------------------------------------
+    ORC_SPRITE_PATH = "images/enemies/orcs/"
+    ORC_FRAME_SIZE = 64
+    ORC_SPRITES_LOADED = False
+    ORC_FRAMES = {}  # Organized as: ORC_FRAMES[anim_name][direction] = [frames]
+
+    # Spritesheet definitions: filename -> (cols, rows)
+    ORC_SPRITESHEETS = {
+        'idle': ('orc_idle.png', 4, 4),
+        'walk': ('orc_walk.png', 6, 4),
+        'run': ('orc_run.png', 8, 4),
+        'attack': ('orc_attack.png', 8, 4),
+        'hurt': ('orc_hurt.png', 6, 4),
+        'death': ('orc_death.png', 8, 4),
+    }
+
+    # Direction row mapping (same as vampire)
+    ORC_DIRECTIONS = {
+        0: 'down',
+        1: 'up',
+        2: 'left',
+        3: 'right'
+    }
+
+    def load_orc_sprites():
+        """Load orc enemy sprites from multiple spritesheets."""
+        global ORC_SPRITES_LOADED, ORC_FRAMES
+
+        if ORC_SPRITES_LOADED:
+            return True
+
+        try:
+            for anim_name, (filename, cols, rows) in ORC_SPRITESHEETS.items():
+                filepath = ORC_SPRITE_PATH + filename
+                spritesheet = load_image(filepath)
+
+                if spritesheet is None:
+                    print(f"Failed to load orc spritesheet: {filepath}")
+                    continue
+
+                ORC_FRAMES[anim_name] = {}
+
+                # Extract frames for each direction
+                for row in range(min(rows, 4)):  # 4 directions
+                    direction = ORC_DIRECTIONS.get(row, 'down')
+                    ORC_FRAMES[anim_name][direction] = []
+
+                    for col in range(cols):
+                        x = col * ORC_FRAME_SIZE
+                        y = row * ORC_FRAME_SIZE
+
+                        # Create frame surface
+                        frame = pygame.Surface((ORC_FRAME_SIZE, ORC_FRAME_SIZE), pygame.SRCALPHA)
+                        frame.blit(spritesheet, (0, 0), (x, y, ORC_FRAME_SIZE, ORC_FRAME_SIZE))
+
+                        ORC_FRAMES[anim_name][direction].append(frame)
+
+            ORC_SPRITES_LOADED = True
+            print(f"Loaded orc sprites: {list(ORC_FRAMES.keys())}")
+            return True
+        except Exception as e:
+            print(f"Error loading orc sprites: {e}")
+            return False
+
+    def get_orc_frame(anim_name, direction, frame_index):
+        """Get a specific orc animation frame for a direction."""
+        if anim_name not in ORC_FRAMES:
+            return None
+        if direction not in ORC_FRAMES[anim_name]:
+            direction = 'down'  # Fallback
+        frames = ORC_FRAMES[anim_name].get(direction, [])
+        if not frames:
+            return None
+        return frames[frame_index % len(frames)]
+
     # Map dimensions
     MAP_WIDTH = 20
     MAP_HEIGHT = 13
@@ -1235,6 +1312,179 @@ init python in beacon_quest:
                 super().draw(surf, time_ms)
 
 
+    class OrcEnemy(Enemy):
+        """An orc enemy with directional sprite-based animations - slow but tanky."""
+        def __init__(self, x, y):
+            super().__init__(x, y, enemy_type="orc")
+            self.width = TILE_SIZE
+            self.height = TILE_SIZE
+            self.speed = 1.8  # Orcs are slower
+            self.health = 4   # But very tanky
+
+            # Animation state
+            self.current_anim = 'idle'
+            self.anim_frame = 0
+            self.anim_timer = 0
+            self.anim_speed = 100  # ms per frame
+
+            # Directional facing
+            self.facing = 'down'
+
+            # Orc-specific properties
+            self.is_attacking = False
+            self.attack_timer = 0
+            self.attack_cooldown = 0
+            self.death_timer = 0
+            self.is_dying = False
+
+            # AI behavior - orcs are more aggressive but slower
+            self.aggro_range = TILE_SIZE * 6
+            self.attack_range = TILE_SIZE * 1.2
+            self.charge_speed = 3.0  # Speed when charging
+
+        def update(self, dt, game_map, player):
+            if self.is_dying:
+                self.death_timer += dt
+                self.anim_timer += dt
+                self.current_anim = 'death'
+                if self.anim_timer >= self.anim_speed:
+                    self.anim_timer = 0
+                    self.anim_frame += 1
+                if self.death_timer >= 700:
+                    self.alive = False
+                return
+
+            if not self.alive:
+                return
+
+            # Update animation timer
+            self.anim_timer += dt
+            if self.anim_timer >= self.anim_speed:
+                self.anim_timer = 0
+                self.anim_frame += 1
+
+            # Cooldowns
+            if self.attack_cooldown > 0:
+                self.attack_cooldown -= dt
+
+            # Handle attack animation
+            if self.is_attacking:
+                self.attack_timer += dt
+                self.current_anim = 'attack'
+                if self.attack_timer >= 700:
+                    self.is_attacking = False
+                    self.attack_timer = 0
+                    self.attack_cooldown = 1500  # Longer cooldown than vampire
+                return
+
+            # Hit flash
+            if self.hit_flash > 0:
+                self.hit_flash -= dt
+                self.current_anim = 'hurt'
+                return
+
+            # Calculate distance to player
+            dx = player.x - self.x
+            dy = player.y - self.y
+            dist = math.sqrt(dx*dx + dy*dy)
+
+            # Update facing direction
+            if abs(dx) > abs(dy):
+                self.facing = 'right' if dx > 0 else 'left'
+            else:
+                self.facing = 'down' if dy > 0 else 'up'
+
+            # AI behavior - orcs are aggressive chargers
+            if dist < self.attack_range and self.attack_cooldown <= 0:
+                # Attack!
+                self.is_attacking = True
+                self.anim_frame = 0
+                self.current_anim = 'attack'
+            elif dist < self.aggro_range:
+                # Charge at player! Orcs run when they see you
+                speed = self.charge_speed if dist > TILE_SIZE * 2 else self.speed
+                self.current_anim = 'run' if dist > TILE_SIZE * 2 else 'walk'
+
+                # Move towards player
+                if dist > 0:
+                    move_x = (dx / dist) * speed
+                    move_y = (dy / dist) * speed
+
+                    new_x = self.x + move_x
+                    new_y = self.y + move_y
+
+                    if self.can_move_to(new_x, self.y, game_map):
+                        self.x = new_x
+                    if self.can_move_to(self.x, new_y, game_map):
+                        self.y = new_y
+            else:
+                # Idle patrol
+                self.current_anim = 'idle'
+
+                self.move_timer += dt
+                if self.move_timer >= self.move_duration:
+                    self.move_timer = 0
+                    self.move_duration = random.randint(1500, 3000)
+                    self.direction = random.choice(['up', 'down', 'left', 'right'])
+                    self.facing = self.direction
+
+                # Slow patrol
+                dir_vec = DIRECTIONS[self.direction]
+                new_x = self.x + dir_vec[0] * self.speed * 0.4
+                new_y = self.y + dir_vec[1] * self.speed * 0.4
+
+                if self.can_move_to(new_x, new_y, game_map):
+                    self.x = new_x
+                    self.y = new_y
+                    self.current_anim = 'walk'
+
+        def take_damage(self, amount=1):
+            self.health -= amount
+            self.hit_flash = 300
+            self.anim_frame = 0
+            if self.health <= 0:
+                self.is_dying = True
+                self.current_anim = 'death'
+                self.anim_frame = 0
+                return True
+            return False
+
+        def draw(self, surf, time_ms):
+            if not self.alive and not self.is_dying:
+                return
+
+            # Get the appropriate animation frame with direction
+            frame = get_orc_frame(self.current_anim, self.facing, self.anim_frame)
+
+            if frame:
+                draw_frame = frame
+
+                # Apply hit flash tint if damaged
+                if self.hit_flash > 0:
+                    tinted = frame.copy()
+                    tint_surf = pygame.Surface(tinted.get_size(), pygame.SRCALPHA)
+                    tint_surf.fill((255, 50, 50, 150))
+                    tinted.blit(tint_surf, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+                    draw_frame = tinted
+
+                # Apply death fade
+                if self.is_dying:
+                    alpha = max(0, 255 - int(self.death_timer * 0.35))
+                    draw_frame = draw_frame.copy()
+                    draw_frame.set_alpha(alpha)
+
+                # Draw shadow
+                shadow_surf = pygame.Surface((self.width - 8, 18), pygame.SRCALPHA)
+                pygame.draw.ellipse(shadow_surf, (0, 0, 0, 55), shadow_surf.get_rect())
+                surf.blit(shadow_surf, (self.x + 4, self.y + self.height - 14))
+
+                # Draw sprite
+                surf.blit(draw_frame, (self.x, self.y))
+            else:
+                # Fallback to parent drawing if sprites not loaded
+                super().draw(surf, time_ms)
+
+
     class Shard:
         """A collectible beacon shard."""
         def __init__(self, x, y):
@@ -1340,6 +1590,7 @@ init python in beacon_quest:
             # Load enemy sprites
             load_slime_sprites()
             load_vampire_sprites()
+            load_orc_sprites()
 
             # Create all rooms
             self.rooms = self.create_all_rooms()
@@ -1445,7 +1696,7 @@ init python in beacon_quest:
             enemies = [
                 SlimeEnemy(5, 4),   # Slime in start room
                 SlimeEnemy(14, 4),  # Slime in start room
-                Enemy(10, 7),       # Shadow enemy
+                OrcEnemy(10, 7),    # Orc patrolling center
             ]
 
             shards = [
@@ -1541,11 +1792,10 @@ init python in beacon_quest:
                     game_map[y][13] = TILE_WALL
 
             enemies = [
-                SlimeEnemy(4, 3),    # Slime gauntlet
-                SlimeEnemy(4, 9),    # Slime gauntlet
+                OrcEnemy(4, 5),      # Orc at gauntlet start
+                SlimeEnemy(4, 8),    # Slime gauntlet
                 VampireEnemy(9, 6),  # Vampire mid-gauntlet
-                SlimeEnemy(15, 4),   # Slime at end
-                SlimeEnemy(15, 8),   # Slime at end
+                OrcEnemy(15, 6),     # Orc guarding shard
             ]
 
             shards = [
@@ -1587,10 +1837,10 @@ init python in beacon_quest:
             game_map[6][10] = TILE_WALL
 
             enemies = [
-                SlimeEnemy(7, 3),    # Slime in corners
+                OrcEnemy(7, 4),      # Orc guard
                 VampireEnemy(10, 6), # Vampire guarding treasure
                 SlimeEnemy(7, 9),    # Slime patrol
-                SlimeEnemy(12, 9),   # Slime in corners
+                OrcEnemy(12, 8),     # Orc guard
             ]
 
             shards = [
