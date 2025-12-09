@@ -26,109 +26,97 @@ init python in beacon_quest:
         except:
             return None
 
-    # Tileset configuration - tile regions on the spritesheet
-    # Format: (x, y, width, height) - coordinates on dungeon_tileset.png
-    TILESET_PATH = "images/dungeon_tileset.png"
+    # ----------------------------------------------------------------
+    # TILESET LOADING (Individual tile files)
+    # ----------------------------------------------------------------
+    # Floor tiles: images/tileset/floor/[1,2,3]/[1-5].png
+    # Wall chunks: images/tileset/chunks/*.png
+
     TILESET_LOADED = False
     TILE_SPRITES = {}
+    FLOOR_TILES = []  # List of floor tile surfaces
+    WALL_CHUNKS = {}  # Named wall/decoration pieces
 
-    # Floor tiles are in a 6x6 grid at bottom right of spritesheet
-    # Each floor tile is approximately 48x48 pixels
-    FLOOR_TILE_SIZE = 48
-    FLOOR_GRID_START_X = 736
-    FLOOR_GRID_START_Y = 256
+    # Floor tile configuration
+    FLOOR_TILE_PATH = "images/tileset/floor/"
+    FLOOR_COLOR_VARIANT = 1  # Which color folder to use (1, 2, or 3)
+    FLOOR_TILE_COUNT = 5     # Number of tiles per folder
 
-    # Wall/decoration tile regions (approximate positions)
-    TILE_REGIONS = {
-        # Floor variations (will be randomly selected)
-        'floor_1': (736, 256, 48, 48),
-        'floor_2': (784, 256, 48, 48),
-        'floor_3': (832, 256, 48, 48),
-        'floor_4': (880, 256, 48, 48),
-        'floor_5': (928, 256, 48, 48),
-        'floor_6': (976, 256, 48, 48),
-        'floor_7': (736, 304, 48, 48),
-        'floor_8': (784, 304, 48, 48),
-        'floor_9': (832, 304, 48, 48),
-        'floor_10': (880, 304, 48, 48),
-        'floor_11': (928, 304, 48, 48),
-        'floor_12': (976, 304, 48, 48),
-        # More floor variations from lower rows
-        'floor_13': (736, 352, 48, 48),
-        'floor_14': (784, 352, 48, 48),
-        'floor_15': (832, 352, 48, 48),
-        'floor_16': (880, 352, 48, 48),
-
-        # Wall pieces
-        'wall_top': (0, 192, 96, 48),      # Top wall section
-        'wall_shelf': (0, 64, 96, 64),     # Wall with shelf
-
-        # Doorway/arch (open archway)
-        'arch_open': (320, 0, 96, 128),
-
-        # Gate/bars doorway
-        'gate': (416, 0, 96, 128),
-
-        # Dark doorway/entrance
-        'door_dark': (576, 160, 64, 80),
-
-        # Stairs
-        'stairs': (672, 0, 64, 96),
-
-        # Bookshelf
-        'bookshelf': (736, 0, 64, 128),
-
-        # Fountain/pedestal
-        'fountain': (512, 224, 64, 64),
-
-        # Pillars
-        'pillar': (608, 80, 32, 80),
-    }
+    # Wall chunk configuration
+    WALL_CHUNK_PATH = "images/tileset/chunks/"
 
     def load_tileset():
-        """Load and extract tiles from the dungeon tileset."""
-        global TILESET_LOADED, TILE_SPRITES
+        """Load tiles from individual image files."""
+        global TILESET_LOADED, TILE_SPRITES, FLOOR_TILES, WALL_CHUNKS
 
         if TILESET_LOADED:
             return True
 
-        try:
-            tileset = load_image(TILESET_PATH)
-            if tileset is None:
-                print("Failed to load tileset")
-                return False
+        loaded_count = 0
 
-            # Extract each tile region
-            for name, region in TILE_REGIONS.items():
-                x, y, w, h = region
-                # Create a surface for this tile
-                tile_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-                tile_surf.blit(tileset, (0, 0), (x, y, w, h))
+        # Load floor tiles from the selected color variant folder
+        floor_folder = f"{FLOOR_TILE_PATH}{FLOOR_COLOR_VARIANT}/"
+        for i in range(1, FLOOR_TILE_COUNT + 1):
+            filepath = f"{floor_folder}{i}.png"
+            tile = load_image(filepath)
+            if tile:
+                # Scale from 64x64 to TILE_SIZE
+                scaled = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
+                FLOOR_TILES.append(scaled)
+                TILE_SPRITES[f'floor_{i}'] = scaled
+                loaded_count += 1
+            else:
+                print(f"Failed to load floor tile: {filepath}")
 
-                # Scale to game tile size (64x64) for floor tiles
-                if name.startswith('floor_'):
-                    tile_surf = pygame.transform.scale(tile_surf, (TILE_SIZE, TILE_SIZE))
+        # Load wall chunks
+        wall_chunk_files = {
+            'wall_top_1': 'tan_wall_top1.png',
+            'wall_top_2': 'tan_wall_top2.png',
+            'wall_top_3': 'tan_wall_top_3.png',
+            'wall_bottom': 'top_of_wall_for_bottom_edge.png',
+            'wall_left': 'wall_left.png',
+            'wall_right': 'wall_right.png',
+            'doorway_top': 'doorway_top.png',
+            'doorway_stairs': 'doorway_stairs_top.png',
+            'pillar_1': 'pillar1.png',
+            'pillar_2': 'pillar2.png',
+            'pillar_3': 'pillar3.png',
+            'pillar_4': 'pillar4.png',
+            'pillars_window': 'pillars_window_seethrough.png',
+            'sewer_grate': 'sewer_grate.png',
+            'stairs_left': 'stairs_floor_left.png',
+            'stairs_right': 'stairs_floor_right.png',
+        }
 
-                TILE_SPRITES[name] = tile_surf
+        for name, filename in wall_chunk_files.items():
+            filepath = f"{WALL_CHUNK_PATH}{filename}"
+            chunk = load_image(filepath)
+            if chunk:
+                WALL_CHUNKS[name] = chunk
+                TILE_SPRITES[name] = chunk
+                loaded_count += 1
+            else:
+                print(f"Failed to load wall chunk: {filepath}")
 
+        if loaded_count > 0:
             TILESET_LOADED = True
-            print(f"Loaded {len(TILE_SPRITES)} tiles from tileset")
+            print(f"Loaded {loaded_count} tiles ({len(FLOOR_TILES)} floor, {len(WALL_CHUNKS)} chunks)")
             return True
-        except Exception as e:
-            print(f"Error loading tileset: {e}")
+        else:
+            print("No tiles loaded - using procedural rendering")
             return False
 
     def get_floor_tile(x, y):
         """Get a floor tile sprite based on position (for consistent variation)."""
-        if not TILE_SPRITES:
+        if not FLOOR_TILES:
             return None
         # Use position to deterministically select a tile variation
-        floor_keys = [k for k in TILE_SPRITES.keys() if k.startswith('floor_')]
-        if not floor_keys:
-            return None
-        # Create a pattern that looks natural
-        index = (x * 7 + y * 13 + (x * y) % 5) % len(floor_keys)
-        return TILE_SPRITES.get(floor_keys[index])
+        index = (x * 7 + y * 13 + (x * y) % 5) % len(FLOOR_TILES)
+        return FLOOR_TILES[index]
+
+    def get_wall_chunk(name):
+        """Get a wall chunk sprite by name."""
+        return WALL_CHUNKS.get(name)
 
     # ----------------------------------------------------------------
     # SLIME ENEMY SPRITES
