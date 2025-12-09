@@ -56,6 +56,7 @@ init python in beacon_quest:
 
         # Load floor tiles from the selected color variant folder
         floor_folder = f"{FLOOR_TILE_PATH}{FLOOR_COLOR_VARIANT}/"
+        print(f"Loading floor tiles from: {floor_folder}")
         for i in range(1, FLOOR_TILE_COUNT + 1):
             filepath = f"{floor_folder}{i}.png"
             tile = load_image(filepath)
@@ -65,8 +66,9 @@ init python in beacon_quest:
                 FLOOR_TILES.append(scaled)
                 TILE_SPRITES[f'floor_{i}'] = scaled
                 loaded_count += 1
+                print(f"Loaded floor tile {i}")
             else:
-                print(f"Failed to load floor tile: {filepath}")
+                print(f"FAILED to load floor tile: {filepath}")
 
         # Load wall chunks
         wall_chunk_files = {
@@ -95,8 +97,9 @@ init python in beacon_quest:
                 WALL_CHUNKS[name] = chunk
                 TILE_SPRITES[name] = chunk
                 loaded_count += 1
+                print(f"Loaded wall chunk '{name}' from: {filepath}")
             else:
-                print(f"Failed to load wall chunk: {filepath}")
+                print(f"FAILED to load wall chunk '{name}' from: {filepath}")
 
         if loaded_count > 0:
             TILESET_LOADED = True
@@ -2427,6 +2430,8 @@ init python in beacon_quest:
 
             # Load tileset sprites
             load_tileset()
+            print(f"WALL_CHUNKS keys available: {list(WALL_CHUNKS.keys())}")
+            print(f"FLOOR_TILES count: {len(FLOOR_TILES)}")
 
             # Load enemy sprites
             load_slime_sprites()
@@ -3153,10 +3158,12 @@ init python in beacon_quest:
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
 
-                        # Draw wall on top - use sprite if available
-                        wall_sprite = TILE_SPRITES.get('wall_top')
+                        # Draw wall on top - use wall chunk if available
+                        # Select wall variant based on position for variety
+                        wall_variant = ((x + y) % 3) + 1
+                        wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
                         if wall_sprite:
-                            # Scale wall sprite to fit tile
+                            # Scale wall chunk to fit tile
                             scaled_wall = pygame.transform.scale(wall_sprite, (TILE_SIZE, TILE_SIZE))
                             surf.blit(scaled_wall, (px, py))
                         else:
