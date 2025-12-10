@@ -13,12 +13,14 @@ init python in beacon_quest:
 
     # Game constants
     WIDTH, HEIGHT = 1920, 1080
-    TILE_SIZE = 80  # Increased from 64 for better visibility
+    TILE_SIZE = 64  # Match spritesheet tile size (64x64)
 
     # ----------------------------------------------------------------
-    # TILESET LOADING
+    # TILESET LOADING - Wang Tile Autotile System
     # ----------------------------------------------------------------
-    # Helper to load images through Ren'Py
+    # Uses a single spritesheet with Tiled Wang tile definitions
+    # Spritesheet: 1024x1024, 16x16 grid of 64x64 tiles (256 total)
+
     def load_image(path):
         """Load an image through Ren'Py's image system."""
         try:
@@ -26,100 +28,313 @@ init python in beacon_quest:
         except:
             return None
 
-    # ----------------------------------------------------------------
-    # TILESET LOADING (Individual tile files)
-    # ----------------------------------------------------------------
-    # Floor tiles: images/tileset/floor/[1,2,3]/[1-5].png
-    # Wall chunks: images/tileset/chunks/*.png
-
+    # Tileset configuration
+    TILESET_PATH = "images/dungeon_tileset.png"
     TILESET_LOADED = False
-    TILE_SPRITES = {}
-    FLOOR_TILES = []  # List of floor tile surfaces
-    WALL_CHUNKS = {}  # Named wall/decoration pieces
+    TILESET_SURFACE = None
+    TILE_CACHE = {}  # Cache extracted tiles by tileid
 
-    # Floor tile configuration
-    FLOOR_TILE_PATH = "images/tileset/floor/"
-    FLOOR_COLOR_VARIANT = 1  # Which color folder to use (1, 2, or 3)
-    FLOOR_TILE_COUNT = 5     # Number of tiles per folder
+    # Spritesheet properties (from Tiled JSON)
+    SHEET_COLUMNS = 16
+    SHEET_TILE_WIDTH = 64
+    SHEET_TILE_HEIGHT = 64
 
-    # Wall chunk configuration
-    WALL_CHUNK_PATH = "images/tileset/chunks/"
+    # Terrain types - indices match Tiled wangset color order
+    TERRAIN_VOID = 0        # No terrain (walls, empty)
+    TERRAIN_LIGHT_STONE = 1 # Main dungeon floor
+    TERRAIN_DARK_STONE = 2  # Alternative floor
+    TERRAIN_LAVA = 3        # Hazard terrain
+    TERRAIN_LAVA_DARK = 4   # Dark lava variant
+    TERRAIN_WATER_LIGHT = 5 # Water terrain
+    TERRAIN_WATER_DARK = 6  # Dark water variant
+
+    # Current terrain theme for the dungeon
+    CURRENT_TERRAIN = TERRAIN_LIGHT_STONE
+
+    # ----------------------------------------------------------------
+    # WANG TILE LOOKUP TABLES
+    # ----------------------------------------------------------------
+    # Wangid format: [TR corner, R edge, BR corner, B edge, BL corner, L edge, TL corner, T edge]
+    # For "mixed" type: edges use terrain values, corners are transitions
+    # We build lookup: wangid_tuple -> tileid
+
+    # Mixed wangset tiles for each terrain type
+    # Format: { terrain_id: { wangid_tuple: tileid } }
+    WANG_MIXED_TILES = {
+        # Light stone (terrain 1)
+        1: {
+            (0,0,0,1,0,0,0,0): 9,   # Floor only south (NW corner piece)
+            (0,0,0,0,0,1,0,0): 10,  # Floor only west (NE corner piece)
+            (0,1,0,0,0,0,0,0): 11,  # Floor only east (SW corner piece)
+            (0,0,0,0,0,0,0,1): 12,  # Floor only north (SE corner piece)
+            (0,0,0,0,0,1,0,1): 13,  # Floor north and west (SE inner corner)
+            (0,1,0,1,0,0,0,0): 29,  # Floor east and south (NW inner corner)
+            (0,1,0,1,0,1,0,1): 44,  # Floor all sides (center floor)
+            (0,1,0,0,0,0,0,1): 45,  # Floor east and north (SW inner corner)
+            (0,0,0,1,0,1,0,0): 61,  # Floor south and west (NE inner corner)
+        },
+        # Dark stone (terrain 2)
+        2: {
+            (0,2,0,0,0,0,0,2): 77,  # Floor east and north
+            (0,2,0,2,0,2,0,2): 92,  # Floor all sides (center)
+            (0,0,0,2,0,2,0,0): 93,  # Floor south and west
+            (0,2,0,2,0,0,0,0): 109, # Floor east and south
+            (0,2,0,0,0,0,0,0): 121, # Floor only east
+            (0,0,0,0,0,0,0,2): 122, # Floor only north
+            (0,0,0,2,0,0,0,0): 123, # Floor only south
+            (0,0,0,0,0,2,0,0): 124, # Floor only west
+            (0,0,0,0,0,2,0,2): 125, # Floor north and west
+        },
+        # Water light (terrain 5)
+        5: {
+            (0,0,0,5,0,0,0,0): 130, # Floor only south
+            (0,0,0,0,0,5,0,0): 131, # Floor only west
+            (0,5,0,0,0,0,0,0): 132, # Floor only east
+            (0,0,0,0,0,0,0,5): 133, # Floor only north
+            (0,0,0,0,0,5,0,5): 134, # Floor north and west
+            (0,5,0,0,0,0,0,5): 149, # Floor east and north
+            (0,5,0,5,0,0,0,0): 150, # Floor east and south
+            (0,0,0,5,0,5,0,0): 165, # Floor south and west
+            (0,5,0,0,0,0,0,5): 166, # Floor east and north (alt)
+            (0,5,0,5,0,5,0,5): 177, # Floor all sides (center)
+            (0,0,0,5,0,5,0,0): 182, # Floor south and west (alt)
+        },
+        # Lava (terrain 3)
+        3: {
+            (0,0,0,3,0,0,0,0): 137, # Floor only south
+            (0,0,0,0,0,3,0,0): 138, # Floor only west
+            (0,3,0,0,0,0,0,0): 139, # Floor only east
+            (0,0,0,0,0,0,0,3): 140, # Floor only north
+            (0,0,0,0,0,3,0,3): 141, # Floor north and west
+            (0,3,0,3,0,0,0,0): 157, # Floor east and south
+            (0,3,0,3,0,3,0,3): 172, # Floor all sides (center)
+            (0,3,0,0,0,0,0,3): 173, # Floor east and north
+            (0,0,0,3,0,3,0,0): 189, # Floor south and west
+        },
+        # Water dark (terrain 6)
+        6: {
+            (0,6,0,6,0,6,0,6): 193, # Floor all sides (center)
+            (0,6,0,0,0,0,0,6): 213, # Floor east and north
+            (0,0,0,6,0,6,0,0): 214, # Floor south and west
+            (0,0,0,6,0,6,0,0): 229, # Floor south and west (alt)
+            (0,6,0,6,0,0,0,0): 230, # Floor east and south
+            (0,6,0,0,0,0,0,0): 242, # Floor only east
+            (0,0,0,0,0,0,0,6): 243, # Floor only north
+            (0,0,0,6,0,0,0,0): 244, # Floor only south
+            (0,0,0,0,0,6,0,0): 245, # Floor only west
+            (0,0,0,0,0,6,0,6): 246, # Floor north and west
+        },
+        # Lava dark (terrain 4)
+        4: {
+            (0,4,0,0,0,0,0,4): 205, # Floor east and north
+            (0,4,0,4,0,4,0,4): 220, # Floor all sides (center)
+            (0,0,0,4,0,4,0,0): 221, # Floor south and west
+            (0,4,0,4,0,0,0,0): 237, # Floor east and south
+            (0,4,0,0,0,0,0,0): 249, # Floor only east
+            (0,0,0,0,0,0,0,4): 250, # Floor only north
+            (0,0,0,4,0,0,0,0): 251, # Floor only south
+            (0,0,0,0,0,4,0,0): 252, # Floor only west
+            (0,0,0,0,0,4,0,4): 253, # Floor north and west
+        },
+    }
+
+    # Corner wangset tiles (for inner corners where 3 sides have floor)
+    # Format: { terrain_id: { wangid_tuple: tileid } }
+    WANG_CORNER_TILES = {
+        # Light stone (terrain 1)
+        1: {
+            (0,1,0,0,0,1,0,1): 25,  # Missing SE corner
+            (0,1,0,0,0,0,0,1): 26,  # Missing S edge
+            (0,1,0,1,0,0,0,1): 27,  # Missing SW corner
+            (0,0,0,0,0,1,0,1): 41,  # Missing E and S
+            (0,1,0,1,0,0,0,0): 43,  # Missing W and N
+            (0,0,0,1,0,1,0,1): 57,  # Missing NE corner
+            (0,0,0,1,0,1,0,0): 58,  # Missing N edge
+            (0,1,0,1,0,1,0,0): 59,  # Missing NW corner
+            (0,1,0,1,0,1,0,1): 60,  # Full floor (center)
+        },
+        # Dark stone (terrain 2)
+        2: {
+            (0,2,0,0,0,2,0,2): 73,
+            (0,2,0,0,0,0,0,2): 74,
+            (0,2,0,2,0,0,0,2): 75,
+            (0,2,0,2,0,2,0,2): 76,
+            (0,0,0,0,0,2,0,2): 89,
+            (0,2,0,2,0,0,0,0): 91,
+            (0,0,0,2,0,2,0,2): 105,
+            (0,0,0,2,0,2,0,0): 106,
+            (0,2,0,2,0,2,0,0): 107,
+        },
+        # Water light (terrain 4 in corners set)
+        4: {
+            (0,4,0,0,0,4,0,4): 146,
+            (0,4,0,0,0,0,0,4): 147,
+            (0,4,0,4,0,0,0,4): 148,
+            (0,0,0,0,0,4,0,4): 162,
+            (0,4,0,4,0,0,0,0): 164,
+            (0,0,0,4,0,4,0,4): 178,
+            (0,0,0,4,0,4,0,0): 179,
+            (0,4,0,4,0,4,0,0): 180,
+            (0,4,0,4,0,4,0,4): 181,
+        },
+        # Lava (terrain 3 in corners set)
+        3: {
+            (0,3,0,0,0,3,0,3): 153,
+            (0,3,0,0,0,0,0,3): 154,
+            (0,3,0,3,0,0,0,3): 155,
+            (0,0,0,0,0,3,0,3): 169,
+            (0,3,0,3,0,0,0,0): 171,
+            (0,0,0,3,0,3,0,3): 185,
+            (0,0,0,3,0,3,0,0): 186,
+            (0,3,0,3,0,3,0,0): 187,
+            (0,3,0,3,0,3,0,3): 188,
+        },
+        # Water dark (terrain 5 in corners set)
+        5: {
+            (0,5,0,0,0,5,0,5): 194,
+            (0,5,0,0,0,0,0,5): 195,
+            (0,5,0,5,0,0,0,5): 196,
+            (0,5,0,5,0,5,0,5): 197,
+            (0,0,0,0,0,5,0,5): 210,
+            (0,5,0,5,0,0,0,0): 212,
+            (0,0,0,5,0,5,0,5): 226,
+            (0,0,0,5,0,5,0,0): 227,
+            (0,5,0,5,0,5,0,0): 228,
+        },
+        # Lava dark (terrain 6 in corners set)
+        6: {
+            (0,6,0,0,0,6,0,6): 201,
+            (0,6,0,0,0,0,0,6): 202,
+            (0,6,0,6,0,0,0,6): 203,
+            (0,6,0,6,0,6,0,6): 204,
+            (0,0,0,0,0,6,0,6): 217,
+            (0,6,0,6,0,0,0,0): 219,
+            (0,0,0,6,0,6,0,6): 233,
+            (0,0,0,6,0,6,0,0): 234,
+            (0,6,0,6,0,6,0,0): 235,
+        },
+    }
 
     def load_tileset():
-        """Load tiles from individual image files."""
-        global TILESET_LOADED, TILE_SPRITES, FLOOR_TILES, WALL_CHUNKS
+        """Load the tileset spritesheet."""
+        global TILESET_LOADED, TILESET_SURFACE, TILE_CACHE
 
         if TILESET_LOADED:
             return True
 
-        loaded_count = 0
-
-        # Load floor tiles from the selected color variant folder
-        floor_folder = f"{FLOOR_TILE_PATH}{FLOOR_COLOR_VARIANT}/"
-        print(f"Loading floor tiles from: {floor_folder}")
-        for i in range(1, FLOOR_TILE_COUNT + 1):
-            filepath = f"{floor_folder}{i}.png"
-            tile = load_image(filepath)
-            if tile:
-                # Scale from 64x64 to TILE_SIZE
-                scaled = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
-                FLOOR_TILES.append(scaled)
-                TILE_SPRITES[f'floor_{i}'] = scaled
-                loaded_count += 1
-                print(f"Loaded floor tile {i}")
-            else:
-                print(f"FAILED to load floor tile: {filepath}")
-
-        # Load wall chunks
-        wall_chunk_files = {
-            'wall_top_1': 'tan_wall_top1.png',
-            'wall_top_2': 'tan_wall_top2.png',
-            'wall_top_3': 'tan_wall_top_3.png',
-            'wall_bottom': 'top_of_wall_for_bottom_edge.png',
-            'wall_left': 'wall_left.png',
-            'wall_right': 'wall_right.png',
-            'doorway_top': 'doorway_top.png',
-            'doorway_stairs': 'doorway_stairs_top.png',
-            'pillar_1': 'pillar1.png',
-            'pillar_2': 'pillar2.png',
-            'pillar_3': 'pillar3.png',
-            'pillar_4': 'pillar4.png',
-            'pillars_window': 'pillars_window_seethrough.png',
-            'sewer_grate': 'sewer_grate.png',
-            'stairs_left': 'stairs_floor_left.png',
-            'stairs_right': 'stairs_floor_right.png',
-        }
-
-        for name, filename in wall_chunk_files.items():
-            filepath = f"{WALL_CHUNK_PATH}{filename}"
-            chunk = load_image(filepath)
-            if chunk:
-                WALL_CHUNKS[name] = chunk
-                TILE_SPRITES[name] = chunk
-                loaded_count += 1
-                print(f"Loaded wall chunk '{name}' from: {filepath}")
-            else:
-                print(f"FAILED to load wall chunk '{name}' from: {filepath}")
-
-        if loaded_count > 0:
+        TILESET_SURFACE = load_image(TILESET_PATH)
+        if TILESET_SURFACE:
             TILESET_LOADED = True
-            print(f"Loaded {loaded_count} tiles ({len(FLOOR_TILES)} floor, {len(WALL_CHUNKS)} chunks)")
+            TILE_CACHE = {}
+            print(f"Loaded tileset spritesheet: {TILESET_PATH}")
+            print(f"Sheet size: {TILESET_SURFACE.get_size()}")
             return True
         else:
-            print("No tiles loaded - using procedural rendering")
+            print(f"FAILED to load tileset: {TILESET_PATH}")
             return False
 
-    def get_floor_tile(x, y):
-        """Get a floor tile sprite based on position (for consistent variation)."""
-        if not FLOOR_TILES:
+    def get_tile_from_sheet(tileid):
+        """Extract a single tile from the spritesheet by tileid."""
+        if not TILESET_SURFACE:
             return None
-        # Use position to deterministically select a tile variation
-        index = (x * 7 + y * 13 + (x * y) % 5) % len(FLOOR_TILES)
-        return FLOOR_TILES[index]
+
+        # Check cache first
+        if tileid in TILE_CACHE:
+            return TILE_CACHE[tileid]
+
+        # Calculate position on spritesheet
+        tile_x = (tileid % SHEET_COLUMNS) * SHEET_TILE_WIDTH
+        tile_y = (tileid // SHEET_COLUMNS) * SHEET_TILE_HEIGHT
+
+        # Extract tile region
+        tile_surf = pygame.Surface((SHEET_TILE_WIDTH, SHEET_TILE_HEIGHT), pygame.SRCALPHA)
+        tile_surf.blit(TILESET_SURFACE, (0, 0), (tile_x, tile_y, SHEET_TILE_WIDTH, SHEET_TILE_HEIGHT))
+
+        # Scale to game TILE_SIZE if different
+        if SHEET_TILE_WIDTH != TILE_SIZE or SHEET_TILE_HEIGHT != TILE_SIZE:
+            tile_surf = pygame.transform.scale(tile_surf, (TILE_SIZE, TILE_SIZE))
+
+        # Cache and return
+        TILE_CACHE[tileid] = tile_surf
+        return tile_surf
+
+    def get_wangid_for_position(room, x, y, terrain):
+        """Calculate the wangid for a floor tile based on its neighbors.
+
+        Wangid positions: [TR, R, BR, B, BL, L, TL, T]
+        - Edges (positions 1,3,5,7): terrain if neighbor is floor, 0 if wall
+        - Corners (positions 0,2,4,6): terrain if both adjacent edges are floor
+        """
+        def is_floor(tx, ty):
+            t = room.get_tile(tx, ty)
+            return t in (TILE_FLOOR, TILE_BEACON, TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W, TILE_BRIDGE)
+
+        # Check 8 neighbors
+        n = is_floor(x, y-1)      # North
+        s = is_floor(x, y+1)      # South
+        e = is_floor(x+1, y)      # East
+        w = is_floor(x-1, y)      # West
+        ne = is_floor(x+1, y-1)   # Northeast
+        nw = is_floor(x-1, y-1)   # Northwest
+        se = is_floor(x+1, y+1)   # Southeast
+        sw = is_floor(x-1, y+1)   # Southwest
+
+        # Build wangid: [TR corner, R edge, BR corner, B edge, BL corner, L edge, TL corner, T edge]
+        wangid = [
+            terrain if (n and e and ne) else 0,  # TR corner - needs N, E, and NE
+            terrain if e else 0,                  # R edge
+            terrain if (s and e and se) else 0,  # BR corner - needs S, E, and SE
+            terrain if s else 0,                  # B edge
+            terrain if (s and w and sw) else 0,  # BL corner - needs S, W, and SW
+            terrain if w else 0,                  # L edge
+            terrain if (n and w and nw) else 0,  # TL corner - needs N, W, and NW
+            terrain if n else 0,                  # T edge
+        ]
+
+        return tuple(wangid)
+
+    def get_autotile(room, x, y, terrain=None):
+        """Get the correct tile sprite for a position using Wang tile autotiling."""
+        if terrain is None:
+            terrain = CURRENT_TERRAIN
+
+        wangid = get_wangid_for_position(room, x, y, terrain)
+
+        # Try corner tiles first (more specific matches)
+        if terrain in WANG_CORNER_TILES:
+            tileid = WANG_CORNER_TILES[terrain].get(wangid)
+            if tileid is not None:
+                return get_tile_from_sheet(tileid)
+
+        # Try mixed tiles
+        if terrain in WANG_MIXED_TILES:
+            tileid = WANG_MIXED_TILES[terrain].get(wangid)
+            if tileid is not None:
+                return get_tile_from_sheet(tileid)
+
+        # Fallback: find closest match by checking edge-only wangid
+        edge_wangid = (0, wangid[1], 0, wangid[3], 0, wangid[5], 0, wangid[7])
+        if terrain in WANG_MIXED_TILES:
+            tileid = WANG_MIXED_TILES[terrain].get(edge_wangid)
+            if tileid is not None:
+                return get_tile_from_sheet(tileid)
+
+        # Last resort: return center tile
+        center_wangid = (0, terrain, 0, terrain, 0, terrain, 0, terrain)
+        if terrain in WANG_MIXED_TILES:
+            tileid = WANG_MIXED_TILES[terrain].get(center_wangid)
+            if tileid is not None:
+                return get_tile_from_sheet(tileid)
+
+        return None
+
+    def get_floor_tile(x, y):
+        """Legacy function - returns None, use get_autotile instead."""
+        return None
 
     def get_wall_chunk(name):
-        """Get a wall chunk sprite by name."""
-        return WALL_CHUNKS.get(name)
+        """Legacy function - returns None, use autotile system instead."""
+        return None
 
     # ----------------------------------------------------------------
     # PROCEDURAL RENDERING (fallbacks when sprites not loaded)
@@ -171,6 +386,46 @@ init python in beacon_quest:
             pygame.draw.polygon(surf, arrow_color, [(px + tile_size - 18, center_y), (px + tile_size - 30, center_y - 8), (px + tile_size - 30, center_y + 8)])
         elif direction == 'W':
             pygame.draw.polygon(surf, arrow_color, [(px + 18, center_y), (px + 30, center_y - 8), (px + 30, center_y + 8)])
+
+    def draw_procedural_pillar(surf, px, py, tile_size, x, y):
+        """Draw a procedural pillar obstacle."""
+        # Vary pillar style based on position
+        variant = (x * 3 + y * 7) % 4
+
+        # Pillar dimensions
+        pillar_w = tile_size // 3
+        pillar_h = int(tile_size * 0.8)
+        pillar_x = px + (tile_size - pillar_w) // 2
+        pillar_y = py + tile_size - pillar_h
+
+        # Shadow
+        shadow_surf = pygame.Surface((pillar_w + 10, 12), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 60), shadow_surf.get_rect())
+        surf.blit(shadow_surf, (pillar_x - 5, py + tile_size - 10))
+
+        # Base colors vary by variant
+        if variant == 0:
+            base_color = (100, 90, 110)
+            highlight = (130, 120, 140)
+        elif variant == 1:
+            base_color = (90, 85, 100)
+            highlight = (120, 115, 130)
+        elif variant == 2:
+            base_color = (95, 88, 105)
+            highlight = (125, 118, 135)
+        else:
+            base_color = (85, 80, 95)
+            highlight = (115, 110, 125)
+
+        # Main pillar body
+        pygame.draw.rect(surf, base_color, (pillar_x, pillar_y, pillar_w, pillar_h))
+        # Highlight edge
+        pygame.draw.rect(surf, highlight, (pillar_x, pillar_y, pillar_w // 3, pillar_h))
+        # Dark edge
+        pygame.draw.rect(surf, (60, 55, 70), (pillar_x + pillar_w - 3, pillar_y, 3, pillar_h))
+        # Top cap
+        pygame.draw.rect(surf, highlight, (pillar_x - 2, pillar_y, pillar_w + 4, 6))
+        pygame.draw.rect(surf, (70, 65, 80), (pillar_x - 2, pillar_y, pillar_w + 4, 6), 1)
 
     def draw_procedural_slime(surf, screen_x, screen_y, width, height, anim_phase, is_dying, death_timer):
         """Draw a procedural slime enemy."""
@@ -2324,10 +2579,10 @@ init python in beacon_quest:
         def __init__(self):
             self.state = STATE_PLAYING
 
-            # Load tileset sprites
+            # Load tileset spritesheet
             load_tileset()
-            print(f"WALL_CHUNKS keys available: {list(WALL_CHUNKS.keys())}")
-            print(f"FLOOR_TILES count: {len(FLOOR_TILES)}")
+            print(f"Tileset loaded: {TILESET_LOADED}")
+            print(f"Current terrain: {CURRENT_TERRAIN}")
 
             # Load enemy sprites
             load_slime_sprites()
@@ -3014,16 +3269,16 @@ init python in beacon_quest:
             random.seed()  # Reset seed
 
         def draw_map(self, surf, time_ms):
-            """Draw the game map using tileset sprites with camera offset.
+            """Draw the game map using Wang tile autotiling with camera offset.
 
-            CHUNK SCALING: All chunks are scaled 2x from original size.
-            POSITIONING: Based on actual sprite dimensions, not forced to tile grid.
+            AUTOTILE SYSTEM: Uses Tiled Wang tiles for seamless floor/wall transitions.
+            Each floor tile automatically selects the correct sprite based on neighbors.
 
-            WALL SPRITE LOGIC (based on camera POV looking down):
-            - South-facing walls (floor above): tan_wall_top_1/2/3 - bottom-aligned
-            - North-facing walls (floor below): wall_bottom - top-aligned
-            - East-facing walls (floor to right): wall_left - right-aligned
-            - West-facing walls (floor to left): wall_right - left-aligned
+            TERRAIN TYPES:
+            - TERRAIN_LIGHT_STONE (1): Default dungeon floor
+            - TERRAIN_DARK_STONE (2): Alternative floor style
+            - TERRAIN_WATER_LIGHT (5): Water areas
+            - TERRAIN_LAVA (3): Lava/hazard areas
             """
             room = self.current_room
 
@@ -3037,18 +3292,6 @@ init python in beacon_quest:
             cam_x_floor = int(self.camera_x)
             cam_y_floor = int(self.camera_y)
 
-            # Helper to check if a tile is walkable (floor, door, beacon)
-            def is_floor_tile(tx, ty):
-                t = room.get_tile(tx, ty)
-                return t in (TILE_FLOOR, TILE_BEACON, TILE_DOOR_N, TILE_DOOR_S, TILE_DOOR_E, TILE_DOOR_W)
-
-            # Helper to scale sprite 2x keeping aspect ratio
-            def scale_2x(sprite):
-                if sprite is None:
-                    return None
-                w, h = sprite.get_size()
-                return pygame.transform.scale(sprite, (w * 2, h * 2))
-
             for y in range(start_y, end_y):
                 for x in range(start_x, end_x):
                     tile = room.get_tile(x, y)
@@ -3058,176 +3301,91 @@ init python in beacon_quest:
                     py = world_y - cam_y_floor
 
                     # ======================
-                    # FLOOR TILE
+                    # FLOOR TILE - Uses Wang autotile
                     # ======================
                     if tile == TILE_FLOOR:
-                        floor_sprite = get_floor_tile(x, y)
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
                             draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
-                        # Random sewer grate decoration (sparse)
-                        if ((x * 17 + y * 31) % 47) == 0:
-                            grate_sprite = WALL_CHUNKS.get('sewer_grate')
-                            if grate_sprite:
-                                scaled = scale_2x(grate_sprite)
-                                # Center on tile
-                                gw, gh = scaled.get_size()
-                                gx = px + (TILE_SIZE - gw) // 2
-                                gy = py + (TILE_SIZE - gh) // 2
-                                surf.blit(scaled, (gx, gy))
-
                     # ======================
-                    # WALL TILE - Direction-based sprites
+                    # WALL TILE - Void/empty space (walls handled by floor edge tiles)
                     # ======================
                     elif tile == TILE_WALL:
-                        # Determine wall facing based on adjacent floor tiles
-                        floor_north = is_floor_tile(x, y - 1)
-                        floor_south = is_floor_tile(x, y + 1)
-                        floor_east = is_floor_tile(x + 1, y)
-                        floor_west = is_floor_tile(x - 1, y)
-
-                        wall_sprite = None
-                        wall_type = None
-
-                        if floor_south:
-                            # Floor is south, wall faces SOUTH - use detailed front
-                            wall_variant = ((x + y) % 3) + 1
-                            wall_sprite = WALL_CHUNKS.get(f'wall_top_{wall_variant}')
-                            wall_type = 'south'
-                        elif floor_north:
-                            # Floor is north, wall faces NORTH - use top edge cap
-                            wall_sprite = WALL_CHUNKS.get('wall_bottom')
-                            wall_type = 'north'
-                        elif floor_east:
-                            # Floor is east, wall faces EAST - west wall side
-                            wall_sprite = WALL_CHUNKS.get('wall_left')
-                            wall_type = 'east'
-                        elif floor_west:
-                            # Floor is west, wall faces WEST - east wall side
-                            wall_sprite = WALL_CHUNKS.get('wall_right')
-                            wall_type = 'west'
-
-                        if wall_sprite:
-                            scaled = scale_2x(wall_sprite)
-                            sw, sh = scaled.get_size()
-
-                            if wall_type == 'south':
-                                # Bottom of sprite aligns with bottom of tile, centered horizontally
-                                wx = px + (TILE_SIZE - sw) // 2
-                                wy = py + TILE_SIZE - sh
-                            elif wall_type == 'north':
-                                # Top of sprite aligns with top of tile, centered horizontally
-                                wx = px + (TILE_SIZE - sw) // 2
-                                wy = py
-                            elif wall_type == 'east':
-                                # Right edge aligns with right of tile, centered vertically
-                                wx = px + TILE_SIZE - sw
-                                wy = py + (TILE_SIZE - sh) // 2
-                            elif wall_type == 'west':
-                                # Left edge aligns with left of tile, centered vertically
-                                wx = px
-                                wy = py + (TILE_SIZE - sh) // 2
-                            else:
-                                wx, wy = px, py
-
-                            surf.blit(scaled, (wx, wy))
-                        else:
-                            draw_procedural_wall(surf, px, py, TILE_SIZE)
+                        # Walls are represented as absence of terrain in Wang tiles
+                        # The floor tiles adjacent to walls have edge graphics
+                        # Just draw dark background for pure wall tiles
+                        draw_procedural_wall(surf, px, py, TILE_SIZE)
 
                     # ======================
                     # BEACON/GOAL TILE
                     # ======================
                     elif tile == TILE_BEACON:
-                        floor_sprite = get_floor_tile(x, y)
+                        # Draw floor with autotile
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
                             draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
+                        # Draw beacon overlay
                         is_active = self.shards_collected >= self.target_shards
                         draw_procedural_beacon(surf, px, py, TILE_SIZE, time_ms, is_active)
 
                     # ======================
-                    # DOOR TILES - Direction-specific sprites
+                    # DOOR TILES - Floor with door indicator
                     # ======================
                     elif tile == TILE_DOOR_N:
-                        floor_sprite = get_floor_tile(x, y)
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-                        # North doors use doorway_top or doorway_stairs randomly
-                        door_choice = 'doorway_top' if ((x + y) % 2 == 0) else 'doorway_stairs'
-                        door_sprite = WALL_CHUNKS.get(door_choice)
-                        if door_sprite:
-                            scaled = scale_2x(door_sprite)
-                            dw, dh = scaled.get_size()
-                            # Center horizontally, align bottom to tile bottom
-                            dx = px + (TILE_SIZE - dw) // 2
-                            dy = py + TILE_SIZE - dh
-                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'N', time_ms)
 
                     elif tile == TILE_DOOR_S:
-                        floor_sprite = get_floor_tile(x, y)
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-                        # South doors - just procedural glow on floor
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'S', time_ms)
 
                     elif tile == TILE_DOOR_E:
-                        floor_sprite = get_floor_tile(x, y)
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-                        # East doors use stairs_right
-                        door_sprite = WALL_CHUNKS.get('stairs_right')
-                        if door_sprite:
-                            scaled = scale_2x(door_sprite)
-                            dw, dh = scaled.get_size()
-                            # Right-aligned, centered vertically
-                            dx = px + TILE_SIZE - dw
-                            dy = py + (TILE_SIZE - dh) // 2
-                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'E', time_ms)
 
                     elif tile == TILE_DOOR_W:
-                        floor_sprite = get_floor_tile(x, y)
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
-                        # West doors use stairs_left
-                        door_sprite = WALL_CHUNKS.get('stairs_left')
-                        if door_sprite:
-                            scaled = scale_2x(door_sprite)
-                            dw, dh = scaled.get_size()
-                            # Left-aligned, centered vertically
-                            dx = px
-                            dy = py + (TILE_SIZE - dh) // 2
-                            surf.blit(scaled, (dx, dy))
                         draw_procedural_door(surf, px, py, TILE_SIZE, 'W', time_ms)
+
+                    # ======================
+                    # BRIDGE TILE
+                    # ======================
+                    elif tile == TILE_BRIDGE:
+                        floor_sprite = get_autotile(room, x, y)
+                        if floor_sprite:
+                            surf.blit(floor_sprite, (px, py))
+                        else:
+                            draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
 
                     # ======================
                     # PILLAR - Decorative obstacle with collision
                     # ======================
                     elif tile == TILE_PILLAR:
-                        # Draw floor underneath
-                        floor_sprite = get_floor_tile(x, y)
+                        # Draw floor underneath with autotile
+                        floor_sprite = get_autotile(room, x, y)
                         if floor_sprite:
                             surf.blit(floor_sprite, (px, py))
                         else:
                             draw_procedural_floor(surf, px, py, TILE_SIZE, x, y)
-                        # Draw pillar (cycle through variants)
-                        pillar_variant = ((x * 3 + y * 7) % 4) + 1
-                        pillar_sprite = WALL_CHUNKS.get(f'pillar_{pillar_variant}')
-                        if pillar_sprite:
-                            scaled = scale_2x(pillar_sprite)
-                            pw, ph = scaled.get_size()
-                            # Center horizontally, align bottom to tile bottom
-                            pillar_x = px + (TILE_SIZE - pw) // 2
-                            pillar_y = py + TILE_SIZE - ph
-                            surf.blit(scaled, (pillar_x, pillar_y))
+                        # Draw procedural pillar overlay
+                        draw_procedural_pillar(surf, px, py, TILE_SIZE, x, y)
 
                     # ======================
-                    # VOID/SKY (nothing drawn)
+                    # VOID/SKY (nothing drawn - shows background)
                     # ======================
                     elif tile == TILE_VOID:
                         pass
