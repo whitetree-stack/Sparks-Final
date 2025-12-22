@@ -44,29 +44,7 @@ init python in crystal_rhythm:
     STATE_VICTORY = "victory"
     STATE_GAMEOVER = "gameover"
 
-    # Pre-defined songs (patterns of notes)
-    # Each note is (time_ms, lane) - time when note should be hit
-    SONGS = {
-        "easy": {
-            "name": "Crystal Waltz",
-            "bpm": 100,
-            "speed": 350,
-            "notes": generate_easy_song()
-        },
-        "medium": {
-            "name": "Gem Symphony",
-            "bpm": 120,
-            "speed": 450,
-            "notes": generate_medium_song()
-        },
-        "hard": {
-            "name": "Diamond Storm",
-            "bpm": 140,
-            "speed": 550,
-            "notes": generate_hard_song()
-        }
-    }
-
+    # Song generator functions (must be defined before SONGS dict)
     def generate_easy_song():
         """Generate an easy song pattern."""
         notes = []
@@ -141,6 +119,29 @@ init python in crystal_rhythm:
             time = notes[-1][0] + beat_time * 4
 
         return notes
+
+    # Pre-defined songs (patterns of notes)
+    # Each note is (time_ms, lane) - time when note should be hit
+    SONGS = {
+        "easy": {
+            "name": "Crystal Waltz",
+            "bpm": 100,
+            "speed": 350,
+            "notes": generate_easy_song()
+        },
+        "medium": {
+            "name": "Gem Symphony",
+            "bpm": 120,
+            "speed": 450,
+            "notes": generate_medium_song()
+        },
+        "hard": {
+            "name": "Diamond Storm",
+            "bpm": 140,
+            "speed": 550,
+            "notes": generate_hard_song()
+        }
+    }
 
     class Note:
         """A falling note that the player must hit."""
@@ -697,9 +698,11 @@ screen crystal_rhythm_screen(difficulty="easy"):
 # Entry label for the minigame
 label crystal_rhythm_start(difficulty="easy"):
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen crystal_rhythm_screen(difficulty)
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

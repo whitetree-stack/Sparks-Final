@@ -850,9 +850,11 @@ screen boss_rush_screen():
 # Entry label
 label boss_rush_start():
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen boss_rush_screen()
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

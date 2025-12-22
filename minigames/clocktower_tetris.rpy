@@ -801,9 +801,11 @@ screen clockwork_tetris_screen(target_lines=20, time_limit=None):
 # Entry label
 label clockwork_tetris_start(target_lines=20, time_limit=None):
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen clockwork_tetris_screen(target_lines, time_limit)
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

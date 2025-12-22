@@ -2068,10 +2068,14 @@ screen vine_blaster_screen():
 ############################################################################
 
 label play_valley_climb:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     show screen valley_climb_screen
     "Arrow Keys to climb! SPACE to attack! ESC to exit."
     $ score = ui.interact()
     hide screen valley_climb_screen
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
     "You finished climbing with a score of [score]!"
     menu:
         "Continue":
@@ -2081,10 +2085,14 @@ label play_valley_climb:
     return
 
 label play_vine_blaster:
+    $ quick_menu = False
+    $ disable_minigame_conflicts()
     show screen vine_blaster_screen
     "Tristan: Arrow Keys + SPACE | Henry: WASD + E | Destroy the vines!"
     $ score = ui.interact()
     hide screen vine_blaster_screen
+    $ restore_minigame_conflicts()
+    $ quick_menu = True
     $ game_display = VineBlasterDisplayable()
     if game_display.victory:
         "The beacon is saved! Score: [score]"

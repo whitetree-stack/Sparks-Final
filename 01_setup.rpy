@@ -3,6 +3,60 @@ init python:
     import random
     import math
     config.auto_voice = "voice/{id}.mp3"
+
+    # --------------------------------------------------------
+    # Minigame Keyboard Utilities
+    # --------------------------------------------------------
+    # Stores original keymap bindings to restore after minigames
+    _saved_keymap = {}
+
+    def disable_minigame_conflicts():
+        """
+        Disable Ren'Py developer/system keys that conflict with minigame controls.
+        Call this at the START of every minigame.
+        """
+        global _saved_keymap
+
+        # Keys that commonly conflict with minigame input
+        conflicting_keys = [
+            'developer',      # Shift+D - developer menu
+            'director',       # D - director mode (conflicts with movement!)
+            'reload_game',    # Shift+R - reload (R might conflict)
+            'inspector',      # Shift+I - inspector
+            'console',        # Shift+O - console
+            'self_voicing',   # V - self voicing
+            'toggle_skip',    # Tab - skip toggle (conflicts with character switch!)
+            'fast_skip',      # Ctrl, > - fast skip
+            'screenshot',     # S - screenshot (conflicts with movement!)
+            'rollback',       # Mouse scroll, pageup
+            'rollforward',    # Mouse scroll, pagedown
+            'hide_windows',   # H - hide windows
+            'game_menu',      # Escape handled separately per minigame
+        ]
+
+        # Save current bindings and clear them
+        for key in conflicting_keys:
+            if key in config.keymap:
+                _saved_keymap[key] = list(config.keymap[key])
+                config.keymap[key] = []
+
+        # Also disable some other problematic bindings
+        if 'dismiss' in config.keymap:
+            _saved_keymap['dismiss'] = list(config.keymap['dismiss'])
+            # Keep only mouse click for dismiss, remove keyboard keys
+            config.keymap['dismiss'] = ['mouseup_1']
+
+    def restore_minigame_conflicts():
+        """
+        Restore Ren'Py developer/system keys after minigame ends.
+        Call this at the END of every minigame.
+        """
+        global _saved_keymap
+
+        for key, bindings in _saved_keymap.items():
+            config.keymap[key] = bindings
+
+        _saved_keymap = {}
 # --------------------------------------------------------
 # Setup File - Global settings and variables
 # --------------------------------------------------------

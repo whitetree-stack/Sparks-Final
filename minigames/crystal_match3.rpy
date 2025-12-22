@@ -685,10 +685,12 @@ screen crystal_match_instructions():
 # Entry label for the minigame
 label crystal_match_start(target_score=1000, moves_limit=30):
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     show screen crystal_match_instructions
     call screen crystal_match_screen(target_score, moves_limit)
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 

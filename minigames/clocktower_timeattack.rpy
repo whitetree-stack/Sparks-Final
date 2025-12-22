@@ -591,9 +591,11 @@ screen gear_rush_screen(target_waves=5, time_limit=60):
 # Entry label
 label gear_rush_start(target_waves=5, time_limit=60):
     $ quick_menu = False
+    $ disable_minigame_conflicts()
 
     call screen gear_rush_screen(target_waves, time_limit)
 
+    $ restore_minigame_conflicts()
     $ quick_menu = True
     $ result = _return
 
